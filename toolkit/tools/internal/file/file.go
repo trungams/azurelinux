@@ -8,13 +8,16 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/logger"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/shell"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/logger"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/shell"
 )
 
 // IsDir check if a given file path is a directory.
@@ -37,20 +40,29 @@ func IsFile(path string) (isFile bool, err error) {
 	return !info.IsDir(), nil
 }
 
+// IsFileOrSymlink returns true if the provided path is a file or a symlink.
+func IsFileOrSymlink(path string) (isFile bool, err error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return
+	}
+
+	isSymlink := info.Mode().Type() == os.ModeSymlink
+	return isSymlink || !info.IsDir(), nil
+}
+
 // Move moves a file from src to dst. Will preserve permissions.
 func Move(src, dst string) (err error) {
 	const squashErrors = false
 
 	src, err = filepath.Abs(src)
 	if err != nil {
-		logger.Log.Errorf("Failed to get absolute path for move source (%s).", src)
-		return
+		return fmt.Errorf("failed to get absolute path for move source (%s):\n%w", src, err)
 	}
 
 	dst, err = filepath.Abs(dst)
 	if err != nil {
-		logger.Log.Errorf("Failed to get absolute path for move destination (%s).", dst)
-		return
+		return fmt.Errorf("failed to get absolute path for move destination (%s):\n%w", dst, err)
 	}
 
 	if src == dst {
@@ -75,13 +87,75 @@ func Move(src, dst string) (err error) {
 // Copy copies a file from src to dst, creating directories for the destination if needed.
 // dst is assumed to be a file and not a directory. Will preserve permissions.
 func Copy(src, dst string) (err error) {
-	return copyWithPermissions(src, dst, os.ModePerm, false, os.ModePerm)
+	return NewFileCopyBuilder(src, dst).Run()
 }
 
-// CopyAndChangeMode copies a file from src to dst, creating directories with the given access rights for the destination if needed.
-// dst is assumed to be a file and not a directory. Will change the permissions to the given value.
-func CopyAndChangeMode(src, dst string, dirmode os.FileMode, filemode os.FileMode) (err error) {
-	return copyWithPermissions(src, dst, dirmode, true, filemode)
+// CopyDir copies src directory to dst, creating the dst directory if needed.
+// dst is assumed to be a directory and not a file.
+func CopyDir(src, dst string, newDirPermissions, childFilePermissions fs.FileMode, mergedDirPermissions *fs.FileMode) (err error) {
+	isDstExist, err := PathExists(dst)
+	if err != nil {
+		return err
+	}
+	if isDstExist {
+		isDstDir, err := IsDir(dst)
+		if err != nil {
+			return err
+		}
+		if !isDstDir {
+			return fmt.Errorf("destination exists but is not a directory (%s)", dst)
+		}
+		logger.Log.Debugf("Destination (%s) already exists and is a directory", dst)
+		if mergedDirPermissions != nil {
+			if err := os.Chmod(dst, *mergedDirPermissions); err != nil {
+				return fmt.Errorf("error setting file permissions: %w", err)
+			}
+		}
+	}
+
+	if !isDstExist {
+		logger.Log.Debugf("Creating destination directory (%s)", dst)
+		// Create dst dir
+		err = os.MkdirAll(dst, newDirPermissions)
+		if err != nil {
+			return fmt.Errorf("failed to create directory (%s):\n%w", dst, err)
+		}
+	}
+
+	// Open the source directory
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	// Iterate over the entries in the source directory
+	for _, entry := range entries {
+		srcPath := filepath.Join(src, entry.Name())
+		dstPath := filepath.Join(dst, entry.Name())
+
+		if entry.IsDir() {
+			// If it's a directory, recursively copy it
+			if err := CopyDir(srcPath, dstPath, newDirPermissions, childFilePermissions, mergedDirPermissions); err != nil {
+				return err
+			}
+		} else {
+			// If it's a file, copy it and set file permissions
+			if err := NewFileCopyBuilder(srcPath, dstPath).SetFileMode(childFilePermissions).Run(); err != nil {
+				return fmt.Errorf("failed to copy file (%s) to (%s):\n%w", srcPath, dstPath, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// Read reads a string from the file src.
+func Read(src string) (data string, err error) {
+	logger.Log.Debugf("Reading from (%s)", src)
+
+	bytes, err := os.ReadFile(src)
+	data = string(bytes)
+	return
 }
 
 // readLines reads file under path and returns lines as strings and any error encountered
@@ -117,13 +191,14 @@ func Create(dst string, perm os.FileMode) (err error) {
 func Write(data string, dst string) (err error) {
 	logger.Log.Debugf("Writing to (%s)", dst)
 
-	dstFile, err := os.Create(dst)
-	if err != nil {
-		return
-	}
-	defer dstFile.Close()
+	err = os.WriteFile(dst, []byte(data), 0o666)
+	return
+}
 
-	_, err = dstFile.WriteString(data)
+func WriteWithPerm(data string, dst string, perm os.FileMode) (err error) {
+	logger.Log.Debugf("Writing to (%s) with perm (%o)", dst, perm)
+
+	err = os.WriteFile(dst, []byte(data), perm)
 	return
 }
 
@@ -157,6 +232,35 @@ func Append(data string, dst string) (err error) {
 	defer dstFile.Close()
 
 	_, err = dstFile.WriteString(data)
+	return
+}
+
+// RemoveFileIfExists will delete a file if it exists on disk.
+func RemoveFileIfExists(path string) (err error) {
+	removeErr := os.Remove(path)
+	if removeErr != nil && !errors.Is(removeErr, fs.ErrNotExist) {
+		err = fmt.Errorf("failed to remove file (%s):\n%w", path, err)
+	}
+	return
+}
+
+// RemoveDirectoryContents will delete the contents of a directory, but not the
+// directory itself. If the directory does not exist, it will return an error.
+func RemoveDirectoryContents(path string) (err error) {
+	dir, err := os.ReadDir(path)
+	if err != nil {
+		return
+	}
+
+	for _, entry := range dir {
+		childPath := filepath.Join(path, entry.Name())
+		logger.Log.Debugf("Removing (%s)", childPath)
+		err = os.RemoveAll(childPath)
+		if err != nil {
+			return
+		}
+	}
+
 	return
 }
 
@@ -233,21 +337,27 @@ func GetAbsPathWithBase(baseDirPath, inputPath string) string {
 	return filepath.Join(baseDirPath, inputPath)
 }
 
-// copyWithPermissions copies a file from src to dst, creating directories with the requested mode for the destination if needed.
-// Depending on the changeMode parameter, it may also change the file mode.
-func copyWithPermissions(src, dst string, dirmode os.FileMode, changeMode bool, filemode os.FileMode) (err error) {
-	const squashErrors = false
-
-	logger.Log.Debugf("Copying (%s) -> (%s)", src, dst)
-
-	isSrcFile, err := IsFile(src)
+func IsDirEmpty(path string) (bool, error) {
+	file, err := os.Open(path)
 	if err != nil {
-		return
+		return false, err
 	}
-	if !isSrcFile {
-		return fmt.Errorf("source (%s) is not a file", src)
+	defer file.Close()
+
+	_, err = file.Readdirnames(1)
+	if err == io.EOF {
+		// Directory has no children.
+		return true, nil
+	}
+	if err != nil {
+		return false, err
 	}
 
+	// Directory has at least 1 child.
+	return false, nil
+}
+
+func createDestinationDir(dst string, dirmode os.FileMode) (err error) {
 	isDstExist, err := PathExists(dst)
 	if err != nil {
 		return err
@@ -271,15 +381,69 @@ func copyWithPermissions(src, dst string, dirmode os.FileMode, changeMode bool, 
 		}
 	}
 
-	err = shell.ExecuteLive(squashErrors, "cp", "--preserve=mode", src, dst)
-	if err != nil {
-		return
-	}
-
-	if changeMode {
-		logger.Log.Debugf("Calling chmod on (%s) with the mode (%v)", dst, filemode)
-		err = os.Chmod(dst, filemode)
-	}
-
 	return
+}
+
+// CopyResourceFile copies a file from an embedded binary resource file to disk.
+// This will override any existing file.
+func CopyResourceFile(srcFS fs.FS, srcFile, dst string, dirmode os.FileMode, filemode os.FileMode) error {
+	logger.Log.Debugf("Copying resource (%s) -> (%s)", srcFile, dst)
+
+	err := createDestinationDir(dst, dirmode)
+	if err != nil {
+		return err
+	}
+
+	source, err := srcFS.Open(srcFile)
+	if err != nil {
+		return fmt.Errorf("failed to copy resource (%s) -> (%s):\nfailed to open source:\n%w", srcFile, dst, err)
+	}
+	defer source.Close()
+
+	destination, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, filemode)
+	if err != nil {
+		return fmt.Errorf("failed to copy resource (%s) -> (%s):\nfailed to open destination:\n%w", srcFile, dst, err)
+	}
+	defer destination.Close()
+
+	_, err = io.Copy(destination, source)
+	if err != nil {
+		return fmt.Errorf("failed to copy resource (%s) -> (%s):\nfailed to copy bytes:\n%w", srcFile, dst, err)
+	}
+
+	err = os.Chmod(dst, filemode)
+	if err != nil {
+		return fmt.Errorf("failed to copy resource (%s) -> (%s):\nfailed to set filemode:\n%w", srcFile, dst, err)
+	}
+
+	return nil
+}
+
+func EnumerateDirFiles(dirPath string) (filePaths []string, err error) {
+	err = filepath.Walk(dirPath, func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		filePaths = append(filePaths, filePath)
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to enumerate files under %s:\n%w", dirPath, err)
+	}
+	return filePaths, nil
+}
+
+func CommandExists(name string) (bool, error) {
+	_, err := exec.LookPath(name)
+	if err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }

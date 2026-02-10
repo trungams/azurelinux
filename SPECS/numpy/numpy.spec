@@ -4,17 +4,16 @@
 
 Summary:        A fast multidimensional array facility for Python
 Name:           numpy
-Version:        1.23.4
-Release:        3%{?dist}
+Version:        1.26.3
+Release:        4%{?dist}
 # Everything is BSD except for class SafeEval in numpy/lib/utils.py which is Python
 License:        BSD AND Python AND ASL 2.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            http://www.numpy.org/
 Source0:        https://github.com/%{name}/%{name}/releases/download/v%{version}/%{name}-%{version}.tar.gz
 Source1:        https://numpy.org/doc/%{majmin}/numpy-html.zip#/numpy-html-%{version}.zip
-
-Patch0:         test_fix.patch
+Patch0:		CVE-2018-1999024.patch
 
 %description
 NumPy is a general-purpose array-processing package designed to
@@ -38,15 +37,21 @@ BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  gcc-gfortran
 BuildRequires:  lapack-devel
+BuildRequires:  ninja-build
 BuildRequires:  python3-Cython
 BuildRequires:  python3-devel
-BuildRequires:  python3-setuptools < 60
+BuildRequires:  python3-pip
+BuildRequires:  python3-pyproject-metadata
+BuildRequires:  python3-setuptools
 Provides:       libnpymath-static = %{version}-%{release}
 Provides:       libnpymath-static%{?_isa} = %{version}-%{release}
 Provides:       numpy = %{version}-%{release}
 Provides:       numpy%{?_isa} = %{version}-%{release}
-%if %{with_check}
-BuildRequires:  python3-pip
+%if 0%{?with_check}
+BuildRequires:  meson
+BuildRequires:  python3-hypothesis
+BuildRequires:  python3-pytest
+BuildRequires:  python3-typing-extensions
 %endif
 
 %description -n python3-numpy
@@ -100,10 +105,7 @@ EOF
 %build
 %set_build_flags
 
-env OPENBLAS=%{_libdir} \
-    BLAS=%{_libdir} \
-    LAPACK=%{_libdir} CFLAGS="%{optflags}" \
-    %{__python3} setup.py build
+%pyproject_wheel -Csetup-args=-Dblas=%{blaslib} -Csetup-args=-Dlapack=lapack
 
 %install
 mkdir docs
@@ -111,31 +113,23 @@ pushd docs
 unzip %{SOURCE1}
 popd
 
-#%%{__python3} setup.py install -O1 --skip-build --root %%{buildroot}
-# skip-build currently broken, this works around it for now
-env OPENBLAS=%{_libdir} \
-    FFTW=%{_libdir} BLAS=%{_libdir} \
-    LAPACK=%{_libdir} CFLAGS="%{optflags}" \
-    %{__python3} setup.py install --root %{buildroot} --prefix=%{_prefix}
-ln -s f2py3 %{buildroot}%{_bindir}/f2py.numpy
+%pyproject_install
+pushd %{buildroot}%{_bindir} &> /dev/null
+ln -s f2py f2py3
+ln -s f2py f2py%{python3_version}
+ln -s f2py3 f2py.numpy
+popd &> /dev/null
 
 #symlink for includes, BZ 185079
 mkdir -p %{buildroot}%{_includedir}
 ln -s %{python3_sitearch}/%{name}/core/include/numpy/ %{buildroot}%{_includedir}/numpy
 
-# distutils from setuptools don't have the patch that was created to avoid standard runpath here
-# we strip it manually instead
-# ERROR   0001: file '...' contains a standard runpath '/usr/lib64' in [/usr/lib64]
-chrpath --delete %{buildroot}%{python3_sitearch}/%{name}/core/_multiarray_umath.*.so
-chrpath --delete %{buildroot}%{python3_sitearch}/%{name}/linalg/lapack_lite.*.so
-chrpath --delete %{buildroot}%{python3_sitearch}/%{name}/linalg/_umath_linalg.*.so
-
 
 %check
 export PYTHONPATH=%{buildroot}%{python3_sitearch}
 
-# Hypothesis 6.72.0 introduced a deprecation error for "Healthcheck.all()" which fails the test run
-pip install 'pytest==7.2' 'hypothesis<6.72.0' typing-extensions
+# Freezing package versions to keep the tests stable.
+pip3 install iniconfig==2.0.0 sortedcontainers==2.4.0
 
 # test_ppc64_ibm_double_double128 is unnecessary now that ppc64le has switched long doubles to IEEE format.
 # https://github.com/numpy/numpy/issues/21094
@@ -146,10 +140,11 @@ python3 runtests.py --no-build -- -ra -k 'not test_ppc64_ibm_double_double128'
 %license LICENSE.txt
 %doc THANKS.txt site.cfg.example
 %{python3_sitearch}/%{name}/__pycache__
+%{python3_sitearch}/%{name}/_core
+%{python3_sitearch}/%{name}/_utils
 %dir %{python3_sitearch}/%{name}
 %{python3_sitearch}/%{name}/*.py*
 %{python3_sitearch}/%{name}/core
-%{python3_sitearch}/%{name}/distutils
 %{python3_sitearch}/%{name}/doc
 %{python3_sitearch}/%{name}/fft
 %{python3_sitearch}/%{name}/lib
@@ -161,8 +156,7 @@ python3 runtests.py --no-build -- -ra -k 'not test_ppc64_ibm_double_double128'
 %{python3_sitearch}/%{name}/compat
 %{python3_sitearch}/%{name}/matrixlib
 %{python3_sitearch}/%{name}/polynomial
-%{python3_sitearch}/%{name}-*.egg-info
-%exclude %{python3_sitearch}/%{name}/LICENSE.txt
+%{python3_sitearch}/%{name}-*.dist-info
 %{_includedir}/numpy
 %{python3_sitearch}/%{name}/__init__.pxd
 %{python3_sitearch}/%{name}/__init__.cython-30.pxd
@@ -183,6 +177,23 @@ python3 runtests.py --no-build -- -ra -k 'not test_ppc64_ibm_double_double128'
 %doc docs/*
 
 %changelog
+* Thu Mar 06 2025 Archana Shettigar <v-shettigara@microsoft.com> - 1.26.3-4
+- Added CVE-2018-1999024.patch
+
+* Tue Aug 27 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.26.3-3
+- Fix package tests.
+- Update to build using python3-pyproject-metadata.
+- Align the python3-numpy-f2py file links with Fedora.
+- Using Fedora 40 (license: MIT) for guidance.
+
+* Fri Feb 16 2024 Andrew Phelps <anphel@microsoft.com> - 1.26.3-2
+- Remove restriction on python3-setuptools < 60
+
+* Wed Jan 24 2024 Osama Esmail <osamaesmail@microsoft.com> - 1.26.3-1
+- Upgrading for 3.0 release
+- Added %%{python3_sitearch}/%%{name}/{_core,_utils}
+- Removed old patch
+
 * Mon May 22 2023 Olivia Crain <oliviacrain@microsoft.com> - 1.23.4-3
 - Pin version of hypothesis used to avoid deprecation errors
 

@@ -1,5 +1,5 @@
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 
 %define git_long  e8e3d20f20da5ee3e37d347207b01890829a5475
 %define git_short e8e3d20
@@ -8,7 +8,7 @@ Distribution:   Mariner
 Summary:	A C++ port of Lucene
 Name:		clucene
 Version:	2.3.3.4
-Release:	38%{?dist}
+Release:	40%{?dist}
 # From 'COPYING':
 # - RSA license: src\CLucene\util\MD5Digester.cpp
 # - BSD license: cmake/MacroCheckGccVisibility.cmake, MacroEnsureVersion.cmake, and src/core/util/Compress.cpp
@@ -16,7 +16,7 @@ License:	(ASL 2.0 or LGPLv2+) and BSD and RSA
 URL:		http://www.sourceforge.net/projects/clucene
 %if 0%{?snap}
 #  git archive e8e3d20f20da5ee3e37d347207b01890829a5475 --prefix=clucene-core-2.3.3.4/ | xz -9 > ../clucene-core-2.3.3.4-e8e3d20.tar.xz
-Source0:	%{_mariner_sources_url}/clucene-core-2.3.3.4-%{git_short}.tar.xz
+Source0:	%{_distro_sources_url}/clucene-core-2.3.3.4-%{git_short}.tar.xz
 
 %else
 Source0:	http://downloads.sourceforge.net/clucene/clucene-core-%{version}.tar.gz
@@ -27,6 +27,7 @@ BuildRequires:	cmake
 BuildRequires:	gawk
 BuildRequires:	gcc-c++
 BuildRequires:	zlib-devel
+BuildRequires: make
 
 ## upstreamable patches
 # include LUCENE_SYS_INCLUDES in pkgconfig --cflags output
@@ -43,6 +44,13 @@ Patch51: clucene-core-2.3.3.4-install_contribs_lib.patch
 Patch52: clucene-core-2.3.3.4-CLuceneConfig.patch
 # Fix tests for undefined usleep
 Patch53: clucene-core-2.3.3.4-usleep.patch
+# Upstream at <https://sourceforge.net/p/clucene/bugs/232/> "Patches for
+# TestIndexSearcher failures":
+Patch54: 0001-Make-sure-to-return-value-from-non-void-function.patch
+Patch55: 0002-Avoid-deadlock-in-TestIndexSearcher.patch
+# Upstream at <https://sourceforge.net/p/clucene/code/merge-requests/3/> "Fix
+# missing #include <time.h>":
+Patch56: 0001-Fix-missing-include-time.h.patch
 
 %description
 CLucene is a C++ port of the popular Apache Lucene search engine
@@ -79,32 +87,29 @@ Requires:	%{name}-core%{?_isa} = %{version}-%{release}
 
 %prep
 %setup -n %{name}-core-%{version}
-
-%patch50 -p1 -b .pkgconfig
-%patch51 -p1 -b .install_contribs_lib
-%patch52 -p1 -b .CLuceneConfig
-%patch53 -p1 -b .usleep
+ 
+%patch -P50 -p1 -b .pkgconfig
+%patch -P51 -p1 -b .install_contribs_lib
+%patch -P52 -p1 -b .CLuceneConfig
+%patch -P53 -p1 -b .usleep
+%patch -P54 -p1 -b .return-value
+%patch -P55 -p1 -b .avoid-deadlock
+%patch -P56 -p1 -b .missing-include
 
 # nuke bundled code
 rm -rfv src/ext/{boost/,zlib/}
 
 
 %build
-mkdir %{_target_platform}
-pushd %{_target_platform}
 %{cmake} \
   -DBUILD_CONTRIBS_LIB:BOOL=ON \
   -DLIB_DESTINATION:PATH=%{_libdir} \
-  -DLUCENE_SYS_INCLUDES:PATH=%{_libdir} \
-  ..
-popd
+  -DLUCENE_SYS_INCLUDES:PATH=%{_libdir}
 
-make %{?_smp_mflags} -C %{_target_platform}
-
+%cmake_build
 
 %install
-make install/fast DESTDIR=%{buildroot} -C %{_target_platform}
-
+%cmake_install
 
 %check
 export PKG_CONFIG_PATH=%{buildroot}%{_libdir}/pkgconfig
@@ -145,6 +150,12 @@ time make -C %{_target_platform} test ARGS="--timeout 300 --output-on-failure" |
 
 
 %changelog
+* Mon Oct 28 2024 Sumit Jena <v-sumitjena@microsoft.com> - 2.3.3.4-40
+- Added essential patches for build fix.
+
+* Thu Feb 22 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.3.3.4-39
+- Updating naming for 3.0 version of Azure Linux.
+
 * Mon Apr 25 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.3.3.4-38
 - Updating source URLs.
 - License verified.

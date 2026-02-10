@@ -1,18 +1,18 @@
 # Prevent librustc_driver from inadvertently being listed as a requirement
 %global __requires_exclude ^librustc_driver-
 
-# Release date and version of stage 0 compiler can be found in "src/stage0.json" inside the extracted "Source0".
+# Release date and version of stage 0 compiler can be found in "src/stage0" inside the extracted "Source0".
 # Look for "date:" and "rustc:".
-%define release_date 2023-02-09
-%define stage0_version 1.67.1
+%define release_date 2025-08-07
+%define stage0_version 1.89.0
 
 Summary:        Rust Programming Language
 Name:           rust
-Version:        1.68.2
-Release:        5%{?dist}
+Version:        1.90.0
+Release:        3%{?dist}
 License:        (ASL 2.0 OR MIT) AND BSD AND CC-BY-3.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/System
 URL:            https://www.rust-lang.org/
 # Notes:
@@ -28,18 +28,22 @@ Source0:        https://static.rust-lang.org/dist/rustc-%{version}-src.tar.xz
 #   wget https://static.rust-lang.org/dist/rustc-1.68.2-src.tar.xz
 # - Create a directory to store the output from the script:
 #   mkdir rustOutputDir
+# - Get prereqs for the script (for a mariner container):
+#   tdnf -y install rust wget jq tar ca-certificates
 # - Run the script:
 #   ./generate_source_tarball --srcTarball path/to/rustc-1.68.2-src.tar.xz --outFolder path/to/rustOutputDir --pkgVersion 1.68.2
 #
 
 Source1:        rustc-%{version}-src-cargo.tar.gz
-Source2:        https://static.rust-lang.org/dist/%{release_date}/cargo-%{stage0_version}-x86_64-unknown-linux-gnu.tar.gz
-Source3:        https://static.rust-lang.org/dist/%{release_date}/rustc-%{stage0_version}-x86_64-unknown-linux-gnu.tar.gz
-Source4:        https://static.rust-lang.org/dist/%{release_date}/rust-std-%{stage0_version}-x86_64-unknown-linux-gnu.tar.gz
-Source5:        https://static.rust-lang.org/dist/%{release_date}/cargo-%{stage0_version}-aarch64-unknown-linux-gnu.tar.gz
-Source6:        https://static.rust-lang.org/dist/%{release_date}/rustc-%{stage0_version}-aarch64-unknown-linux-gnu.tar.gz
-Source7:        https://static.rust-lang.org/dist/%{release_date}/rust-std-%{stage0_version}-aarch64-unknown-linux-gnu.tar.gz
-Patch0:         CVE-2023-27477.patch
+Source2:        https://static.rust-lang.org/dist/%{release_date}/cargo-%{stage0_version}-x86_64-unknown-linux-gnu.tar.xz
+Source3:        https://static.rust-lang.org/dist/%{release_date}/rustc-%{stage0_version}-x86_64-unknown-linux-gnu.tar.xz
+Source4:        https://static.rust-lang.org/dist/%{release_date}/rust-std-%{stage0_version}-x86_64-unknown-linux-gnu.tar.xz
+Source5:        https://static.rust-lang.org/dist/%{release_date}/cargo-%{stage0_version}-aarch64-unknown-linux-gnu.tar.xz
+Source6:        https://static.rust-lang.org/dist/%{release_date}/rustc-%{stage0_version}-aarch64-unknown-linux-gnu.tar.xz
+Source7:        https://static.rust-lang.org/dist/%{release_date}/rust-std-%{stage0_version}-aarch64-unknown-linux-gnu.tar.xz
+Patch0:         CVE-2025-4574.patch
+Patch1:         CVE-2025-53605.patch
+Patch2:         CVE-2024-11738.patch
 BuildRequires:  binutils
 BuildRequires:  cmake
 # make sure rust relies on curl from CBL-Mariner (instead of using its vendored flavor)
@@ -54,8 +58,11 @@ BuildRequires:  ninja-build
 # make sure rust relies on openssl from CBL-Mariner (instead of using its vendored flavor)
 BuildRequires:  openssl-devel
 BuildRequires:  python3
-%if %{with_check}
-BuildRequires:  glibc-static >= 2.35-4%{?dist}
+# make sure rust depends on system zlib
+BuildRequires:  zlib-devel
+%if 0%{?with_check}
+BuildRequires:  glibc-static >= 2.38-18%{?dist}
+BuildRequires:	sudo
 %endif
 # rustc uses a C compiler to invoke the linker, and links to glibc in most cases
 Requires:       binutils
@@ -85,23 +92,18 @@ tar -xf %{SOURCE1} --no-same-owner
 popd
 %autosetup -p1 -n rustc-%{version}-src
 
-# Rust doesn't recognize our .tar.gz bootstrap files when XZ support is enabled
-# This causes stage 0 bootstrap to look online for sources
-# So, we remove XZ support detection in the bootstrap program
-sed -i "s/tarball_suffix = '.tar.xz' if support_xz() else '.tar.gz'/tarball_suffix = '.tar.gz'/g" src/bootstrap/bootstrap.py
-
 # Setup build/cache directory
 BUILD_CACHE_DIR="build/cache/%{release_date}"
 mkdir -pv "$BUILD_CACHE_DIR"
 %ifarch x86_64
-mv %{SOURCE2} "$BUILD_CACHE_DIR"
-mv %{SOURCE3} "$BUILD_CACHE_DIR"
-mv %{SOURCE4} "$BUILD_CACHE_DIR"
+cp %{SOURCE2} "$BUILD_CACHE_DIR"
+cp %{SOURCE3} "$BUILD_CACHE_DIR"
+cp %{SOURCE4} "$BUILD_CACHE_DIR"
 %endif
 %ifarch aarch64
-mv %{SOURCE5} "$BUILD_CACHE_DIR"
-mv %{SOURCE6} "$BUILD_CACHE_DIR"
-mv %{SOURCE7} "$BUILD_CACHE_DIR"
+cp %{SOURCE5} "$BUILD_CACHE_DIR"
+cp %{SOURCE6} "$BUILD_CACHE_DIR"
+cp %{SOURCE7} "$BUILD_CACHE_DIR"
 %endif
 
 %build
@@ -112,27 +114,38 @@ export CXXFLAGS="`echo " %{build_cxxflags} " | sed 's/ -g//'`"
 sh ./configure \
     --prefix=%{_prefix} \
     --enable-extended \
-    --tools="cargo,clippy,rustfmt" \
+    --enable-profiler \
+    --tools="cargo,clippy,rustfmt,rust-analyzer-proc-macro-srv" \
     --release-channel="stable" \
-    --release-description="CBL-Mariner %{version}-%{release}"
+    --release-description="Azure Linux %{version}-%{release}"
 
 # SUDO_USER=root bypasses a check in the python bootstrap that
 # makes rust refuse to pull sources from the internet
 USER=root SUDO_USER=root %make_build
 
 %check
-ln -s %{_prefix}/src/mariner/BUILD/rustc-%{version}-src/build/x86_64-unknown-linux-gnu/stage2-tools-bin/rustfmt %{_prefix}/src/mariner/BUILD/rustc-%{version}-src/build/x86_64-unknown-linux-gnu/stage0/bin/
-ln -s %{_prefix}/src/mariner/BUILD/rustc-%{version}-src/vendor/ /root/vendor
-# remove rustdoc ui flaky test issue-98690.rs (which is tagged with 'unstable-options')
-rm -v ./tests/rustdoc-ui/issue-98690.*
-%make_build check
+# We expect to generate dynamic CI contents in this folder, but it will fail since the .github folder is not included
+# with the published sources.
+mkdir -p .github/workflows
 
+ln -s %{_topdir}/BUILD/rustc-%{version}-src/build/x86_64-unknown-linux-gnu/stage2-tools-bin/rustfmt %{_topdir}/BUILD/rustc-%{version}-src/build/x86_64-unknown-linux-gnu/stage0/bin/
+ln -s %{_topdir}/BUILD/rustc-%{version}-src/vendor/ /root/vendor
+# Since mariner has `aarch64-unknown-linux-gnu-gcc` as native compiler in arm64 and a ptest is expecting `aarch64-linux-gnu-gcc`
+ln -s /usr/bin/aarch64-unknown-linux-gnu-gcc /usr/bin/aarch64-linux-gnu-gcc
+# remove rustdoc ui flaky test issue-98690.rs (which is tagged with 'unstable-options')
+rm -v ./tests/rustdoc-ui/issues/issue-98690.*
+useradd -m -d /home/test test
+chown -R test:test .
+sudo -u test %make_build check
+userdel -r test
 %install
 USER=root SUDO_USER=root %make_install
-mv %{buildroot}%{_docdir}/%{name}/LICENSE-THIRD-PARTY .
-rm %{buildroot}%{_docdir}/%{name}/{COPYRIGHT,LICENSE-APACHE,LICENSE-MIT}
-rm %{buildroot}%{_docdir}/%{name}/html/.lock
-rm %{buildroot}%{_docdir}/%{name}/*.old
+mv %{buildroot}%{_docdir}/cargo/LICENSE-THIRD-PARTY .
+rm %{buildroot}%{_docdir}/rustc/{COPYRIGHT-library.html,COPYRIGHT.html}
+rm %{buildroot}%{_docdir}/cargo/{LICENSE-APACHE,LICENSE-MIT}
+rm %{buildroot}%{_docdir}/clippy/{LICENSE-APACHE,LICENSE-MIT}
+rm %{buildroot}%{_docdir}/rustfmt/{LICENSE-APACHE,LICENSE-MIT}
+rm %{buildroot}%{_docdir}/docs/html/.lock
 
 %ldconfig_scriptlets
 
@@ -143,7 +156,6 @@ rm %{buildroot}%{_docdir}/%{name}/*.old
 %{_bindir}/rust-lldb
 %{_libdir}/lib*.so
 %{_libdir}/rustlib/*
-%{_libexecdir}/cargo-credential-1password
 %{_libexecdir}/rust-analyzer-proc-macro-srv
 %{_bindir}/rust-gdb
 %{_bindir}/rust-gdbgui
@@ -157,14 +169,124 @@ rm %{buildroot}%{_docdir}/%{name}/*.old
 
 %files doc
 %license LICENSE-APACHE LICENSE-MIT LICENSE-THIRD-PARTY COPYRIGHT
-%doc %{_docdir}/%{name}/html/*
-%doc %{_docdir}/%{name}/README.md
+%license %{_docdir}/rustc/licenses/*
+%doc %{_docdir}/rustc/README.md
+%doc %{_docdir}/cargo/*
+%doc %{_docdir}/rustfmt/*
+%doc %{_docdir}/clippy/*
+%doc %{_docdir}/docs/html/*
 %doc CONTRIBUTING.md README.md RELEASES.md
 %doc src/tools/clippy/CHANGELOG.md
 %doc src/tools/rustfmt/Configurations.md
 %{_mandir}/man1/*
 
 %changelog
+* Thu Jan 22 2026 Kanishk Bansal <kanbansal@microsoft.com> - 1.90.0-3
+- Bump to rebuild with updated glibc
+
+* Mon Jan 19 2026 Kanishk Bansal <kanbansal@microsoft.com> - 1.90.0-2
+- Bump to rebuild with updated glibc
+
+* Tue Oct 28 2025 Kavya Sree Kaitepalli <kkaitepalli@microsoft.com> - 1.90.0-1
+- Upgrade to 1.90.0
+
+* Mon Nov 10 2025 Andrew Phelps <anphel@microsoft.com> - 1.86.0-10
+- Bump to rebuild with updated glibc
+
+* Thu Oct 23 2025 Kanishk Bansal <kanbansal@microsoft.com> - 1.86.0-9
+- Bump to rebuild with updated glibc
+
+* Wed Oct 08 2025 Andrew Phelps <anphel@microsoft.com> - 1.86.0-8
+- Bump to rebuild with updated glibc
+
+* Thu Aug 28 2025 Kanishk Bansal <kanbansal@microsoft.com> - 1.86.0-7
+- Bump to rebuild with updated glibc
+
+* Mon Aug 25 2025 Andrew Phelps <anphel@microsoft.com> - 1.86.0-6
+- Bump to rebuild with updated glibc
+
+* Fri Aug 08 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 1.86.0-5
+- Patch for CVE-2024-11738
+ 
+* Mon Jul 21 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 1.86.0-4
+- patch for CVE-2025-53605
+
+* Fri Jun 13 2025 Kavya Sree Kaitepalli <kkaitepalli@microsoft.com> - 1.86.0-3
+- Patch CVE-2025-4574
+
+* Thu May 22 2025 Kanishk Bansal <kanbansal@microsoft.com> - 1.86.0-2
+- Bump to rebuild with updated glibc
+
+
+* Tue May 13 2025 Kavya Sree Kaitepalli <kkaitepalli@microsoft.com> - 1.86.0-1
+- Upgrade to 1.86.0
+
+* Mon May 12 2025 Andrew Phelps <anphel@microsoft.com> - 1.85.0-2
+- Bump to rebuild with updated glibc
+
+* Sun Apr 20 2025 Kavya Sree Kaitepalli <kkaitepalli@microsoft.com> - 1.85.0-1
+- Upgrade to 1.85.0
+- Drop patches
+- Remove expand-yaml-anchors tool in %check
+- Remove rust-demangler tool 
+- Update generate_source_tarball script
+- Run %check as test user
+- Add explicit build dependency on zlib
+
+* Thu Feb 27 2025 Chris Co <chrco@microsoft.com> - 1.75.0-12
+- Bump to rebuild with updated glibc
+
+* Mon Aug 26 2024 Rachel Menge <rachelmenge@microsoft.com> - 1.75.0-11
+- Update to build dep latest glibc-static version
+
+* Wed Aug 21 2024 Chris Co <chrco@microsoft.com> - 1.75.0-10
+- Bump to rebuild with updated glibc
+
+* Fri Aug 09 2024 corvus-callidus <108946721+corvus-callidus@users.noreply.github.com> - 1.75.0-9
+- Patch CVE-2024-32884 and CVE-2024-31852
+
+* Wed May 29 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 1.75.0-8
+- Bump release to build with new llvm to fix CVE-2024-31852
+
+* Wed May 22 2024 Suresh Babu Chalamalasetty <schalam@microsoft.com> - 1.75.0-7
+- update to build dep latest glibc-static version
+
+* Mon May 13 2024 Chris Co <chrco@microsoft.com> - 1.75.0-6
+- Update to build dep latest glibc-static version
+
+* Mon Apr 01 2024 Muhammad Falak <mwani@microsoft.com> - 1.75.0-5
+- Enable profiler support
+
+* Mon Mar 11 2024 Dan Streetman <ddstreet@microsoft.com> - 1.75.0-4
+- update to build dep latest glibc-static version
+
+* Thu Feb 29 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.75.0-3
+- Updating naming for 3.0 version of Azure Linux.
+
+* Tue Feb 27 2024 Dan Streetman <ddstreet@microsoft.com> - 1.75.0-2
+- updated glibc-static buildrequires release
+
+* Mon Jan 29 2024 Muhammad Falak <mwani@microsoft.com> - 1.75.0-1
+- Bump version to 1.75.0
+
+* Tue Nov 07 2023 Andrew Phelps <anphel@microsoft.com> - 1.72.0-6
+- Bump release to rebuild against glibc 2.38-1
+
+* Mon Oct 30 2023 Rohit Rawat <rohitrawat@microsoft.com> - 1.72.0-5
+- Patch CVE-2023-45853 in vendor/libz-sys/src/zlib
+
+* Tue Oct 10 2023 Daniel McIlvaney <damcilva@microsoft.com> - 1.72.2-4
+- Explicitly call './x.py' instead of 'x.py'
+
+* Wed Oct 04 2023 Minghe Ren <mingheren@microsoft.com> - 1.72.2-3
+- Bump release to rebuild against glibc 2.35-6
+
+* Tue Oct 03 2023 Mandeep Plaha <mandeepplaha@microsoft.com> - 1.72.2-2
+- Bump release to rebuild against glibc 2.35-5
+
+* Wed Sep 06 2023 Daniel McIlvaney <damcilva@microsoft.com> - 1.72.2-1
+- Bump to version 1.72.2 to address CVE-2023-38497, CVE-2023-40030
+
 * Tue Aug 22 2023 Rachel Menge <rachelmenge@microsoft.com> - 1.68.2-5
 - Bump release to rebuild against openssl 1.1.1k-26
 

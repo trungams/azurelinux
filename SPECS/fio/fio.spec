@@ -1,44 +1,70 @@
 Summary:        Multithreaded IO generation tool
 Name:           fio
-Version:        3.30
-Release:        1%{?dist}
+Version:        3.37
+Release:        3%{?dist}
 License:        GPLv2
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://git.kernel.dk/?p=fio.git;a=summary
-Source0:        https://brick.kernel.dk/snaps/%{name}-%{version}.tar.bz2
-BuildRequires:  gcc
-BuildRequires:  gnupg2
-BuildRequires:  libaio-devel
-BuildRequires:  libcurl-devel
-BuildRequires:  libnbd-devel
-BuildRequires:  librbd1-devel
-BuildRequires:  librdmacm-devel
-BuildRequires:  numactl-devel
-BuildRequires:  openssl-devel
-BuildRequires:  python3-devel
-BuildRequires:  zlib-devel
+Source0:        https://github.com/axboe/%{name}/archive/refs/tags/%{name}-%{version}.tar.gz
+Patch0:         CVE-2025-10823.patch
+
+%bcond_without nbd
+%bcond_with rbd
+%bcond_with rados
 %ifarch x86_64
-BuildRequires:  libpmem-devel
-BuildRequires:  libpmemblk-devel
+%bcond_without pmem
 %endif
-%if %{with_check}
+
+BuildRequires:	gcc
+BuildRequires:	gnupg2
+BuildRequires:	libaio-devel
+BuildRequires:	zlib-devel
+BuildRequires:	python3-devel
+%if %{with nbd}
+BuildRequires:	libnbd-devel
+%endif
+BuildRequires:	libcurl-devel
+BuildRequires:	openssl-devel
+%if %{with pmem}
+BuildRequires:	libpmem-devel
+%endif
+%if %{with rbd}
+BuildRequires:	librbd1-devel
+%endif
+%ifnarch %{arm}
+BuildRequires:	numactl-devel
+BuildRequires:	librdmacm-devel
+%endif
+BuildRequires: make
+%if 0%{?with_check}
 BuildRequires:  CUnit-devel
 %endif
+
+# Don't create automated dependencies for the fio engines.
+# https://bugzilla.redhat.com/show_bug.cgi?id=1884954
+%global __provides_exclude_from ^%{_libdir}/fio/
 
 # Main fio package has soft dependencies on all the engine
 # subpackages, but allows the engines to be uninstalled if not needed
 # or if the dependencies are too onerous.
 Recommends:     %{name}-engine-libaio
 Recommends:     %{name}-engine-http
+%if %{with nbd}
 Recommends:     %{name}-engine-nbd
-Recommends:     %{name}-engine-rados
-Recommends:     %{name}-engine-rbd
-Recommends:     %{name}-engine-rdma
-%ifarch x86-64
+%endif
+%if %{with pmem}
 Recommends:     %{name}-engine-dev-dax
-Recommends:     %{name}-engine-pmemblk
 Recommends:     %{name}-engine-libpmem
+%endif
+%if %{with rados}
+Recommends:     %{name}-engine-rados
+%endif
+%if %{with rbd}
+Recommends:     %{name}-engine-rbd
+%endif
+%ifnarch %{arm}
+Recommends:     %{name}-engine-rdma
 %endif
 
 %description
@@ -51,29 +77,31 @@ one wants to simulate.
 
 %package engine-libaio
 Summary:        Linux libaio engine for %{name}.
-Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description engine-libaio
 Linux libaio engine for %{name}.
 
 %package engine-http
 Summary:        HTTP engine for %{name}.
-Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description engine-http
 HTTP engine for %{name}.
 
+%if %{with nbd}
 %package engine-nbd
 Summary:        Network Block Device engine for %{name}.
-Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description engine-nbd
 Network Block Device (NBD) engine for %{name}.
+%endif
 
-%ifarch x86_64
+%if %{with pmem}
 %package engine-dev-dax
 Summary:        PMDK dev-dax engine for %{name}.
-Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description engine-dev-dax
 dev-dax engine for %{name}.
@@ -81,21 +109,10 @@ Read and write using device DAX to a persistent memory device
 (e.g., /dev/dax0.0) through the PMDK libpmem library.
 %endif
 
-%ifarch x86_64
-%package engine-pmemblk
-Summary:        PMDK pmemblk engine for %{name}.
-Requires:       %{name} = %{version}-%{release}
-
-%description engine-pmemblk
-pmemblk engine for %{name}.
-Read and write using filesystem DAX to a file on a filesystem mounted with
-DAX on a persistent memory device through the PMDK libpmemblk library.
-%endif
-
-%ifarch x86_64
+%if %{with pmem}
 %package engine-libpmem
 Summary:        PMDK pmemblk engine for %{name}.
-Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description engine-libpmem
 libpmem engine for %{name}.
@@ -103,29 +120,35 @@ Read and write using mmap I/O to a file on a filesystem mounted with DAX
 on a persistent memory device through the PMDK libpmem library.
 %endif
 
+%if %{with rados}
 %package engine-rados
 Summary:        Rados engine for %{name}.
-Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description engine-rados
 Rados engine for %{name}.
+%endif
 
+%if %{with rbd}
 %package engine-rbd
 Summary:        Rados Block Device engine for %{name}.
-Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description engine-rbd
 Rados Block Device (RBD) engine for %{name}.
+%endif
 
+%ifnarch %{arm}
 %package engine-rdma
 Summary:        RDMA engine for %{name}.
-Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description engine-rdma
 RDMA engine for %{name}.
+%endif
 
 %prep
-%autosetup -p1
+%autosetup -n %{name}-%{name}-%{version} -p1
 
 %py3_shebang_fix \
  tools/fio_jsonplus_clat2csv \
@@ -138,11 +161,15 @@ RDMA engine for %{name}.
 sed -e 's,/usr/local/lib/,%{_libdir}/,g' -i os/os-linux.h
 
 %build
+%if %{with nbd}
 ./configure --disable-optimizations --enable-libnbd --dynamic-libengines
+%else
+./configure --disable-optimizations --dynamic-libengines
+%endif
 EXTFLAGS="$RPM_OPT_FLAGS" LDFLAGS="$RPM_LD_FLAGS" %make_build
 
 %install
-%make_install prefix=%{_prefix} mandir=%{_mandir} libdir=%{_libdir}/fio INSTALL="install -p"
+%make_install prefix=%{_prefix} mandir=%{_mandir} libdir=%{_libdir}/fio DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p"
 
 %check
 %make_build test
@@ -157,7 +184,7 @@ EXTFLAGS="$RPM_OPT_FLAGS" LDFLAGS="$RPM_LD_FLAGS" %make_build
 %{_mandir}/man1/*
 %{_datadir}/%{name}/*
 
-%ifarch x86_64
+%if %{with pmem}
 %files engine-dev-dax
 %{_libdir}/fio/fio-dev-dax.so
 %endif
@@ -168,29 +195,48 @@ EXTFLAGS="$RPM_OPT_FLAGS" LDFLAGS="$RPM_LD_FLAGS" %make_build
 %files engine-libaio
 %{_libdir}/fio/fio-libaio.so
 
-%ifarch x86_64
+%if %{with pmem}
 %files engine-libpmem
 %{_libdir}/fio/fio-libpmem.so
 %endif
 
+%if %{with nbd}
 %files engine-nbd
 %{_libdir}/fio/fio-nbd.so
-
-%ifarch x86_64
-%files engine-pmemblk
-%{_libdir}/fio/fio-pmemblk.so
 %endif
 
+%if %{with rados}
 %files engine-rados
 %{_libdir}/fio/fio-rados.so
+%endif
 
+%if %{with rbd}
 %files engine-rbd
 %{_libdir}/fio/fio-rbd.so
+%endif
 
+%ifnarch %{arm}
 %files engine-rdma
 %{_libdir}/fio/fio-rdma.so
+%endif
 
 %changelog
+* Wed Sep 24 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 3.37-3
+- Patch for CVE-2025-10823
+
+* Thu Jun 06 2024 Andrew Phelps <anphel@microsoft.com> - 3.37-2
+- Update spec based on Fedora 40 package (license: MIT)
+- Disable building rbd and rados subpackages
+
+* Wed Apr 17 2024 Muhammad Falak <mwani@microsoft.com> - 3.37-1
+- Bump version to 3.37
+
+* Mon Mar 11 2023 Andrew Phelps <anphel@microsoft.com> - 3.30-3
+- Remove engine-pmemblk subpackage and BR on libpmemblk-devel
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 3.30-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Fri July 15 2022 Olivia Crain <oliviacrain@microsoft.com> - 3.30-1
 - Promote to Mariner base repo
 - Update to latest upstream version and remove upstreamed patches
@@ -418,40 +464,40 @@ EXTFLAGS="$RPM_OPT_FLAGS" LDFLAGS="$RPM_LD_FLAGS" %make_build
 * Sat Aug 16 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.1.11-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_22_Mass_Rebuild
 
-* Tue Jul 15 2014 Eric Sandeen <sandeen@redhat.com> 2.1.11-1 
+* Tue Jul 15 2014 Eric Sandeen <sandeen@redhat.com> 2.1.11-1
 - New upstream version
 
-* Mon Jun 16 2014 Eric Sandeen <sandeen@redhat.com> 2.1.10-1 
+* Mon Jun 16 2014 Eric Sandeen <sandeen@redhat.com> 2.1.10-1
 - New upstream version
 
 * Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.1.9-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
 
-* Tue May 13 2014 Eric Sandeen <sandeen@redhat.com> 2.1.9-1 
+* Tue May 13 2014 Eric Sandeen <sandeen@redhat.com> 2.1.9-1
 - New upstream version
 
-* Mon Apr 14 2014 Eric Sandeen <sandeen@redhat.com> 2.1.8-1 
+* Mon Apr 14 2014 Eric Sandeen <sandeen@redhat.com> 2.1.8-1
 - New upstream version
 
-* Mon Apr 07 2014 Eric Sandeen <sandeen@redhat.com> 2.1.7-1 
+* Mon Apr 07 2014 Eric Sandeen <sandeen@redhat.com> 2.1.7-1
 - New upstream version
 
-* Wed Feb 12 2014 Eric Sandeen <sandeen@redhat.com> 2.1.5-1 
+* Wed Feb 12 2014 Eric Sandeen <sandeen@redhat.com> 2.1.5-1
 - New upstream version
 
-* Wed Sep 25 2013 Eric Sandeen <sandeen@redhat.com> 2.1.3-1 
+* Wed Sep 25 2013 Eric Sandeen <sandeen@redhat.com> 2.1.3-1
 - New upstream version
 
-* Thu Aug 08 2013 Eric Sandeen <sandeen@redhat.com> 2.1.2-1 
+* Thu Aug 08 2013 Eric Sandeen <sandeen@redhat.com> 2.1.2-1
 - New upstream version
 
 * Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.1-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
 
-* Wed May 15 2013 Eric Sandeen <sandeen@redhat.com> 2.1-1 
+* Wed May 15 2013 Eric Sandeen <sandeen@redhat.com> 2.1-1
 - New upstream version
 
-* Wed Apr 17 2013 Eric Sandeen <sandeen@redhat.com> 2.0.15-1 
+* Wed Apr 17 2013 Eric Sandeen <sandeen@redhat.com> 2.0.15-1
 - New upstream version
 
 * Wed Feb 13 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.0.13-2
@@ -463,16 +509,16 @@ EXTFLAGS="$RPM_OPT_FLAGS" LDFLAGS="$RPM_LD_FLAGS" %make_build
 * Tue Jan 01 2013 Dan Horák <dan[at]danny.cz> - 2.0.12.2-2
 - fix build on arches without ARCH_HAVE_CPU_CLOCK (arm, s390)
 
-* Fri Dec 21 2012 Eric Sandeen <sandeen@redhat.com> 2.0.12.2-1 
+* Fri Dec 21 2012 Eric Sandeen <sandeen@redhat.com> 2.0.12.2-1
 - New upstream version
 
-* Sat Nov 24 2012 Eric Sandeen <sandeen@redhat.com> 2.0.11-1 
+* Sat Nov 24 2012 Eric Sandeen <sandeen@redhat.com> 2.0.11-1
 - New upstream version
 
 * Thu Nov 15 2012 Peter Robinson <pbrobinson@fedoraproject.org> 2.0.10-2
 - Merge latest from F16 to master, bump release
 
-* Fri Oct 12 2012 Eric Sandeen <sandeen@redhat.com> 2.0.10-1 
+* Fri Oct 12 2012 Eric Sandeen <sandeen@redhat.com> 2.0.10-1
 - New upstream version
 
 * Thu Jul 19 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.0.8-2

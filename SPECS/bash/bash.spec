@@ -1,15 +1,18 @@
 Summary:        Bourne-Again SHell
 Name:           bash
-Version:        5.1.8
+Version:        5.2.15
 Release:        3%{?dist}
 License:        GPLv3
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Base
 URL:            https://www.gnu.org/software/bash/
 Source0:        https://ftp.gnu.org/gnu/%{name}/%{name}-%{version}.tar.gz
 Source1:        bash_completion
 Patch0:         bash-5.1.patch
+# Non-interactive shells beginning with argv[0][0] == '-' should run the startup files when not in posix mode.
+Patch1:         bash-2.03-profile.patch
+Patch2:         bash-tty-tests.patch
 BuildRequires:  readline
 Requires:       readline
 Requires(post): /bin/cp
@@ -258,7 +261,10 @@ dircolors -p > %{buildroot}%{_sysconfdir}/dircolors
 rm -rf %{buildroot}/%{_infodir}
 
 %check
-make  NON_ROOT_USERNAME=nobody %{?_smp_mflags} check
+# Remove tests that get stuck waiting on /dev/tty input
+rm -v tests/run-read
+rm -v tests/run-history
+make check
 
 %post
 if [ $1 -eq 1 ] ; then
@@ -328,6 +334,19 @@ fi
 %defattr(-,root,root)
 
 %changelog
+* Fri Aug 16 2024 Andrew Phelps <anphel@microsoft.com> - 5.2.15-3
+- Fix check tests
+
+* Mon Jun 17 2024 Daniel McIlvaney <damcilva@microsoft.com> - 5.2.15-2
+- When non-interactive shells are started with '-bash' load startup files. From
+- Fedora upstream: https://src.fedoraproject.org/rpms/bash/blob/f40/f/bash-2.03-profile.patch
+
+* Tue Nov 21 2023 Andrew Phelps <anphel@microsoft.com> - 5.2.15-1
+- Upgrade to version 5.2.15
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 5.1.8-4
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Thu Jun 29 2023 Tobias Brick <tobiasb@microsoft.com> - 5.1.8-3
 - Revert: Add dependency on filesystem
 - Revert: Remove umask.sh, which will be provided by filesystem

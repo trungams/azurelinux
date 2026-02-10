@@ -1,3 +1,4 @@
+%global debug_package %{nil}
 %global srcname frozendict
 %global _description %{expand:
 frozendict is an immutable wrapper around dictionaries that implements
@@ -5,17 +6,17 @@ the complete mapping interface. It can be used as a drop-in
 replacement for dictionaries where immutability is desired.}
 Summary:        An immutable dictionary
 Name:           python-%{srcname}
-Version:        2.3.0
-Release:        1%{?dist}
+Version:        2.3.8
+Release:        2%{?dist}
 License:        LGPLv3+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://pypi.python.org/pypi/frozendict
 Source0:        https://github.com/Marco-Sulla/%{name}/releases/download/v%{version}/%{srcname}-%{version}.tar.gz#/%{name}-%{version}.tar.gz
 BuildRequires:  gcc
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  python3-pip
 %endif
 
@@ -49,6 +50,12 @@ PYTHONPATH=%{buildroot}%{python3_sitelib} python3 -m pytest
 %{python3_sitelib}/%{srcname}/
 
 %changelog
+* Fri Feb 16 2024 Andrew Phelps <anphel@microsoft.com> - 2.3.8-2
+- Disable debuginfo package
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.3.8-1
+- Auto-upgrade to 2.3.8 - Azure Linux 3.0 - package upgrades
+
 * Mon Mar 14 2022 Thomas Crain <thcrain@microsoft.com> - 2.3.0-1
 - Upgrade to latest version in forked repo
 - Remove noarch specification (package now comes with a C extension)

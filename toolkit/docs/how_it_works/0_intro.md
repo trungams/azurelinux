@@ -4,7 +4,7 @@
 
 ## General Build Flow
 
-This section is intended to give an overview of Mariner's build process and toolkit. The diagrams below follow conventions stated in the key.
+This section is intended to give an overview of Azure Linux's build process and toolkit. The diagrams below follow conventions stated in the key.
 
 ```mermaid
 ---
@@ -30,7 +30,7 @@ flowchart TD
 
 ### High-level RPM flow
 
-Mariner is an RPM based distro. A single package (or RPM) is built using a combination of sources and a spec file. A signature file is used to verify the sources' hashes.
+Azure Linux is an RPM based distro. A single package (or RPM) is built using a combination of sources and a spec file. A signature file is used to verify the sources' hashes.
 
 ```mermaid
 flowchart LR
@@ -59,14 +59,14 @@ flowchart LR
     remoteSourceTar --> pack
     patches --> pack
     sigFile --> pack
-    pack --> srpm 
+    pack --> srpm
     srpm --> buildRPM
     buildRPM --> rpm
 ```
 
 ### High-level build flow
 
- The build process can be split into three components: tooling, package generation, and image generation. When building, `make` options can be used to build Mariner from end to end or to download prebuilt artifacts.
+ The build process can be split into three components: tooling, package generation, and image generation. When building, `make` options can be used to build Azure Linux from end to end or to download prebuilt artifacts.
 
 ```mermaid
 flowchart LR
@@ -145,7 +145,7 @@ flowchart TD
     tcManifests --> buildTC
     tcRebuild -->|no| toolchainChoice
     toolchainChoice -->|no| pullRemote
-    toolchainChoice -->|yes| pullTC 
+    toolchainChoice -->|yes| pullTC
     pullRemote --> tcRPMs
     pullTC --> hydrateTC
     tcArchiveOld --> pullTC
@@ -228,7 +228,7 @@ flowchart TD
         subgraph sched ["Scheduler tool (scheduler)"]
         currentGraph[/Current graph/]:::io
         trim[Remove unneeded branches from graph]:::process
-        doneBuild{{Done building all required nodes?}}:::decision 
+        doneBuild{{Done building all required nodes?}}:::decision
         leafNodesAvail{{Leaf nodes available?}}:::decision
         worker[Schedule a chroot worker to build the SRPM]:::process
         builtRPMs[/Built RPMs/]:::io
@@ -263,7 +263,7 @@ flowchart TD
     classDef goodState fill:#566E40,stroke:#333,stroke-width:2px,color:#fff;
     classDef badState fill:#BC4B51,stroke:#333,stroke-width:2px,color:#fff;
     classDef collection fill:#247BA0,stroke:#333,stroke-width:2px,color:#fff;
-    
+
     %% state nodes
     start(["Start (make image / make ISO)"]):::goodState
     done([Done]):::goodState
@@ -299,7 +299,7 @@ flowchart TD
     raw --> roast
     roast --> image
     image --> done
-    
+
 ```
 
 ## In Depth Explanations
@@ -323,3 +323,7 @@ flowchart TD
 ### [5. Misc](5_misc.md)
 
 - Chroots
+
+### [6. Logs](6_logs.md)
+
+- Understanding common build logs errors

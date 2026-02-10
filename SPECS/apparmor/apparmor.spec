@@ -1,16 +1,21 @@
+%define version_major_minor %(echo %{version} | cut -d '.' -f -2)
 Summary:        AppArmor is an effective and easy-to-use Linux application security system.
 Name:           apparmor
-Version:        3.0.4
+Version:        3.1.7
 Release:        1%{?dist}
 License:        GPLv2
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Productivity/Security
 URL:            https://launchpad.net/apparmor
-Source0:        https://launchpad.net/apparmor/3.0/3.0.4/+download/%{name}-%{version}.tar.gz
+Source0:        https://launchpad.net/apparmor/%{version_major_minor}/%{version}/+download/%{name}-%{version}.tar.gz
 Patch1:         apparmor-service-start-fix.patch
-# CVE-2016-1585 has no upstream fix as of 2020/09/28
-Patch100:       CVE-2016-1585.nopatch
+Patch2:         CVE-2023-50471.patch
+Patch3:         CVE-2024-31755.patch
+Patch4:         CVE-2023-53154.patch
+Patch5:         removed_unused_global_variables_fix_test-aa.patch
+Patch6:         parser-set-DISTRO-suse-if-built-on-Azure-Linux.patch
+
 BuildRequires:  apr
 BuildRequires:  apr-util-devel
 BuildRequires:  autoconf
@@ -281,6 +286,7 @@ make DESTDIR=%{buildroot} install
 /sbin/rcapparmor
 /lib/apparmor/rc.apparmor.functions
 /lib/apparmor/apparmor.systemd
+/lib/apparmor/profile-load
 %{_bindir}/aa-exec
 %{_bindir}/aa-enabled
 %attr(644,root,root) %{_unitdir}/apparmor.service
@@ -353,6 +359,22 @@ make DESTDIR=%{buildroot} install
 %exclude %{perl_archlib}/perllocal.pod
 
 %changelog
+* Mon Sep 08 2025 Aadhar Agarwal <aadagarwal@microsoft.com> - 3.1.7-1
+- Upgrade to 3.1.7
+
+* Fri Jun 13 2025 Durga Jagadeesh Palli <v-dpalli@microsoft.com> - 3.0.4-5
+- Patch CVE-2023-53154
+- Patch removed_unused_global_variables_fix_test-aa.patch to fix PTest failure
+
+* Thu May 30 2024 Sumedh Sharma <sumsharma@microsoft.com> - 3.0.4-4
+- Add patch for CVE-2024-31755
+
+* Wed Dec 27 2023 Dallas Delaney <dadelan@microsoft.com> - 3.0.4-3
+- Add patch for CVE-2023-50471 and CVE-2023-50472
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 3.0.4-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Wed Mar 09 2022 Andrew Phelps <anphel@microsoft.com> - 3.04-1
 - Upgrade to version 3.04
 

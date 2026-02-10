@@ -1,22 +1,41 @@
 # Retrieved from 'deps/npm/package.json' inside the sources tarball.
-%define npm_version 8.19.4
+%define npm_version 10.7.0
 Summary:        A JavaScript runtime built on Chrome's V8 JavaScript engine.
 Name:           nodejs
 # WARNINGS: MUST check and update the 'npm_version' macro for every version update of this package.
 #           The version of NPM can be found inside the sources under 'deps/npm/package.json'.
-Version:        16.20.1
-Release:        2%{?dist}
+Version:        20.14.0
+Release:        13%{?dist}
 License:        BSD AND MIT AND Public Domain AND NAIST-2003 AND Artistic-2.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/System
 URL:            https://github.com/nodejs/node
 # !!!! Nodejs code has a vendored version of OpenSSL code that must be removed from source tarball
 # !!!! because it contains patented algorithms.
-# !!!  => use clean-source-tarball.sh script to create a clean and reproducible source tarball.
+# !!!  => use generate_source_tarball.sh script to create a clean and reproducible source tarball.
 Source0:        https://nodejs.org/download/release/v%{version}/node-v%{version}.tar.xz
 Patch0:         disable-tlsv1-tlsv1-1.patch
-Patch1:         CVE-2022-25883.patch
+Patch1:         CVE-2019-10906.patch
+Patch2:         CVE-2024-21538.patch
+Patch3:         CVE-2025-23083.patch
+Patch4:         CVE-2025-22150.patch
+Patch5:         CVE-2025-23085.patch
+Patch6:         CVE-2024-22020.patch
+Patch7:         CVE-2024-22195.patch
+Patch8:         CVE-2020-28493.patch
+Patch9:         CVE-2024-34064.patch
+Patch10:        CVE-2025-27516.patch
+Patch11:        CVE-2025-47279.patch
+Patch12:        CVE-2025-23165.patch
+Patch13:        CVE-2025-23166.patch
+Patch14:        CVE-2025-5222.patch
+Patch15:        CVE-2025-55131.patch
+Patch16:        CVE-2025-55132.patch
+Patch17:        CVE-2025-59465.patch
+Patch18:        CVE-2025-59466.patch
+Patch19:        CVE-2026-21637.patch
+Patch20:        CVE-2025-55130.patch
 BuildRequires:  brotli-devel
 BuildRequires:  c-ares-devel
 BuildRequires:  coreutils >= 8.22
@@ -28,9 +47,10 @@ BuildRequires:  python3
 BuildRequires:  which
 BuildRequires:  zlib-devel
 Requires:       brotli
+Requires:       c-ares
 Requires:       coreutils >= 8.22
 Requires:       openssl >= 1.1.1
-Provides:       npm = %{npm_version}.%{version}-%{release}
+Provides:       nodejs
 
 %description
 Node.js is a JavaScript runtime built on Chrome's V8 JavaScript engine.
@@ -48,6 +68,16 @@ Requires:       zlib-devel
 %description    devel
 The nodejs-devel package contains libraries, header files and documentation
 for developing applications that use nodejs.
+
+%package        npm
+Summary:        Node.js Package Manager
+Group:          System Environment/Base
+Requires:       %{name} = %{version}-%{release}
+Provides:       npm = %{npm_version}.%{version}-%{release}
+
+%description npm
+npm is a package manager for node.js. You can use it to install and publish
+your node programs. It manages dependencies and does other cool stuff.
 
 %prep
 %autosetup -p1 -n node-v%{version}
@@ -75,7 +105,6 @@ python3 configure.py \
   --shared-brotli \
   --with-intl=small-icu \
   --with-icu-source=deps/icu-small \
-  --without-dtrace \
   --openssl-use-def-ca-store \
   --shared-cares
 
@@ -102,18 +131,78 @@ make cctest
 %defattr(-,root,root)
 %license LICENSE
 %doc CHANGELOG.md README.md
-%{_bindir}/*
-%{_libdir}/node_modules/*
+%{_bindir}/node
+%dir %{_prefix}/lib/node_modules
 %{_mandir}/man*/*
-
 
 %files devel
 %defattr(-,root,root)
 %{_includedir}/*
 %{_docdir}/*
-%{_datadir}/systemtap/tapset/node.stp
+
+%files npm
+%defattr(-,root,root)
+%{_bindir}/npm
+%{_bindir}/npx
+%{_bindir}/corepack
+%{_prefix}/lib/node_modules/*
 
 %changelog
+* Mon Feb 02 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 20.14.0-13
+- Patch for CVE-2025-55130
+
+* Thu Jan 29 2026 Sandeep Karambelkar <skarambelkar@microsoft.com> - 20.14.0-12
+- Add nodejs provides to manage co existence with nodejs24
+
+* Wed Jan 28 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 20.14.0-11
+- Patch for CVE-2026-21637, CVE-2025-59466, CVE-2025-59465, CVE-2025-55132, CVE-2025-55131
+
+* Fri Nov 07 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 20.14.0-10
+- Patch for CVE-2025-5222
+
+* Tue May 27 2025 Aninda Pradhan <v-anipradhan@microsoft.com> - 20.14.0-9
+- Patch CVE-2025-23165, CVE-2025-23166
+
+* Wed May 21 2025 Aninda Pradhan <v-anipradhan@microsoft.com> - 20.14.0-8
+- Patch CVE-2025-47279
+
+* Mon Mar 10 2025 Sandeep Karambelkar <skarambelkar@microsoft.com> - 20.14.0-7
+- Patch CVE-2025-27516
+
+* Wed Feb 12 2025 Kevin Lockwood <v-klockwood@microsoft.com> - 20.14.0-6
+- Patch CVE-2020-28493
+- Patch CVE-2024-34064
+
+* Tue Feb 11 2025 Kanishk Bansal <kanbansal@microsoft.com> - 20.14.0-5
+- Patch CVE-2025-22150, CVE-2025-23085, CVE-2024-22020, CVE-2024-22195
+
+* Mon Jan 27 2025 Sumedh Sharma <sumsharma@microsoft.com> - 20.14.0-4
+- Patch CVE-2025-23083
+
+* Tue Nov 19 2024 Bala <balakumaran.kannan@microsoft.com> - 20.14.0-3
+- Patch CVE-2024-21538
+
+* Thu Sep 19 2024 Suresh Thelkar <sthelkar@microsoft.com> - 20.14.0-2
+- Patch CVE-2019-10906
+
+* Fri Jun 07 2024 Nicolas Guibourge <nicolasg@microsoft.com> - 20.14.0-1
+- Upgrade to 20.14.0 to address CVEs
+
+* Thu Jun 06 2024 Riken Maharjan <rmaharjan@microsoft.com> - 20.10.0-3
+- Separate npm from node using Fedora 50 (LICENSE: MIT)
+
+* Tue May 21 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 20.10.0-2
+- Bump release to build with new libuv to fix CVE-2024-24806
+
+* Wed Jan 31 2024 Saul Paredes <saulparedes@microsoft.com> - 20.10.0-1
+- Upgrade to nodejs to 20.10.0 and npm to 10.2.3
+
+* Wed Sep 06 2023 Brian Fjeldstad <bfjelds@microsoft.com> - 16.20.2-2
+- Patch CVE-2023-35945
+
+* Wed Sep 06 2023 Brian Fjeldstad <bfjelds@microsoft.com> - 16.20.2-1
+- Patch CVE-2023-32002 CVE-2023-32006 CVE-2023-32559
+
 * Wed Jul 12 2023 Olivia Crain <oliviacrain@microsoft.com> - 16.20.1-2
 - Backport upstream patches to fix CVE-2022-25883
 

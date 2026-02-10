@@ -6,7 +6,7 @@ package repocloner
 import (
 	"fmt"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/pkgjson"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/pkgjson"
 )
 
 // RepoContents contains an array of packages contained in a repo.
@@ -26,7 +26,8 @@ type RepoPackage struct {
 // It is capable of generate a local repository consisting of a set of request packages
 // and their dependencies.
 type RepoCloner interface {
-	Clone(cloneDeps bool, packagesToClone ...*pkgjson.PackageVer) (allPackagesPrebuilt bool, err error)
+	CloneByPackageVer(cloneDeps bool, packagesToClone ...*pkgjson.PackageVer) (allPackagesPrebuilt bool, err error)
+	CloneByPackageVerSingleTransaction(cloneDeps bool, packagesToClone ...*pkgjson.PackageVer) (allPackagesPrebuilt bool, err error)
 	CloneDirectory() string
 	ClonedRepoContents() (repoContents *RepoContents, err error)
 	Close() error

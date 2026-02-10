@@ -3,10 +3,10 @@
 Summary:        Statistics collection daemon for filling RRD files
 Name:           collectd
 Version:        5.12.0
-Release:        8%{?dist}
+Release:        11%{?dist}
 License:        GPLv2 AND MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://collectd.org/
 Source:         https://github.com/collectd/collectd/releases/download/%{name}-%{version}/%{name}-%{version}.tar.bz2
 Source1:        collectd-httpd.conf
@@ -21,6 +21,7 @@ Source97:       rrdtool.conf
 Source98:       onewire.conf
 Patch0:         %{name}-include-collectd.d.patch
 Patch1:         %{name}-gcc11.patch
+Patch2:         fix_missing_longintrepr_header.patch
 BuildRequires:  libgcrypt-devel
 BuildRequires:  perl
 BuildRequires:  perl(ExtUtils::Embed)
@@ -866,6 +867,15 @@ make check
 %{_libdir}/collectd/write_tsdb.so
 
 %changelog
+* Tue Jan 06 2026 Pawel Winogrodzki <pawelwi@microsoft.com> - 5.12.0-11
+- Bumping release to rebuild with new 'net-snmp' libs.
+
+* Wed Apr 17 2024 Andrew Phelps <anphel@microsoft.com> - 5.12.0-10
+- Add patch to fix build break.
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 5.12.0-9
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Wed Sep 29 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 5.12.0-8
 - Added missing BR on "systemd-rpm-macros".
 

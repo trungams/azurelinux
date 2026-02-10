@@ -1,19 +1,26 @@
 Summary:        Archiving program
 Name:           tar
-Version:        1.34
-Release:        1%{?dist}
+Version:        1.35
+Release:        2%{?dist}
 License:        GPLv3+
 URL:            https://www.gnu.org/software/tar
 Group:          Applications/System
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Source0:        https://ftp.gnu.org/gnu/%{name}/%{name}-%{version}.tar.xz
+
+# libcap changed the output in newer version. tar test still expects libcap's getcap output to be same
+# https://web.git.kernel.org/pub/scm/libs/libcap/libcap.git/commit/?id=177cd418031b1acfcf73fe3b1af9f3279828681c
+Patch1:         tar-1.33-fix-capabilities-test.patch
+Patch2:         tar-1.35-add-forgotten-tests-from-upstream.patch
 
 %description
 Contains GNU archiving program
 
 %prep
 %setup -q
+%autopatch -p1
+
 %build
 FORCE_UNSAFE_CONFIGURE=1  ./configure \
     --prefix=%{_prefix} \
@@ -43,6 +50,12 @@ make  %{?_smp_mflags} check
 %{_mandir}/*/*
 
 %changelog
+* Wed Apr 02 2025 Riken Maharjan <rmaharjan@microsoft.com> - 1.35-2
+- import patches from fedora (LICENSE:MIT) to fix libcap issue.
+* Mon Nov 27 2023 Andrew Phelps <anphel@microsoft.com> - 1.35-1
+- Upgrade to version 1.35
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 1.34-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
 *   Fri Nov 05 2021 Andrew Phelps <anphel@microsoft.com> 1.34-1
 -   Update to version 1.34
 -   License verified

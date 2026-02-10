@@ -1,11 +1,11 @@
 %global srcname responses
 Summary:        A utility library for mocking out the requests Python library.
 Name:           python-%{srcname}
-Version:        0.20.0
-Release:        4%{?dist}
+Version:        0.23.3
+Release:        1%{?dist}
 License:        ASL 2.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://github.com/getsentry/responses
 # The 0.20.0 release had a bad manifest file, which caused the sdist file to not include tests.
 # Future releases should be able to use the actual release tarball, but for now we use the GitHub source tarball
@@ -13,7 +13,7 @@ Source0:        https://github.com/getsentry/responses/archive/refs/tags/%{versi
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-wheel
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  python3-pip
 BuildRequires:  python3-requests
 BuildRequires:  python3-urllib3
@@ -54,6 +54,9 @@ tox -e py%{python3_version_nodots} --sitepackages
 %{python3_sitelib}/%{srcname}
 
 %changelog
+* Thu Nov 02 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 0.23.3-1
+- Auto-upgrade to 0.23.3 - Azure Linux 3.0 - package upgrades
+
 * Wed Mar 30 2022 Olivia Crain <oliviacrain@microsoft.com> - 0.20.0-1
 - Upgrade to latest upstream version
 - Use tox to run tests

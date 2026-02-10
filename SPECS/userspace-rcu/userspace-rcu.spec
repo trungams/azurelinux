@@ -1,10 +1,10 @@
 Summary:        user space RCU (read-copy-update)
 Name:           userspace-rcu
-Version:        0.13.0
-Release:        1%{?dist}
+Version:        0.14.0
+Release:        2%{?dist}
 License:        LGPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Tools
 URL:            https://liburcu.org
 #Source0:       https://github.com/urcu/userspace-rcu/archive/v%{version}.tar.gz
@@ -39,23 +39,31 @@ make %{?_smp_mflags}
 %install
 make DESTDIR=%{buildroot} install
 find %{buildroot} -type f -name "*.la" -delete -print
+# Don't duplicate LICENSE file in the doc directory
+rm %{buildroot}%{_datadir}/doc/userspace-rcu/LICENSE
 
 %check
 make %{?_smp_mflags} check
 
 %files
+%license LICENSE
 %{_libdir}/*.so.*
 %{_includedir}/*
 %{_datadir}/*
 
 %files devel
 %defattr(-,root,root)
-%license LICENSE
 %{_libdir}/pkgconfig/*
 %{_libdir}/*.so
 %{_includedir}/*
 
 %changelog
+* Thu May 16 2024 Daniel McIlvaney <damcilva@microsoft.com> - 0.14.0-2
+- Sanitize license files
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 0.14.0-1
+- Auto-upgrade to 0.14.0 - Azure Linux 3.0 - package upgrades
+
 * Wed Jan 12 2022 Neha Agarwal <nehaagarwal@microsoft.com> - 0.13.0-1
 - Update to version 0.13.0.
 

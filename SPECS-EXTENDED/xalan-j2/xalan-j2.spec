@@ -1,5 +1,5 @@
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 #
 # spec file for package xalan-j2
 #
@@ -21,14 +21,14 @@ Distribution:   Mariner
 %define cvs_version 2_7_2
 Name:           xalan-j2
 Version:        2.7.2
-Release:        10%{?dist}
+Release:        11%{?dist}
 Summary:        Java XSLT processor
 License:        Apache-2.0
 Group:          Development/Libraries/Java
-Url:            http://xalan.apache.org/index.html
-Source0:        http://www.apache.org/dist/xalan/xalan-j/source/xalan-j_%{cvs_version}-src.tar.gz
-Source1:        http://repo1.maven.org/maven2/xalan/xalan/%{version}/xalan-%{version}.pom
-Source2:        http://repo1.maven.org/maven2/xalan/serializer/%{version}/serializer-%{version}.pom
+Url:            https://xalan.apache.org/index.html
+Source0:        https://archive.apache.org/dist/xalan/xalan-j/source/xalan-j_%{cvs_version}-src.tar.gz
+Source1:        https://repo1.maven.org/maven2/xalan/xalan/%{version}/xalan-%{version}.pom
+Source2:        https://repo1.maven.org/maven2/xalan/serializer/%{version}/serializer-%{version}.pom
 Source3:        xsltc-%{version}.pom
 Source4:        xalan-j2-serializer-MANIFEST.MF
 Source5:        xalan-j2-MANIFEST.MF
@@ -136,10 +136,10 @@ This package contains demonstration and sample files for Xalan.
 %setup -q -n xalan-j_%{cvs_version}
 patch -u %{SOURCE5} -i %{SOURCE6}
 
-%patch0 -p1
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
+%patch 0 -p1
+%patch 1 -p1
+%patch 2 -p1
+%patch 3 -p1
 # Remove all binary libs, except ones needed to build docs and N/A elsewhere.
 for j in $(find . -name "*.jar"); do
         mv $j $j.no
@@ -165,7 +165,7 @@ ln -sf $(build-classpath stylebook) stylebook-1.0-b3_xalan-2.jar
 popd
 ant \
   -Dservlet-api.jar=$(build-classpath servletapi5) \
-  -Dcompiler.source=1.6 -Dcompiler.target=1.6 \
+  -Dcompiler.source=1.8 -Dcompiler.target=1.8 \
   -Djava.awt.headless=true \
   -Dapi.j2se=%{_javadocdir}/java \
   -Dbuild.xalan-interpretive.jar=build/xalan-interpretive.jar \
@@ -228,7 +228,8 @@ update-alternatives --install %{_javadir}/jaxp_transform_impl.jar \
 
 %files
 %defattr(0644,root,root,0755)
-%doc KEYS LICENSE.txt NOTICE.txt
+%doc KEYS
+%license LICENSE.txt NOTICE.txt 
 %{_javadir}/%{name}-%{version}.jar
 %{_javadir}/%{name}.jar
 %{_javadir}/%{name}-serializer-%{version}.jar
@@ -245,7 +246,8 @@ update-alternatives --install %{_javadir}/jaxp_transform_impl.jar \
 
 %files bootstrap
 %defattr(0644,root,root,0755)
-%doc KEYS LICENSE.txt NOTICE.txt
+%doc KEYS
+%license LICENSE.txt NOTICE.txt
 %{_javadir}/%{name}-%{version}.jar
 %{_javadir}/%{name}.jar
 %{_javadir}/%{name}-serializer-%{version}.jar
@@ -280,6 +282,10 @@ update-alternatives --install %{_javadir}/jaxp_transform_impl.jar \
 %{_datadir}/%{name}
 
 %changelog
+* Thu May 22 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 2.7.2-11
+- Fixed the build for 2.7.2
+- License Verified
+
 * Thu Oct 14 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.7.2-10
 - Converting the 'Release' tag to the '[number].[distribution]' format.
 

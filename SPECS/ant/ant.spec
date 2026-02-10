@@ -22,11 +22,11 @@
 
 Summary:        Apache Ant
 Name:           ant
-Version:        1.10.11
+Version:        1.10.14
 Release:        1%{?dist}
 License:        ASL 2.0 AND W3C
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Tools/Building
 URL:            https://ant.apache.org/
 Source0:        https://archive.apache.org/dist/ant/source/apache-ant-%{version}-src.tar.gz
@@ -34,10 +34,10 @@ Source1:        ant.conf
 Source10:       ant-bootstrap.pom.in
 Patch0:         apache-ant-no-test-jar.patch
 Patch1:         apache-ant-bootstrap.patch
-BuildRequires:  msopenjdk-11
+BuildRequires:  msopenjdk-17
 BuildRequires:  javapackages-local-bootstrap
 BuildRequires:  unzip
-Requires:       msopenjdk-11
+Requires:       msopenjdk-17
 Requires:       which
 Provides:       ant-nodeps = %{version}-%{release}
 Provides:       ant-trax = %{version}-%{release}
@@ -98,9 +98,9 @@ find -name build.xml -o -name pom.xml | xargs sed -i -e s/-SNAPSHOT//
 find -name \*.jar -print -delete
 
 # When bootstrapping, we don't have junit
-%patch0 -p1
+%patch 0 -p1
 # Explicitly set sourcepath when compiling bootstrap
-%patch1 -p1
+%patch 1 -p1
 
 # clean jar files
 find . -name "*.jar" -print -delete
@@ -263,6 +263,9 @@ popd
 %{_bindir}/*.py*
 
 %changelog
+* Thu Nov 02 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.10.14-1
+- Auto-upgrade to 1.10.14 - Azure Linux 3.0 - package upgrades
+
 * Wed Dec 08 2021 Andrew Phelps <anphel@microsoft.com> - 1.10.11-1
 - Update to build with jdk11
 

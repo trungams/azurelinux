@@ -1,16 +1,18 @@
 %define __requires_exclude ^/(usr/)?bin/(ba)?sh$
 
+%global icu_major 72
+
 Summary:        International Components for Unicode.
 Name:           icu
-Version:        68.2.0.9
-Release:        1%{?dist}
+Version:        72.1.0.3
+Release:        2%{?dist}
 License:        BSD and MIT and Public Domain and naist-2003
 URL:            https://github.com/microsoft/icu
 Group:          System Environment/Libraries
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
-#Source0:       %{url}/archive/v%{version}.tar.gz
-Source0:        %{name}-%{version}.tar.gz
+Distribution:   Azure Linux
+Source0:        https://github.com/microsoft/icu/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Patch0:         CVE-2025-5222.patch
 BuildRequires:  autoconf
 BuildRequires:  python3
 BuildRequires:  python3-xml
@@ -28,7 +30,7 @@ Provides:       libicu-devel = %{version}-%{release}
 It contains the libraries and header files to create applications
 
 %prep
-%setup -q
+%autosetup -p1
 
 %build
 pushd icu/icu4c/source
@@ -42,24 +44,36 @@ popd
 %install
 make -C icu/icu4c/source DESTDIR=%{buildroot} install
 
+%check
+%make_build -C icu/icu4c/source check
+
 %files
 %defattr(-,root,root)
 %license LICENSE
 %{_bindir}/*
 %{_sbindir}/*
-%{_libdir}/*.so.68
-%{_libdir}/*.so.68.*
+%{_libdir}/*.so.%{icu_major}
+%{_libdir}/*.so.%{icu_major}.*
 %exclude %{_libdir}/debug/
 %exclude %{_libdir}/icu/
 
 %files devel
 %defattr(-,root,root)
 %{_includedir}/*
-%{_datadir}/*
+%{_datadir}/%{name}
+%{_datadir}/man
 %{_libdir}/*.so
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Tue Aug 12 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 72.1.0.3-2
+- Patch for CVE-2025-5222
+- Fixed license check warning.
+
+* Thu Feb 05 2024 corvus-callidus <108946721+corvus-callidus@users.noreply.github.com> - 72.1.0.3-1
+- Update to version  "72.1.0.3".
+- Add check section.
+
 * Fri May 20 2022 CBL-Mariner Service Account <cblmargh@microsoft.com> - 68.2.0.9-1
 - Update to version  "68.2.0.9".
 

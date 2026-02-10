@@ -1,13 +1,12 @@
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 # SPDX-License-Identifier: MIT
 %global forgeurl https://pagure.io/fonts-rpm-macros
-Epoch: 1
 Version: 2.0.5
 %forgemeta
 
 #https://src.fedoraproject.org/rpms/redhat-rpm-config/pull-request/51
-%global _spectemplatedir %{_datadir}/rpmdevtools/mariner
+%global _spectemplatedir %{_datadir}/rpmdevtools/azl
 %global _docdir_fmt     %{name}
 %global ftcgtemplatedir %{_datadir}/fontconfig/templates
 
@@ -23,22 +22,24 @@ Version: 2.0.5
 BuildArch: noarch
 
 Name:      fonts-rpm-macros
-Release:   11%{?dist}
+Release:   14%{?dist}
 Summary:   Build-stage rpm automation for fonts packages
 
 License:   GPL-3.0-or-later
 URL:       https://docs.fedoraproject.org/en-US/packaging-guidelines/FontsPolicy/
 Source:    %{forgesource}
 Patch0:    %{name}-omit-foundry-in-family.patch
-Patch1:    update_for_mariner.patch
+Patch1:    %{name}-drop-yaml.patch
+Patch2:    %{name}-epoch-in-req.patch
+Patch3:    update_for_azl.patch
 
-Requires:  fonts-srpm-macros = %{?epoch:%{epoch}:}%{version}-%{release}
-Requires:  fonts-filesystem  = %{?epoch:%{epoch}:}%{version}-%{release}
+Requires:  fonts-srpm-macros = %{version}-%{release}
+Requires:  fonts-filesystem  = %{version}-%{release}
 
-Provides:  fontpackages-devel = %{?epoch:%{epoch}:}%{version}-%{release}
-Obsoletes: fontpackages-devel < %{?epoch:%{epoch}:}%{version}-%{release}
+Provides:  fontpackages-devel = %{version}-%{release}
+Obsoletes: fontpackages-devel < %{version}-%{release}
 # Tooling dropped for now as no one was willing to maintain it
-Obsoletes: fontpackages-tools < %{?epoch:%{epoch}:}%{version}-%{release}
+Obsoletes: fontpackages-tools < %{version}-%{release}
 
 Requires:  fontconfig
 Requires:  libappstream-glib
@@ -73,8 +74,8 @@ fonts-srpm-macros will pull in for fonts packages only.
 Summary:   Directories used by font packages
 License:   MIT
 
-Provides:  fontpackages-filesystem = %{?epoch:%{epoch}:}%{version}-%{release}
-Obsoletes: fontpackages-filesystem < %{?epoch:%{epoch}:}%{version}-%{release}
+Provides:  fontpackages-filesystem = %{version}-%{release}
+Obsoletes: fontpackages-filesystem < %{version}-%{release}
 
 %description -n fonts-filesystem
 This package contains the basic directory layout used by font packages,
@@ -84,8 +85,8 @@ including the correct permissions for the directories.
 Summary:   Example fonts packages rpm spec templates
 License:   MIT
 
-Requires:    fonts-rpm-macros = %{?epoch:%{epoch}:}%{version}-%{release}
-Supplements: fonts-rpm-macros = %{?epoch:%{epoch}:}%{version}-%{release}
+Requires:    fonts-rpm-macros = %{version}-%{release}
+Supplements: fonts-rpm-macros = %{version}-%{release}
 
 %description -n fonts-rpm-templates
 This package contains documented rpm spec templates showcasing how to use the
@@ -99,8 +100,10 @@ for template in templates/rpm/*\.spec ; do
   grep -v '^%%dnl' "${template}" > "${target}"
   touch -r "${template}" "${target}"
 done
-%patch0 -p1 -b .1-omit-foundry-in-family
-%patch1 -p1
+%patch -P0 -p1 -b .1-omit-foundry-in-family
+%patch -P1 -p1 -b .1-drop-yaml
+%patch -P2 -p1 -b .2-epoch-in-req
+%patch -P3 -p1
 
 %install
 install -m 0755 -d    %{buildroot}%{_fontbasedir} \
@@ -118,12 +121,12 @@ install -m 0644 -vp   templates/fontconfig/*{conf,txt} \
 install -m 0755 -vd   %{buildroot}%{rpmmacrodir}
 install -m 0644 -vp   rpm/macros.d/macros.fonts-* \
                       %{buildroot}%{rpmmacrodir}
-install -m 0755 -vd   %{buildroot}%{_rpmluadir}/mariner/srpm
+install -m 0755 -vd   %{buildroot}%{_rpmluadir}/azl/srpm
 install -m 0644 -vp   rpm/lua/srpm/*lua \
-                      %{buildroot}%{_rpmluadir}/mariner/srpm
-install -m 0755 -vd   %{buildroot}%{_rpmluadir}/mariner/rpm
+                      %{buildroot}%{_rpmluadir}/azl/srpm
+install -m 0755 -vd   %{buildroot}%{_rpmluadir}/azl/rpm
 install -m 0644 -vp   rpm/lua/rpm/*lua \
-                      %{buildroot}%{_rpmluadir}/mariner/rpm
+                      %{buildroot}%{_rpmluadir}/azl/rpm
 
 install -m 0755 -vd   %{buildroot}%{_bindir}
 install -m 0755 -vp   bin/* %{buildroot}%{_bindir}
@@ -132,13 +135,13 @@ install -m 0755 -vp   bin/* %{buildroot}%{_bindir}
 %license LICENSE.txt
 %{_bindir}/*
 %{rpmmacrodir}/macros.fonts-rpm*
-%{_rpmluadir}/mariner/rpm/*.lua
+%{_rpmluadir}/azl/rpm/*.lua
 
 %files -n fonts-srpm-macros
 %license LICENSE.txt
 %doc     *.md changelog.txt
 %{rpmmacrodir}/macros.fonts-srpm*
-%{_rpmluadir}/mariner/srpm/*.lua
+%{_rpmluadir}/azl/srpm/*.lua
 
 %files -n fonts-filesystem
 %dir %{_datadir}/fontconfig
@@ -156,6 +159,14 @@ install -m 0755 -vp   bin/* %{buildroot}%{_bindir}
 %doc %{ftcgtemplatedir}/*txt
 
 %changelog
+* Fri Mar 21 2025 Jyoti kanase <v-jykanase@microsoft.com> - 2.0.5-14
+- Applying patches for Build fix 
+- License verified.
+
+* Thu Feb 22 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.0.5-13
+- Updating file paths for 3.0 version of Azure Linux.
+- Resetting 'Epoch' for 3.0 version of Azure Linux.
+
 * Tue May 16 2023 Bala <balakumaran.kannan@microsoft.com> - 1:2.0.5-12
 - Initial CBL-Mariner import from Fedora 38 (license: MIT)
 - License verified

@@ -5,19 +5,19 @@ Release:        1%{?dist}
 License:        MIT
 URL:            https://test.com
 Group:          Test
-Vendor:         Microsoft
-Distribution:   Mariner
+Vendor:         Microsoft Corporation
+Distribution:   Azure Linux
 
 BuildArch:      noarch
 
-# Must contain an architecture for each of the supported builds of CBL-Mariner!
+# Must contain an architecture for each of the supported builds of Azure Linux!
 ExcludeArch:    x86_64 aarch64
 
-# Must contain only architectures not supported by CBL-Mariner!
+# Must contain only architectures not supported by Azure Linux!
 ExclusiveArch:  i686
 
 %description
-Test spec. Make sure "ExclusiveArch" contains an architecture not supported by CBL-Mariner!
+Test spec. Make sure "ExclusiveArch" contains an architecture not supported by Azure Linux!
 
 %prep
 

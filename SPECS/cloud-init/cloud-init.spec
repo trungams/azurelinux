@@ -1,20 +1,23 @@
 Summary:        Cloud instance init scripts
 Name:           cloud-init
-Version:        23.2
+Version:        24.3.1
 Release:        2%{?dist}
 License:        GPLv3
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Base
 URL:            https://launchpad.net/cloud-init
-Source0:        https://launchpad.net/cloud-init/trunk/%{version}/+download/%{name}-%{version}.tar.gz
+Source0:        https://github.com/canonical/%{name}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz
 Source1:        10-azure-kvp.cfg
-Patch0:         testGetInterfacesUnitTest.patch
+Patch0:         Add-Network-Interface-Renaming-Support-for-CAPM3-Met.patch
+Patch1:         no-single-process.patch
+Patch2:         CVE-2024-6174.patch
+Patch3:         CVE-2024-11584.patch
 %define cl_services cloud-config.service cloud-config.target cloud-final.service cloud-init.service cloud-init.target cloud-init-local.service
 BuildRequires:  automake
 BuildRequires:  dbus
 BuildRequires:  iproute
-BuildRequires:  mariner-release 
+BuildRequires:  azurelinux-release 
 BuildRequires:  python3
 BuildRequires:  python3-PyYAML
 BuildRequires:  python3-certifi
@@ -30,7 +33,7 @@ BuildRequires:  python3-six
 BuildRequires:  python3-xml
 BuildRequires:  systemd
 BuildRequires:  systemd-devel
-Requires:       dhcp-client
+Requires:       dhcpcd
 Requires:       e2fsprogs
 Requires:       iproute
 Requires:       net-tools
@@ -51,7 +54,7 @@ Requires:       python3-six
 Requires:       python3-xml
 Requires:       systemd
 BuildArch:      noarch
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  python3-configobj
 BuildRequires:  python3-jsonpatch
 BuildRequires:  python3-pip
@@ -74,15 +77,13 @@ Cloud-init configuration for Hyper-V telemetry
 %prep
 %autosetup -p1 -n %{name}-%{version}
 
-find systemd -name "cloud*.service*" | xargs sed -i s/StandardOutput=journal+console/StandardOutput=journal/g
-
 %build
 python3 setup.py build
 
 %install
 %{py3_install "--init-system=systemd"}
 
-python3 tools/render-cloudcfg --variant mariner > %{buildroot}/%{_sysconfdir}/cloud/cloud.cfg
+python3 tools/render-template --variant azurelinux > %{buildroot}/%{_sysconfdir}/cloud/cloud.cfg
 sed -i "s,@@PACKAGED_VERSION@@,%{version}-%{release}," %{buildroot}/%{python3_sitelib}/cloudinit/version.py
 
 %if "%{_arch}" == "aarch64"
@@ -131,11 +132,9 @@ make check %{?_smp_mflags}
 %dir %{_sharedstatedir}/cloud
 %dir %{_sysconfdir}/cloud/templates
 %doc %{_sysconfdir}/cloud/cloud.cfg.d/README
-%doc %{_sysconfdir}/cloud/clean.d/README
 %config(noreplace) %{_sysconfdir}/cloud/templates/*
 %config(noreplace) %{_sysconfdir}/cloud/cloud.cfg
 %config(noreplace) %{_sysconfdir}/cloud/cloud.cfg.d/05_logging.cfg
-%config(noreplace) %{_sysconfdir}/systemd/system/sshd-keygen@.service.d/disable-sshd-keygen-if-cloud-init-active.conf
 %{_unitdir}/*
 %{_systemdgeneratordir}/cloud-init-generator
 /usr/lib/udev/rules.d/66-azure-ephemeral.rules
@@ -145,6 +144,47 @@ make check %{?_smp_mflags}
 %config(noreplace) %{_sysconfdir}/cloud/cloud.cfg.d/10-azure-kvp.cfg
 
 %changelog
+* Fri Jun 27 2025 Archana Shettigar <v-shettigara@microsoft.com> - 24.3.1-2
+- Patch CVE-2024-6174 & CVE-2024-11584
+
+* Tue Oct 01 2024 Minghe Ren <mingheren@microsoft.com> - 24.3.1-1
+- Upgrade cloud-init to 24.3.1 to support azure-proxy-agent
+- Add upstream patch no-single-process.patch to revert a behavior change on cloud-init systemd
+
+* Tue Jul 16 2024 Minghe Ren <mingheren@microsoft.com> - 24.2-2
+- Add patch to point default cloud-init binaries location
+
+* Wed Jul 03 2024 Minghe Ren <mingheren@microsoft.com> - 24.2-1
+- Upgrade cloud-init to 24.2 to support dhcpcd and azurelinux
+- Remove patches we no longer needed after upgrade
+
+* Thu Jun 06 2024 Minghe Ren <mingheren@microsoft.com> - 23.4.3-3
+- Add patch for cloud-init to support dhclient's unknown-121 option
+
+* Thu May 09 2024 Sharath Srikanth Chellappa <sharathsr@microsoft.com> - 23.4.3-2
+- Add patch to add network interface renaming support for CAPM3 Met.
+
+* Mon Feb 26 2024 Dan Streetman <ddstreet@microsoft.com> - 23.4.3-1
+- update to 23.4.3
+- Use new 'azurelinux' cloud-init distro
+
+* Wed Feb 07 2024 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 23.3.3-2
+- Update the build dependency from mariner-release to azurelinux-release
+
+* Tue Oct 17 2023 Dan Streetman <ddstreet@ieee.org> - 23.3.3-1
+- Upgrade to cloud-init 23.3.3
+- Remove Photon-specific behavior of refusal to setup fallback network
+- Update Source0 to point to actual upstream URL
+
+* Tue Oct 10 2023 Minghe Ren <mingheren@microsoft.com> - 23.3-1
+- Upgrade to cloud-init 23.3 and remove unnecessary testGetInterfacesUnitTest.patch
+
+* Wed Sep 13 2023 Minghe Ren <mingheren@microsoft.com> - 23.2-4
+- Add patch overrideDatasourceDetection bug from upstream
+
+* Thu Aug 24 2023 Minghe Ren <mingheren@microsoft.com> - 23.2-3
+- Remove the line prohibits cloud-init log dumping to serial console 
+
 * Fri Aug 11 2023 Minghe Ren <mingheren@microsoft.com> - 23.2-2
 - Add patch for unit test failure
 

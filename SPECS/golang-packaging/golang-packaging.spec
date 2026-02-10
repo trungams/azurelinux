@@ -17,19 +17,19 @@
 
 
 Name:           golang-packaging
-Version:        15.0.15
+Version:        15.0.17
 Release:        2%{?dist}
 Summary:        A toolchain to help packaging golang
 License:        GPLv3
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Languages/Golang
 URL:            https://github.com/openSUSE/%{name}
 #Source0:       https://github.com/openSUSE/%{name}/archive/refs/tags/v%{version}.tar.gz
 Source0:        %{name}-%{version}.tar.gz
 BuildRequires:  rpm
 BuildRequires:  xz
-Requires:       go
+Recommends:     go
 BuildArch:      noarch
 
 %description
@@ -59,6 +59,12 @@ install -m0644 macros.go %{buildroot}%{_sysconfdir}/rpm/
 %config %{_sysconfdir}/rpm/macros.go
 
 %changelog
+* Tue Sep 02 2025 Andrew Phelps <anphel@microsoft.com> - 15.0.17-2
+- Change to "Recommends: go" to resolve build conflict with golang 1.24 and 1.25
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 15.0.17-1
+- Auto-upgrade to 15.0.17 - Azure Linux 3.0 - package upgrades
+
 * Tue Oct 12 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 15.0.15-2
 - Switching to using a single digit for the 'Release' tag.
 

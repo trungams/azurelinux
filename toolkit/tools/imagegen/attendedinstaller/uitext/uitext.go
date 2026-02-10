@@ -48,7 +48,7 @@ const (
 	DiskButtonRemovePartition = "[Remove Partition[]"
 
 	// Auto partition
-	DiskHelp  = "Please select a disk to install CBL-Mariner on."
+	DiskHelp  = "Please select a disk to install Azure Linux on."
 	DiskTitle = "Select a Disk"
 
 	// Custom Partition
@@ -69,7 +69,6 @@ const (
 	// Errors
 	InvalidBootPartitionErrorFmt       = "Invalid boot partition: first partition must be of type '%s'"
 	InvalidRootPartitionErrorFmt       = "Must specify a partition to have the mount point '%s'"
-	InvalidRootDeviceMapperError       = "Must have a root to use with device mapper roots (Encryption, Read-Only)"
 	InvalidRootPartitionErrorFormatFmt = "Root partition cannot be %s"
 	MountPointAlreadyInUseError        = "Mount point is already in use"
 	MountPointStartError               = "Mount point must start with `/`"
@@ -103,7 +102,7 @@ const (
 
 // EulaView text.
 const (
-	EulaTitle = "Welcome to the CBL-Mariner Installer"
+	EulaTitle = "Welcome to the Azure Linux Installer"
 )
 
 // HostNameView text.
@@ -137,8 +136,6 @@ const (
 	PasswordMismatchFeedback = "Passwords do not match"
 	EnumNavigationFeedback   = "Use left or right arrow keys to change the selection"
 
-	EncryptionVerityIncompatible = "Encrypted and read-only roots are currently incompatible with each other"
-
 	UserNameEmptyError            = "user name cannot be empty"
 	UserNameInvalidRuneError      = "user name should only contain alpha-numeric and '-', '.' or '_' characters"
 	UserNameInvalidStartError     = "user name should start with an alpha-numeric character"
@@ -147,12 +144,12 @@ const (
 
 // ProgressView text.
 const (
-	ProgressTitle      = "Installing CBL-Mariner OS"
-	ProgressSpinnerFmt = "Installing CBL-Mariner, please wait %v"
+	ProgressTitle      = "Installing Azure Linux OS"
+	ProgressSpinnerFmt = "Installing Azure Linux, please wait %v"
 )
 
 // FinishView text.
 const (
-	FinishTitle   = "CBL-Mariner Installation Complete"
+	FinishTitle   = "Azure Linux Installation Complete"
 	FinishTextFmt = "Total installation time: %v seconds. Press Enter to restart."
 )

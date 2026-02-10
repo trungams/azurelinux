@@ -1,13 +1,13 @@
 Summary:        World timezone definitions, modern and historical
 Name:           pytz
-Version:        2021.3
+Version:        2023.3
 Release:        1%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Languages/Python
 URL:            https://pypi.python.org/pypi/pytz
-Source0:        https://files.pythonhosted.org/packages/source/p/pytz/%{name}-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/5e/32/12032aa8c673ee16707a9b6cdda2b09c0089131f35af55d443b6a9c69c1d/%{name}-%{version}.tar.gz
 BuildArch:      noarch
 
 %description
@@ -18,7 +18,7 @@ Summary:        World timezone definitions, modern and historical
 BuildRequires:  python3-devel
 BuildRequires:  python3-pytest
 BuildRequires:  unzip
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  python3-pip
 %endif
 Requires:       python3
@@ -61,6 +61,9 @@ popd
 %{python3_sitelib}/*
 
 %changelog
+* Thu Nov 02 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2023.3-1
+- Auto-upgrade to 2023.3 - Azure Linux 3.0 - package upgrades
+
 * Sat Feb 12 2022 Muhammad Falak <mwani@microsoft.com> - 2021.3-1
 - Bump version to 2021.3
 - Add an explicit BR on `pip` & remove un-needed deps

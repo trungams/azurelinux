@@ -11,9 +11,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/logger"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/rpm"
-	simpletoolchroot "github.com/microsoft/CBL-Mariner/toolkit/tools/pkg/simpletoolchroot"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/logger"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/rpm"
+	simpletoolchroot "github.com/microsoft/azurelinux/toolkit/tools/pkg/simpletoolchroot"
 )
 
 type ArchChecker struct {
@@ -54,7 +54,7 @@ func (a *ArchChecker) FilterSpecsByArch(specFiles []string, distTag string, test
 func (a *ArchChecker) buildAllSpecsListFromNames(specNames []string) (specPaths []string, err error) {
 	for _, specName := range specNames {
 		var fullSpecPath []string
-		specFilesGlob := filepath.Join(a.simpleToolChroot.ChrootRelativeSpecDir(), "**", fmt.Sprintf("%s.spec", specName))
+		specFilesGlob := filepath.Join(a.simpleToolChroot.ChrootRelativeMountDir(), "**", fmt.Sprintf("%s.spec", specName))
 
 		fullSpecPath, err = filepath.Glob(specFilesGlob)
 		if err != nil {
@@ -73,16 +73,16 @@ func (a *ArchChecker) buildAllSpecsListFromNames(specNames []string) (specPaths 
 }
 
 func (a *ArchChecker) filterListInChroot(specFileNames []string, distTag string, testOnly bool) (filteredSpecNames []string, err error) {
-	defines := rpm.DefaultDefinesWithDist(testOnly, distTag)
+	defines := rpm.DefaultDistroDefines(testOnly, distTag)
 	specPaths, err := a.buildAllSpecsListFromNames(specFileNames)
 	if err != nil {
-		err = fmt.Errorf("failed to translate names to specs inside (%s). Error:\n%w", a.simpleToolChroot.ChrootRelativeSpecDir(), err)
+		err = fmt.Errorf("failed to translate names to specs inside (%s). Error:\n%w", a.simpleToolChroot.ChrootRelativeMountDir(), err)
 		return
 	}
 	logger.Log.Debugf("Got specs: %v.", specPaths)
-	filteredSpecs, err := rpm.BuildCompatibleSpecsList(a.simpleToolChroot.ChrootRelativeSpecDir(), specPaths, defines)
+	filteredSpecs, err := rpm.BuildCompatibleSpecsList(a.simpleToolChroot.ChrootRelativeMountDir(), specPaths, defines)
 	if err != nil {
-		err = fmt.Errorf("failed to retrieve a list of compatible  specs inside (%s). Error:\n%w", a.simpleToolChroot.ChrootRelativeSpecDir(), err)
+		err = fmt.Errorf("failed to retrieve a list of compatible  specs inside (%s). Error:\n%w", a.simpleToolChroot.ChrootRelativeMountDir(), err)
 		return
 	}
 
@@ -115,7 +115,7 @@ func filterOutSpecsWithoutTests(specPaths []string, distTag string) (filteredSpe
 		return nil, err
 	}
 
-	defines := rpm.DefaultDefinesWithDist(runChecks, distTag)
+	defines := rpm.DefaultDistroDefines(runChecks, distTag)
 	for _, specPath := range specPaths {
 		hasCheckSection, err := rpm.SpecHasCheckSection(specPath, filepath.Dir(specPath), buildArch, defines)
 		if err != nil {

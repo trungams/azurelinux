@@ -4,8 +4,8 @@
 package formats
 
 import (
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/shell"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/systemdependency"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/shell"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/systemdependency"
 )
 
 // TarGzipType represents the tar.gz format
@@ -25,9 +25,9 @@ func (t *TarGzip) Convert(input, output string, isInputFile bool) (err error) {
 	}
 
 	if isInputFile {
-		err = shell.ExecuteLive(squashErrors, "tar", "-I", tool, "-cf", output, input)
+		err = shell.ExecuteLive(squashErrors, "tar", "--xattrs", "--selinux", "-I", tool, "-cf", output, input)
 	} else {
-		err = shell.ExecuteLive(squashErrors, "tar", "-I", tool, "-cf", output, "-C", input, ".")
+		err = shell.ExecuteLive(squashErrors, "tar", "--xattrs", "--selinux", "-I", tool, "-cf", output, "-C", input, ".")
 	}
 
 	return

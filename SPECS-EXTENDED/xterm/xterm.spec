@@ -1,25 +1,29 @@
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
-Summary:        Terminal emulator for the X Window System
-Name:           xterm
-Version:        372
-Release:        1%{?dist}
-URL:            https://invisible-island.net/xterm
-License:        MIT
-BuildRequires:  gcc pkgconfig ncurses-devel libutempter-devel
-BuildRequires:  libXft-devel libXaw-devel libXext-devel desktop-file-utils
-BuildRequires:  libxkbfile-devel xorg-x11-apps
-Requires:       xterm-resize = %{version}-%{release}
-Recommends:     xorg-x11-fonts-misc
-
-Source0:        http://ftp.invisible-island.net/archives/xterm/%{name}-%{version}.tgz
-Source1:        http://ftp.invisible-island.net/archives/xterm/16colors.txt
-
-Patch1:         xterm-defaults.patch
-Patch2:         xterm-desktop.patch
-Patch3:         xterm-man-paths.patch
+Distribution:   Azure Linux
 
 %bcond_with trace
+
+Summary: Terminal emulator for the X Window System
+Name: xterm
+Version: 395
+Release: 2%{?dist}
+URL: https://invisible-island.net/xterm
+License: MIT AND X11 AND HPND AND CC-BY-4.0
+BuildRequires: make
+BuildRequires: gcc pkgconfig ncurses-devel libutempter-devel
+BuildRequires: libXft-devel libXaw-devel libXext-devel desktop-file-utils
+BuildRequires: libxkbfile-devel pcre2-devel pkgconfig(libpcre2-posix)
+BuildRequires: gnupg2
+Recommends: xorg-x11-fonts-misc
+
+Source0: https://invisible-island.net/archives/xterm/%{name}-%{version}.tgz
+Source1: https://invisible-island.net/archives/xterm/%{name}-%{version}.tgz.asc
+Source2: https://invisible-island.net/public/dickey@invisible-island.net-rsa3072.asc
+Source3: https://invisible-island.net/archives/xterm/16colors.txt
+
+Patch1: xterm-defaults.patch
+Patch2: xterm-desktop.patch
+Patch3: xterm-man-paths.patch
 
 %global x11_app_defaults_dir %(pkg-config --variable appdefaultdir xt)
 
@@ -36,11 +40,12 @@ Prints a shell command for setting the appropriate environment variables to
 indicate the current size of the window from which the command is run.
 
 %prep
+%{gpgverify} --keyring='%{SOURCE2}' --signature='%{SOURCE1}' --data='%{SOURCE0}'
 %setup -q
 
-%patch1 -p1 -b .defaults
-%patch2 -p1 -b .desk
-%patch3 -p1 -b .man-paths
+%patch 1 -p1 -b .defaults
+%patch 2 -p1 -b .desk
+%patch 3 -p1 -b .man-paths
 
 for f in THANKS; do
 	iconv -f iso8859-1 -t utf8 -o ${f}{_,} &&
@@ -51,26 +56,25 @@ done
 %configure \
 	--enable-meta-sends-esc \
 	--disable-backarrow-key \
-	--enable-256-color \
 	--enable-exec-xterm \
-	--enable-luit \
 %{?with_trace: --enable-trace} \
 	--enable-warnings \
-	--enable-wide-chars \
 	--with-app-defaults=%{x11_app_defaults_dir} \
 	--with-icon-theme=hicolor \
 	--with-icondir=%{_datadir}/icons \
 	--with-utempter \
 	--with-tty-group=tty \
 	--disable-full-tgetent \
-	--enable-sixel-graphics
+	--with-pcre2 \
+	--enable-readline-mouse \
+	--enable-logging
 
-make %{?_smp_mflags}
+%make_build
 
 %install
-make DESTDIR=$RPM_BUILD_ROOT install
+%make_install
 
-cp -fp %{SOURCE1} 16colors.txt
+cp -fp %{SOURCE3} 16colors.txt
 
 desktop-file-install \
 %if 0%{?fedora} && 0%{?fedora} < 19
@@ -103,15 +107,204 @@ install -m644 -p xterm.appdata.xml $RPM_BUILD_ROOT%{_datadir}/appdata
 %{_mandir}/man1/resize.1*
 
 %changelog
-* Fri Aug 12 2022 Muhammad Falak <mwani@microsoft.com> - 372-1
-- Bump version to address CVE-2021-27135
-- Refresh all patches to apply cleanly
-- Switch url to `http` instead of `ftp`
-- Cosmetic changes to spec formating
+* Mon Jan 13 2025 Archana Shettigar <shettigara@microsoft.com> - 395-2
+- Initial Azure Linux import from Fedora 41 (license: MIT).
 - License verified
 
-* Fri Oct 15 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 351-3
-- Initial CBL-Mariner import from Fedora 32 (license: MIT).
+* Fri Nov 01 2024 Tomas Korbar <tkorbar@redhat.com> - 395-1
+- Rebase to version 395
+- Resolves: rhbz#2321689
+
+* Thu Sep 05 2024 Tomas Korbar <tkorbar@redhat.com> - 394-1
+- Rebase to version 394
+- Resolves: rhbz#2309329
+
+* Thu Aug 01 2024 Tomas Korbar <tkorbar@redhat.com> - 393-1
+- Rebase to version 393
+- Resolves: rhbz#2297922
+
+* Sat Jul 20 2024 Fedora Release Engineering <releng@fedoraproject.org> - 392-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_41_Mass_Rebuild
+
+* Thu Jun 27 2024 Tomas Korbar <tkorbar@redhat.com> - 392-1
+- Rebase to version 392
+- Resolves: rhbz#2282801
+
+* Wed Mar 13 2024 Tomas Korbar <tkorbar@redhat.com> - 390-1
+- Rebase to version 390
+- Resolves: rhbz#2265040
+
+* Mon Jan 29 2024 Fedora Release Engineering <releng@fedoraproject.org> - 389-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_40_Mass_Rebuild
+
+* Wed Jan 03 2024 Tomas Korbar <tkorbar@redhat.com> - 389-1
+- Rebase to version 389
+- Resolves: rhbz#2256390
+
+* Tue Nov 28 2023 Florian Weimer <fweimer@redhat.com> - 388-3
+- Fix C compatibility issue in the configure script (#2251945)
+
+* Wed Nov 01 2023 Tomas Korbar <tkorbar@redhat.com> - 388-2
+- Add licenses to fully conform to SPDX
+
+* Wed Oct 25 2023 Tomas Korbar <tkorbar@redhat.com> - 388-1
+- Rebase to version 388
+- Resolves: rhbz#2242865
+
+* Tue Oct 03 2023 Tomas Korbar <tkorbar@redhat.com> - 385-1
+- Rebase to version 385
+- Resolves: rhbz#2241681
+
+* Sat Jul 22 2023 Fedora Release Engineering <releng@fedoraproject.org> - 384-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_39_Mass_Rebuild
+
+* Tue Jul 11 2023 Tomas Korbar <tkorbar@redhat.com> - 384-1
+- Rebase to version 384
+- Resolves: rhbz#2221827
+
+* Fri Jul 07 2023 Tomas Korbar <tkorbar@redhat.com> - 383-1
+- Rebase to version 383
+- Resolves: rhbz#2218033
+
+* Wed May 31 2023 Tomas Korbar <tkorbar@redhat.com> - 382-1
+- Rebase to version 382
+- Resolves: rhbz#2211276
+
+* Mon May 29 2023 Tomas Korbar <tkorbar@redhat.com> - 381-1
+- Rebase to version 381
+- Resolves:rhbz#2210609
+
+* Tue May 16 2023 Tomas Korbar <tkorbar@redhat.com> - 380-1
+- Rebase to version 380
+- Resolves: rhbz#2204459
+
+* Thu Mar 16 2023 Tomas Korbar <tkorbar@redhat.com> - 379-2
+- Enable logging feature
+
+* Sun Feb 19 2023 Tomas Korbar <tkorbar@redhat.com> - 379-1
+- Rebase to version 379
+- Resolves: rhbz#2170296
+
+* Wed Feb 08 2023 Tomas Korbar <tkorbar@redhat.com> - 378-3
+- Enable readline-mouse configuration option
+- Resolves: rhbz#2166860
+
+* Sat Jan 21 2023 Fedora Release Engineering <releng@fedoraproject.org> - 378-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_38_Mass_Rebuild
+
+* Thu Jan 12 2023 Tomas Korbar <tkorbar@redhat.com> - 378-1
+- Rebase to version 378
+- Resolves: rhbz#2159449
+
+* Thu Dec 08 2022 Tomas Korbar <tkorbar@redhat.com> - 377-1
+- Rebase to version 377
+- Remove unnecessary dependency on xterm-resize
+- Resolves: rhbz#2143618
+- Resolves: rhbz#2142751
+
+* Mon Oct 31 2022 Tomas Korbar <tkorbar@redhat.com> - 375-1
+- Rebase to version 375
+- Resolves: rhbz#2137784
+
+* Tue Oct 11 2022 Tomas Korbar <tkorbar@redhat.com> - 374-1
+- Rebase to version 374
+- Resolves: rhbz#2133585
+
+* Wed Oct 05 2022 Tomas Korbar <tkorbar@redhat.com> - 373-1
+- Rebase to version 373
+- Resolves: rhbz#2129661
+
+* Sat Jul 23 2022 Fedora Release Engineering <releng@fedoraproject.org> - 372-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_37_Mass_Rebuild
+
+* Mon Apr 25 2022 Tomas Korbar <tkorbar@redhat.com> - 372-1
+- Rebase to version 372
+- Resolves: rhbz#2062511
+
+* Mon Feb 28 2022 Tomas Korbar <tkorbar@redhat.com> - 371-1
+- Rebase to version 371
+- Resolves: rhbz#2058442
+
+* Sat Jan 22 2022 Fedora Release Engineering <releng@fedoraproject.org> - 370-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_36_Mass_Rebuild
+
+* Fri Jan 07 2022 Thomas E. Dickey <dickey@invisible-island.net> - 370-2
+- Trim configure options which are no longer necessary.
+- Resolves: rhbz#2038247
+
+* Tue Nov 30 2021 Tomas Korbar <tkorbar@redhat.com> - 370-1
+- Rebase to version 370
+- Resolves: rhbz#2023017
+
+* Wed Sep 22 2021 Tomas Korbar <tkorbar@redhat.com> - 369-1
+- Rebase to version 369
+- Resolves: rhbz#2006589
+
+* Fri Jul 23 2021 Fedora Release Engineering <releng@fedoraproject.org> - 368-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_35_Mass_Rebuild
+
+* Wed Jul 14 2021 Petr Pisar <ppisar@redhat.com> - 368-2
+- Rebuild against pcre2-10.37 (bug #1965025)
+
+* Tue Jun 08 2021 Tomas Korbar <tkorbar@redhat.com> - 368-1
+- Rebase to version 368
+- Resolves: rhbz#1969214
+
+* Fri May 21 2021 Joe Orton <jorton@redhat.com> - 367-3
+- drop luit support
+
+* Mon May 17 2021 Peter Hutterer <peter.hutterer@redhat.com> 367-2
+- Add luit to Requires
+- Resolves: rhbz#1959210
+
+* Mon Apr 12 2021 Tomas Korbar <tkorbar@redhat.com> - 367-1
+- Rebase to version 367
+- Resolves: rhbz#1943741
+
+* Thu Feb 11 2021 Tomas Korbar <tkorbar@redhat.com> - 366-1
+- Rebase to version 366
+- Resolves: rhbz#1927543
+
+* Wed Feb 03 2021 Tomas Korbar <tkorbar@redhat.com> - 364-1
+- Rebase to version 364 (#1924362)
+- Build with pcre2 support (#1909609)
+
+* Thu Jan 28 2021 Fedora Release Engineering <releng@fedoraproject.org> - 363-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_34_Mass_Rebuild
+
+* Tue Jan 19 2021 Tomas Korbar <tkorbar@redhat.com> - 363-1
+- Rebase to version 363 (#1910995)
+- Build with pcre2 support (#1909609)
+
+* Fri Nov 13 2020 Tomas Korbar <tkorbar@redhat.com> - 362-1
+- Rebase to version 362 (#1896986)
+
+* Thu Oct 22 2020 Tomas Korbar <tkorbar@redhat.com> - 361-1
+- Rebase to version 361 (#1888488)
+
+* Mon Sep 21 2020 Tomas Korbar <tkorbar@redhat.com> - 360-1
+- Rebase to version 360 (#1880883)
+
+* Tue Aug 18 2020 Tomas Korbar <tkorbar@redhat.com> - 359-1
+- Rebase to version 359 (#1869418)
+
+* Tue Jul 28 2020 Adam Jackson <ajax@redhat.com> - 358-2
+- BuildRequires luit, not xorg-x11-apps
+
+* Mon Jul 13 2020 Tomas Korbar <tkorbar@redhat.com> - 358-1
+- Rebase to version 358 (#1856126)
+
+* Mon Jul 06 2020 Tomas Korbar <tkorbar@redhat.com> - 357-1
+- Rebase to version 357 (#1853951)
+
+* Sun May 03 2020 Tomas Korbar <tkorbar@redhat.com> - 356-1
+- Rebase to version 356 (#1830237)
+
+* Wed Apr 29 2020 Tomas Korbar <tkorbar@redhat.com> - 354-1
+- Rebase to version 354 (#1828107)
+
+* Mon Feb 24 2020 Tomas Korbar <tkorbar@redhat.com> - 353-1
+- Rebase to version 353 (#1792091)
 
 * Fri Jan 31 2020 Fedora Release Engineering <releng@fedoraproject.org> - 351-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_32_Mass_Rebuild

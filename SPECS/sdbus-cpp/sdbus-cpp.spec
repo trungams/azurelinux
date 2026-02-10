@@ -1,10 +1,10 @@
 Summary:        sdbus-cpp
 Name:           sdbus-cpp
-Version:        1.1.0
-Release:        1%{?dist}
+Version:        1.3.0
+Release:        2%{?dist}
 License:        LGPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          SystemUtilities
 URL:            https://github.com/Kistler-Group/sdbus-cpp
 Source0:        https://github.com/Kistler-Group/sdbus-cpp/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
@@ -47,11 +47,9 @@ cd build
 cmake --build . --target install
 rm -rf %{buildroot}%{_docdir}
 
-%post
--p /sbin/ldconfig
+%post -p /sbin/ldconfig
 
-%postun
--p /sbin/ldconfig
+%postun -p /sbin/ldconfig
 
 %files
 %defattr(-,root,root)
@@ -66,6 +64,12 @@ rm -rf %{buildroot}%{_docdir}
 %{_libdir}/pkgconfig/*.pc
 
 %changelog
+* Wed Apr 23 2025 Sam Meluch <sammeluch@microsoft.com> - 1.3.0-2
+- Fix -p for ldconfig in post and postun scripts.
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.3.0-1
+- Auto-upgrade to 1.3.0 - Azure Linux 3.0 - package upgrades
+
 * Mon May 16 2022 Sriram Nambakam <snambakam@microsoft.com> - 1.1.0-1
 - Original version for CBL-Mariner.
 - Verified license

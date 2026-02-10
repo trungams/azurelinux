@@ -13,13 +13,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/imagegen/attendedinstaller"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/imagegen/configuration"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/exe"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/file"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/jsonutils"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/logger"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/shell"
+	"github.com/microsoft/azurelinux/toolkit/tools/imagegen/attendedinstaller"
+	"github.com/microsoft/azurelinux/toolkit/tools/imagegen/configuration"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/exe"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/file"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/jsonutils"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/logger"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/shell"
+	"github.com/sirupsen/logrus"
 
 	"golang.org/x/sys/unix"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -35,9 +36,8 @@ var (
 	imagerTool         = app.Flag("imager", "Path to the imager tool.").Required().ExistingFile()
 	buildDir           = app.Flag("build-dir", "Directory to store temporary files while building.").Required().ExistingDir()
 	baseDirPath        = app.Flag("base-dir", "Base directory for relative file paths from the config. Defaults to config's directory.").ExistingDir()
-
-	logFile  = exe.LogFileFlag(app)
-	logLevel = exe.LogLevelFlag(app)
+	repoSnapshotTime   = app.Flag("repo-snapshot-time", "Optional: tdnf repo snapshot time").String()
+	logFlags           = exe.SetupLogFlags(app)
 )
 
 // Every valid mouse event handler will follow the format:
@@ -45,13 +45,14 @@ var (
 var mouseEventHandlerRegex = regexp.MustCompile(`^H:\s+Handlers=(\w+)\s+mouse\d+`)
 
 type imagerArguments struct {
-	imagerTool   string
-	configFile   string
-	buildDir     string
-	baseDirPath  string
-	emitProgress bool
-	logFile      string
-	logLevel     string
+	imagerTool       string
+	configFile       string
+	buildDir         string
+	baseDirPath      string
+	emitProgress     bool
+	logFile          string
+	logLevel         string
+	repoSnapshotTime string
 }
 
 type installationDetails struct {
@@ -69,7 +70,7 @@ func main() {
 
 	app.Version(exe.ToolkitVersion)
 	kingpin.MustParse(app.Parse(os.Args[1:]))
-	logger.InitBestEffort(*logFile, *logLevel)
+	logger.InitBestEffort(logFlags)
 
 	// Prevent a SIGINT (Ctr-C) from stopping liveinstaller while an installation is in progress.
 	// It is the responsibility of the installer's user interface (terminal installer or Calamares) to handle quit requests from the user.
@@ -79,11 +80,12 @@ func main() {
 
 	// Imager's stdout/stderr will be combined with this tool's, so it will automatically be logged to the current log file
 	args := imagerArguments{
-		imagerTool:  *imagerTool,
-		buildDir:    *buildDir,
-		baseDirPath: *baseDirPath,
-		logLevel:    logger.Log.GetLevel().String(),
-		logFile:     imagerLogFile,
+		imagerTool:       *imagerTool,
+		buildDir:         *buildDir,
+		baseDirPath:      *baseDirPath,
+		logLevel:         logger.Log.GetLevel().String(),
+		logFile:          imagerLogFile,
+		repoSnapshotTime: *repoSnapshotTime,
 	}
 
 	installFunc := installerFactory(*forceAttended, *configFile, *templateConfigFile)
@@ -143,7 +145,7 @@ func updateBootOrder(installDetails installationDetails) (err error) {
 		return
 	}
 
-	err = removeOldMarinerBootTargets()
+	err = removeOldAzureLinuxBootTargets()
 	if err != nil {
 		return
 	}
@@ -168,22 +170,22 @@ func runBootEntryCreationCommand(installDetails installationDetails) (err error)
 		"-d", bootDisk.TargetDisk.Value, // Specify which disk the boot file is on
 		"-p", fmt.Sprintf("%d", bootPartIdx+1), // Specify which partition the boot file is on
 		"-l", "'\\EFI\\BOOT\\bootx64.efi'", // Specify the path for where the boot file is located on the partition
-		"-L", "Mariner", // Specify what label you would like to give this boot entry
+		"-L", "Azure Linux", // Specify what label you would like to give this boot entry
 		"-v", // Be verbose
 	}
 	err = shell.ExecuteLive(squashErrors, program, commandArgs...)
 	return
 }
 
-func removeOldMarinerBootTargets() (err error) {
+func removeOldAzureLinuxBootTargets() (err error) {
 	const squashErrors = false
-	logger.Log.Info("Removing pre-existing 'Mariner' boot targets from efibootmgr")
+	logger.Log.Info("Removing pre-existing 'Azure Linux' boot targets from efibootmgr")
 	program := "efibootmgr" // Default behavior when piped or called without options is to print current boot order in a human-readable format
 	commandArgs := []string{
-		"|", "grep", "\"Mariner\"", // Filter boot order for Mariner boot targets
-		"|", "sed", "'s/* Mariner//g'", // Pruning for just the bootnum
+		"|", "grep", "\"Azure Linux\"", // Filter boot order for Azure Linux boot targets
+		"|", "sed", "'s/* Azure Linux//g'", // Pruning for just the bootnum
 		"|", "sed", "'s/Boot*//g'", // Pruning for just the bootnum
-		"|", "xargs", "-t", "-i", "efibootmgr", "-b", "{}", "-B", // Calling efibootmgr --delete-bootnum (aka `-B`) on each pre-existing bootnum with a Mariner label
+		"|", "xargs", "-t", "-i", "efibootmgr", "-b", "{}", "-B", // Calling efibootmgr --delete-bootnum (aka `-B`) on each pre-existing bootnum with an Azure Linux label
 	}
 	err = shell.ExecuteLive(squashErrors, program, commandArgs...)
 	return
@@ -191,7 +193,13 @@ func removeOldMarinerBootTargets() (err error) {
 
 func ejectDisk() (err error) {
 	logger.Log.Info("Ejecting CD-ROM.")
-	_, _, err = shell.Execute("eject", "--cdrom")
+	const squashErrors = false
+	program := "eject"
+	commandArgs := []string{
+		"--cdrom",
+		"--force",
+	}
+	err = shell.ExecuteLive(squashErrors, program, commandArgs...)
 
 	if err != nil {
 		// If there was an error ejecting the CD-ROM, assume this is a USB installation and prompt the user
@@ -261,7 +269,7 @@ func calamaresInstall(templateConfigFile string, args imagerArguments) (err erro
 	args.configFile = filepath.Join(calamaresDir, "unattended_config.json")
 
 	launchScript := filepath.Join(calamaresDir, "mariner-install.sh")
-	skuDir := filepath.Join(calamaresDir, "mariner-skus")
+	skuDir := filepath.Join(calamaresDir, "azurelinux-skus")
 
 	bootType := configuration.SystemBootType()
 	logger.Log.Infof("Boot type detected: %s", bootType)
@@ -391,17 +399,11 @@ func terminalAttendedInstall(cfg configuration.Config, progress chan int, status
 		return
 	}
 
-	onStdout := func(args ...interface{}) {
+	onStdout := func(line string) {
 		const (
 			progressPrefix = "progress:"
 			actionPrefix   = "action:"
 		)
-
-		if len(args) == 0 {
-			return
-		}
-
-		line := args[0].(string)
 
 		if strings.HasPrefix(line, progressPrefix) {
 			reportedProgress, err := strconv.Atoi(strings.TrimPrefix(line, progressPrefix))
@@ -418,7 +420,10 @@ func terminalAttendedInstall(cfg configuration.Config, progress chan int, status
 
 	args.emitProgress = true
 	program, commandArgs := formatImagerCommand(args)
-	err = shell.ExecuteLiveWithCallback(onStdout, logger.Log.Warn, false, program, commandArgs...)
+	err = shell.NewExecBuilder(program, commandArgs...).
+		LogLevel(logrus.TraceLevel, logrus.WarnLevel).
+		StdoutCallback(onStdout).
+		Execute()
 
 	return
 }
@@ -448,6 +453,7 @@ func formatImagerCommand(args imagerArguments) (program string, commandArgs []st
 		fmt.Sprintf("--base-dir=%s", args.baseDirPath),
 		fmt.Sprintf("--log-file=%s", args.logFile),
 		fmt.Sprintf("--log-level=%s", args.logLevel),
+		fmt.Sprintf("--repo-snapshot-time=%s", args.repoSnapshotTime),
 	}
 
 	if args.emitProgress {

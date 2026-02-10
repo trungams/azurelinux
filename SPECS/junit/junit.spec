@@ -18,14 +18,16 @@
 Summary:        Java regression test package
 Name:           junit
 Version:        4.13
-Release:        5%{?dist}
+Release:        7%{?dist}
 License:        EPL-1.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Libraries/Java
 URL:            https://www.junit.org/
 Source0:        https://github.com/junit-team/junit/archive/r%{version}.tar.gz#/%{name}-%{version}.tar.gz
 Source1:        build.xml
+Patch1:         0001-Port-to-hamcrest-2.2.patch
+Patch2:         CVE-2020-15250.patch
 BuildRequires:  ant
 BuildRequires:  fdupes
 BuildRequires:  hamcrest >= 1.3
@@ -66,6 +68,8 @@ Documentation for %{name}.
 %prep
 %setup -q -n %{name}4-r%{version}
 cp %{SOURCE1} .
+%patch 1 -p1
+%patch 2 -p1
 
 find . -type f -name "*.jar" -or -name "*.class" | xargs -t rm -rf
 
@@ -73,7 +77,7 @@ ln -s $(build-classpath hamcrest/all) lib/hamcrest-core-1.3.jar
 
 %build
 export CLASSPATH=$(build-classpath hamcrest/all)
-ant jars javadoc -Dversion-status=
+ant -f build.xml jars javadoc -Dversion-status=
 
 %install
 # jars
@@ -121,6 +125,12 @@ java -cp %{buildroot}/%{_javadir}/%{name}.jar: test 2>&1 | \
 %doc doc/*
 
 %changelog
+* Tue Feb 11 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 4.13-7
+- Patch to fix CVE-2020-15250
+
+* Wed Feb 28 2024 Riken Maharjan <rmaharjan@microsoft.com> - 4.13-6
+- rebuild with msopenjdk-17
+
 * Fri Mar 17 2023 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 4.13-5
 - Fixing maven provides
 

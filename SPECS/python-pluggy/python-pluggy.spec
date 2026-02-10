@@ -4,23 +4,21 @@ The plugin manager stripped of pytest specific details.
 
 Summary:        The plugin manager stripped of pytest specific details
 Name:           python-pluggy
-Version:        1.0.0
-Release:        3%{?dist}
+Version:        1.3.0
+Release:        2%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://github.com/pytest-dev/pluggy
-Source0:        https://files.pythonhosted.org/packages/a1/16/db2d7de3474b6e37cbb9c008965ee63835bba517e22cdb8c35b5116b5ce1/%{pypi_name}-%{version}.tar.gz
-
+Source0:        https://pypi.python.org/packages/source/p/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 BuildArch:      noarch
-
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-setuptools_scm
-
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  python3-atomicwrites
 BuildRequires:  python3-attrs
+BuildRequires:  python3-more-itertools
 BuildRequires:  python3-pytest
 %endif
 
@@ -42,7 +40,7 @@ The plugin manager stripped of pytest specific details.
 %py3_install
 
 %check
-pip3 install more-itertools
+pip3 install iniconfig
 
 # TODO investigate test_load_setuptools_instantiation failure
 PYTHONPATH=%{buildroot}%{python3_sitelib} python3 -m pytest testing -k "not test_load_setuptools_instantiation"
@@ -54,6 +52,12 @@ PYTHONPATH=%{buildroot}%{python3_sitelib} python3 -m pytest testing -k "not test
 %license LICENSE
 
 %changelog
+* Mon May 13 2024 Sam Meluch <sammeluch@microsoft.com> - 1.3.0-2
+- Add missing iniconfig dependency to check section
+
+* Tue Jan 23 2024 Andrew Phelps <anphel@microsoft.com> - 1.3.0-1
+- Upgrade to version 1.3.0
+
 * Mon Mar 28 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.0.0-3
 - Initial CBL-Mariner import from Fedora 36 (license: MIT).
 - License verified.

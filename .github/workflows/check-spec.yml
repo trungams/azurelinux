@@ -5,9 +5,9 @@ name: Spec files check
 
 on:
   push:
-    branches: [main, dev, 1.0*, 2.0*]
+    branches: [main, dev, 1.0*, 2.0*, 3.0*, fasttrack/*]
   pull_request:
-    branches: [main, dev, 1.0*, 2.0*]
+    branches: [main, dev, 1.0*, 2.0*, 3.0*, fasttrack/*]
 
 jobs:
   spec-check:
@@ -17,13 +17,13 @@ jobs:
     steps:
       # Checkout the branch of our repo that triggered this action
       - name: Workflow trigger checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # For consistency, we use the same major/minor version of Python that CBL-Mariner ships
-      - name: Setup Python 3.9
-        uses: actions/setup-python@v4
+      # For consistency, we use the same major/minor version of Python that Azure Linux ships
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.12
 
       - name: Get Python dependencies
         run: python3 -m pip install -r toolkit/scripts/requirements.txt
@@ -49,12 +49,16 @@ jobs:
           echo "Files to validate: '${changed_specs}'"
           echo "updated-specs=$(echo ${changed_specs})" >> $GITHUB_ENV
 
+      - name: Get toolchain spec list
+        run: |
+          echo "toolchain-spec-list=$(make --no-print-directory -sC toolkit printvar-toolchain_spec_list)" >> $GITHUB_ENV
+
       - name: Main branch checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: 'main'
           path: 'main-checkout'
 
       - name: Verify .spec files
         if: ${{ env.updated-specs != '' }}
-        run: python3 toolkit/scripts/check_spec_guidelines.py ${{ env.updated-specs }}
+        run: python3 toolkit/scripts/check_spec_guidelines.py --toolchain_specs  "${{ env.toolchain-spec-list }}" --specs ${{ env.updated-specs }}

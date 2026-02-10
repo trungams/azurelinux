@@ -1,6 +1,6 @@
 %global macrosdir %(d=%{_rpmconfigdir}/macros.d; [ -d $d ] || d=%{_sysconfdir}/rpm; echo $d)
 %define version_main %(echo %{version} | cut -d. -f-2)
-%global so_version 200
+%global so_version 310
 %global with_mpich 0
 %global with_openmpi 0
 %if %{with_mpich}
@@ -11,23 +11,34 @@
 %endif
 Summary:        A general purpose library and file format for storing scientific data
 Name:           hdf5
-Version:        1.12.1
-Release:        11%{?dist}
+Version:        1.14.6
+Release:        1%{?dist}
 License:        BSD
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://portal.hdfgroup.org/display/HDF5/HDF5
-Source0:        https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%{version_main}/hdf5-%{version}/src/hdf5-%{version}.tar.bz2
+Source0:        https://support.hdfgroup.org/releases/hdf5/v1_14/v1_14_6/downloads/%{name}-%{version}.tar.gz
 Source1:        h5comp
-Patch0:         hdf5-LD_LIBRARY_PATH.patch
-# Fix fortran build with gcc 12
-# https://github.com/HDFGroup/hdf5/pull/1412
-Patch1:         hdf5-gfortran12.patch
-Patch3:         hdf5-build.patch
+
+Patch0:         hdf5-build.patch
 # Remove Fedora build flags from h5cc/h5c++/h5fc
 # https://bugzilla.redhat.com/show_bug.cgi?id=1794625
-Patch5:         hdf5-wrappers.patch
-# For patches/rpath
+Patch1:         hdf5-wrappers.patch
+Patch2:         CVE-2025-2153.patch
+Patch3:         CVE-2025-2310.patch
+Patch4:         CVE-2025-2914.patch
+Patch5:         CVE-2025-2924.patch
+Patch6:         CVE-2025-2925.patch
+Patch7:         CVE-2025-2926.patch
+Patch8:         CVE-2025-44905.patch
+Patch9:         CVE-2025-6269.patch
+Patch10:        CVE-2025-6750.patch
+Patch11:        CVE-2025-6816.patch
+Patch12:        CVE-2025-6857.patch
+Patch13:        CVE-2025-6858.patch
+Patch14:        CVE-2025-7067.patch
+Patch15:        CVE-2025-7068.patch
+
 # For patches/rpath
 BuildRequires:  automake
 # Needed for mpi tests
@@ -223,8 +234,6 @@ find %{buildroot} -type f -name "*.la" -delete -print
   mkdir -p %{buildroot}%{_libdir}/$mpi/hdf5/plugin
   module purge
 done
-#Fixup example permissions
-find %{buildroot}%{_datadir} \( -name '*.[ch]*' -o -name '*.f90' \) -exec chmod -x {} +
 
 #Fixup headers and scripts for multiarch
 %ifarch x86_64 ppc64 ia64 s390x sparc64 alpha
@@ -256,7 +265,8 @@ cat > %{buildroot}%{macrosdir}/macros.hdf5 <<EOF
 EOF
 
 %check
-make -C build check
+# Do not ignore make error code
+make -C build check || exit 1
 #export HDF5_Make_Ignore=yes
 export OMPI_MCA_rmaps_base_oversubscribe=1
 # openmpi 5+
@@ -272,16 +282,16 @@ done
 
 %files
 %license COPYING
-%doc MANIFEST README.txt release_docs/RELEASE.txt
+%doc README.md release_docs/RELEASE.txt
 %doc release_docs/HISTORY*.txt
-%{_bindir}/gif2h5
-%{_bindir}/h52gif
 %{_bindir}/h5clear
 %{_bindir}/h5copy
 %{_bindir}/h5debug
+%{_bindir}/h5delete
 %{_bindir}/h5diff
 %{_bindir}/h5dump
 %{_bindir}/h5format_convert
+%{_bindir}/h5fuse
 %{_bindir}/h5import
 %{_bindir}/h5jam
 %{_bindir}/h5ls
@@ -292,8 +302,6 @@ done
 %{_bindir}/h5stat
 %{_bindir}/h5unjam
 %{_bindir}/h5watch
-%{_bindir}/mirror_server
-%{_bindir}/mirror_server_stop
 %{_libdir}/hdf5/
 %{_libdir}/libhdf5.so.%{so_version}*
 %{_libdir}/libhdf5_cpp.so.%{so_version}*
@@ -309,10 +317,10 @@ done
 %{_bindir}/h5fc*
 %{_bindir}/h5redeploy
 %{_includedir}/*.h
+%{_includedir}/H5config_f.inc
 %{_libdir}/*.so
 %{_libdir}/*.settings
 %{_fmoddir}/*.mod
-%{_datadir}/hdf5_examples/
 
 %files static
 %{_libdir}/*.a
@@ -320,10 +328,8 @@ done
 %if %{with_mpich}
 %files mpich
 %license COPYING
-%doc MANIFEST README.txt release_docs/RELEASE.txt
+%doc README.md release_docs/RELEASE.txt
 %doc release_docs/HISTORY*.txt
-%{_libdir}/mpich/bin/gif2h5
-%{_libdir}/mpich/bin/h52gif
 %{_libdir}/mpich/bin/h5clear
 %{_libdir}/mpich/bin/h5copy
 %{_libdir}/mpich/bin/h5debug
@@ -342,8 +348,6 @@ done
 %{_libdir}/mpich/bin/h5stat
 %{_libdir}/mpich/bin/h5unjam
 %{_libdir}/mpich/bin/h5watch
-%{_libdir}/mpich/bin/mirror_server
-%{_libdir}/mpich/bin/mirror_server_stop
 %{_libdir}/mpich/bin/ph5diff
 %{_libdir}/mpich/hdf5/
 %{_libdir}/mpich/lib/*.so.%{so_version}*
@@ -364,10 +368,8 @@ done
 %if %{with_openmpi}
 %files openmpi
 %license COPYING
-%doc MANIFEST README.txt release_docs/RELEASE.txt
+%doc README.md release_docs/RELEASE.txt
 %doc release_docs/HISTORY*.txt
-%{_libdir}/openmpi/bin/gif2h5
-%{_libdir}/openmpi/bin/h52gif
 %{_libdir}/openmpi/bin/h5clear
 %{_libdir}/openmpi/bin/h5copy
 %{_libdir}/openmpi/bin/h5debug
@@ -386,8 +388,6 @@ done
 %{_libdir}/openmpi/bin/h5stat
 %{_libdir}/openmpi/bin/h5unjam
 %{_libdir}/openmpi/bin/h5watch
-%{_libdir}/openmpi/bin/mirror_server
-%{_libdir}/openmpi/bin/mirror_server_stop
 %{_libdir}/openmpi/bin/ph5diff
 %{_libdir}/openmpi/hdf5/
 %{_libdir}/openmpi/lib/*.so.%{so_version}*
@@ -409,6 +409,31 @@ done
 
 
 %changelog
+* Tue Nov 19 2025 Jyoti kanase <v-jykanase@microsoft.com> - 1.14.6-1
+- Upgrade to 1.14.6
+- Patch hdf5 for CVE-2025-2153, CVE-2025-2310, CVE-2025-2914, CVE-2025-2926, CVE-2025-6816,
+  CVE-2025-2925, CVE-2025-2924, CVE-2025-44905, CVE-2025-6269, CVE-2025-6750, CVE-2025-6857,
+  CVE-2025-7067, CVE-2025-7068, CVE-2025-6858, CVE_2025-2923, CVE-2025-2913, CVE-2025-6516,
+  CVE-2025-6818, CVE-2025-6817, CVE-2025-6856, CVE-2025-7069
+
+* Tue Jun 04 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 1.14.4.3-1
+- Upgrade to v1.14.4.3 to fix CVEs 2024-29157, 2024-29158, 2024-29159, 2024-29160,
+  2024-29161, 2024-29162, 2024-29163, 2024-29164, 2024-29165, 2024-29166, 2024-32605,
+  2024-32606, 2024-32607, 2024-32608, 2024-32609, 2024-32610, 2024-32611, 2024-32612,
+  2024-32613, 2024-32614, 2024-32615, 2024-32616, 2024-32617, 2024-32618, 2024-32619,
+  2024-32620, 2024-32621, 2024-32622, 2024-32623, 2024-32624, 2024-33873, 2024-33877,
+  2024-33874, 2024-33875, 2024-33876
+
+* Tue Mar 26 2024 corvus-callidus <108946721+corvus-callidus@users.noreply.github.com> - 1.14.3-1
+- Update to 1.14.3
+- Add patch to fix build with autoconf 2.71
+
+* Thu Oct 19 2023 Jon Slobodzian <joslobo@microsoft.com> - 1.12.1-13
+- Patch hdf5 for CVE-2021-37501.
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 1.12.1-12
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Tue Nov 01 2022 Riken Maharjan <rmaharjan@microsoft.com> - 1.12.1-11
 - License verified
 - Initial CBL-Mariner import from Fedora 37 (license: MIT)

@@ -4,12 +4,12 @@
 
 Summary:        Exporter for machine metrics
 Name:           prometheus-node-exporter
-Version:        1.3.1
-Release:        19%{?dist}
+Version:        1.7.0
+Release:        3%{?dist}
 # Upstream license specification: Apache-2.0
 License:        ASL 2.0 AND MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://github.com/prometheus/node_exporter
 Source0:        https://github.com/prometheus/node_exporter/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 # Below is a manually created tarball, no download link.
@@ -33,8 +33,8 @@ Source4:        %{name}.conf
 Source5:        %{name}.logrotate
 # Replace defaults paths for config files
 Patch0:         defaults-paths.patch
-# https://github.com/prometheus/node_exporter/pull/2190
-Patch1:         0001-Refactor-perf-collector.patch
+Patch1:         CVE-2023-45288.patch
+Patch2:         CVE-2025-22870.patch
 
 BuildRequires:  golang
 BuildRequires:  systemd-rpm-macros
@@ -46,10 +46,7 @@ Prometheus exporter for hardware and OS metrics exposed by *NIX kernels, written
 in Go with pluggable metric collectors.
 
 %prep
-%autosetup -p1 -n node_exporter-%{version}
-
-rm -rf vendor
-tar -xf %{SOURCE1} --no-same-owner
+%autosetup -n node_exporter-%{version} -p1 -a1
 
 %build
 export BUILDTAGS="netgo osusergo static_build"
@@ -107,6 +104,21 @@ getent passwd 'prometheus' >/dev/null || useradd -r -g 'prometheus' -d '%{_share
 %dir %attr(0755,prometheus,prometheus) %{_sharedstatedir}/prometheus/node-exporter
 
 %changelog
+* Tue Apr 08 2025 Rohit Rawat <rohitrawat@microsoft.com> - 1.7.0-3
+- Patch CVE-2025-22870
+
+* Fri Feb 14 2025 Kanishk Bansal <kanbansal@microsoft.com> - 1.7.0-2
+- Address CVE-2023-45288
+
+* Wed Jan 10 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.7.0-1
+- Auto-upgrade to 1.7.0
+
+* Mon Oct 16 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.3.1-21
+- Bump release to rebuild with go 1.20.10
+
+* Tue Oct 10 2023 Dan Streetman <ddstreet@ieee.org> - 1.3.1-20
+- Bump release to rebuild with updated version of Go.
+
 * Mon Aug 07 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.3.1-19
 - Bump release to rebuild with go 1.19.12
 

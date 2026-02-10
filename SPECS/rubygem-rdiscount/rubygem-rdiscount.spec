@@ -4,11 +4,11 @@
 
 Summary:       Converts documents in Markdown syntax to HTML
 Name:          rubygem-%{gem_name}
-Version:       2.2.0.2
-Release:       3%{?dist}
+Version:       2.2.7.1
+Release:       1%{?dist}
 License:       MIT
 Vendor:	       Microsoft Corporation
-Distribution:  Mariner
+Distribution:   Azure Linux
 URL:           http://github.com/rtomayko/rdiscount
 Source0:       https://github.com/davidfstr/rdiscount/archive/refs/tags/%{version}.tar.gz#/%{gem_name}-%{version}.tar.gz
 BuildRequires: ruby
@@ -31,6 +31,9 @@ gem install -V --local --force --install-dir %{buildroot}/%{gemdir} %{gem_name}-
 %{gemdir}
 
 %changelog
+* Wed Mar 13 2024 Riken Maharjan <rmaharjan@microsoft.com> - 2.2.7.1-1
+- Upgrade to 2.2.7.1 - azl3.0 
+
 * Wed Sep 28 2022 Suresh Babu Chalamalasetty <schalam@microsoft.com> - 2.2.0.2-3
 - Move to SPECS directory from Extended.
 

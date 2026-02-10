@@ -17,11 +17,11 @@
 
 Summary:        CLI for managing resources in InfluxDB
 Name:           influx-cli
-Version:        2.6.1
-Release:        11%{?dist}
+Version:        2.7.5
+Release:        2%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Productivity/Databases/Servers
 URL:            https://github.com/influxdata/influx-cli
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
@@ -40,11 +40,22 @@ Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.
 #           -cf %%{name}-%%{version}-vendor.tar.gz vendor
 #
 Source1:        %{name}-%{version}-vendor.tar.gz
-BuildRequires:  golang <= 1.18.8
+BuildRequires:  golang
 BuildRequires:  systemd-rpm-macros
 
 %description
 CLI for managing resources in InfluxDB v2.
+
+%package bash-completion
+Summary:        Bash Completion for %{name}
+Group:          Productivity/Databases/Servers
+Requires:       bash-completion
+Supplements:    (%{name} and bash-completion)
+BuildArch:      noarch
+
+%description bash-completion
+The official bash completion script for influx. It includes support
+for every argument that can currently be passed to influx.
 
 %package zsh-completion
 Summary:        ZSH Completion for %{name}
@@ -69,6 +80,9 @@ go build -mod vendor -ldflags="-X main.version=%{version}" -o bin/influx ./cmd/i
 mkdir -p %{buildroot}%{_bindir}
 install -D -m 0755 bin/influx %{buildroot}%{_bindir}/
 
+mkdir -p %{buildroot}/%{_datadir}/bash-completion/completions
+bin/influx completion bash > %{buildroot}/%{_datadir}/bash-completion/completions/influx
+
 mkdir -p %{buildroot}/%{_datadir}/zsh/site-functions
 bin/influx completion zsh > %{buildroot}/%{_datadir}/zsh/site-functions/_influx
 
@@ -77,10 +91,31 @@ bin/influx completion zsh > %{buildroot}/%{_datadir}/zsh/site-functions/_influx
 %doc README.md CHANGELOG.md
 %{_bindir}/influx
 
+%files bash-completion
+%{_datadir}/bash-completion
+
 %files zsh-completion
 %{_datadir}/zsh
 
 %changelog
+* Wed Mar 12 2025 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 2.7.5-2
+- Add back bash-completion subpackage for influx-cli
+
+* Tue Feb 11 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.7.5-1
+- Auto-upgrade to 2.7.5 - Update influx-cli to match influxdb version for CVE-2023-44487
+
+* Thu Mar 07 2024 Andrew Phelps <anphel@microsoft.com> - 2.7.3-2
+- Remove restriction on golang BR version
+
+* Thu Feb 01 2024 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 2.7.3-1
+- Upgrade to version 2.7.3
+
+* Mon Oct 16 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.6.1-13
+- Bump release to rebuild with go 1.20.10
+
+* Tue Oct 10 2023 Dan Streetman <ddstreet@ieee.org> - 2.6.1-12
+- Bump release to rebuild with updated version of Go.
+
 * Mon Aug 07 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.6.1-11
 - Bump release to rebuild with go 1.19.12
 
@@ -90,7 +125,7 @@ bin/influx completion zsh > %{buildroot}/%{_datadir}/zsh/site-functions/_influx
 * Thu Jun 15 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.6.1-9
 - Bump release to rebuild with go 1.19.10
 
-* Thu May 25 2023 Mykhailo Bykhovtsev <mbykhovtsev@microsft.com> - 2.6.1-8
+* Thu May 25 2023 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 2.6.1-8
 - Removed bash-completion subpackage since the script produced is included in original bash-completion.
 
 * Wed Apr 05 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.6.1-7

@@ -1,10 +1,10 @@
 Summary:        Measures number of Terminal column cells of wide-character codes.
 Name:           python-wcwidth
-Version:        0.2.5
-Release:        1%{?dist}
+Version:        0.2.6
+Release:        2%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Languages/Python
 URL:            https://pypi.python.org/pypi/wcwidth
 Source0:        https://github.com/jquast/wcwidth/archive/%{version}.tar.gz#/%{name}-%{version}.tar.gz
@@ -20,11 +20,13 @@ BuildRequires:  python3-libs
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-xml
 
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  python3-atomicwrites
 BuildRequires:  python3-attrs
 BuildRequires:  python3-coverage
+BuildRequires:  python3-more-itertools
 BuildRequires:  python3-pip
+BuildRequires:  python3-pluggy
 BuildRequires:  python3-pytest
 BuildRequires:  python3-pytest-cov
 BuildRequires:  python3-six
@@ -46,8 +48,7 @@ This Library is mainly for those implementing a Terminal Emulator, or programs t
 
 %check
 pip3 install \
-    more-itertools \
-    pluggy
+    iniconfig
 # note tox should have been preferred but unfortunately tox.ini is set to only support python up to 3.8 => no tests will then be executed
 # => stick with pytest which has a problem with test_package_version (version is correct but test stil throw an error)
 pytest3 -vv tests -k "not test_package_version"
@@ -58,6 +59,12 @@ pytest3 -vv tests -k "not test_package_version"
 %{python3_sitelib}/*
 
 %changelog
+* Mon May 13 2024 Sam Meluch <sammeluch@microsoft.com> - 0.2.6-2
+- Add missing iniconfig dependency to check section
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 0.2.6-1
+- Auto-upgrade to 0.2.6 - Azure Linux 3.0 - package upgrades
+
 * Fri Mar 25 2022 Nicolas Guibourge <nicolasg@microsoft.com> - 0.2.5-1
 - Upgrade to  0.2.5
 

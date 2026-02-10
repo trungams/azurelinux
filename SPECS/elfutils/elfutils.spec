@@ -3,14 +3,21 @@
 
 Summary:        A collection of utilities and DSOs to handle compiled objects
 Name:           elfutils
-Version:        0.186
-Release:        1%{?dist}
+Version:        0.189
+Release:        6%{?dist}
 License:        GPLv3+ AND (GPLv2+ OR LGPLv3+)
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Tools
 URL:            https://sourceware.org/elfutils
 Source0:        https://sourceware.org/elfutils/ftp/%{version}/%{name}-%{version}.tar.bz2
+Source1:        10-ptrace-yama.conf
+
+Patch0:         CVE-2025-1372.patch
+Patch1:         CVE-2025-1376.patch
+Patch2:         CVE-2025-1377.patch
+Patch3:         CVE-2025-1352.patch
+Patch4:         CVE-2024-25260.patch
 
 BuildRequires:  bison >= 1.875
 BuildRequires:  bzip2-devel
@@ -143,7 +150,7 @@ Requires:       %{name}-libelf = %{version}-%{release}
 These are the additional language files of elfutils.
 
 %prep
-%setup -q
+%autosetup -p1
 
 %build
 %configure \
@@ -160,7 +167,14 @@ mkdir -p %{buildroot}%{_prefix}
 chmod +x %{buildroot}%{_libdir}/lib*.so*
 #chmod +x %{buildroot}%{_libdir}/elfutils/lib*.so*
 
+%if 0%{?azl}
+# We override elfutils' default yama ptrace scope setting since we want to provide a restricted attach (1) by default as
+# this is the more secure default setting.
+# Users who need the unrestricted ptrace capabilities can change this configuration to unrestricted (0) in the /etc/sysctl.d file.
+install -Dm0644 %{SOURCE1} %{buildroot}%{_sysconfdir}/sysctl.d/10-default-yama-scope.conf
+%else
 install -Dm0644 config/10-default-yama-scope.conf %{buildroot}%{_sysconfdir}/sysctl.d/10-default-yama-scope.conf
+%endif
 
 # XXX Nuke unpackaged files
 {
@@ -220,7 +234,11 @@ fi
 %{_libdir}/libasm-%{version}.so
 %{_libdir}/libdw-%{version}.so
 %{_libdir}/libasm.so.*
+%{_libdir}/libdebuginfod-%{version}.so
+%{_libdir}/libdebuginfod.so.*
 %{_libdir}/libdw.so.*
+/etc/profile.d/debuginfod.csh
+/etc/profile.d/debuginfod.sh
 %{_mandir}/man1/*
 %exclude %{_mandir}/man7/*
 
@@ -230,8 +248,6 @@ fi
 %files devel
 %defattr(-,root,root)
 %{_includedir}/dwarf.h
-/etc/profile.d/debuginfod.csh
-/etc/profile.d/debuginfod.sh
 %dir %{_includedir}/elfutils
 %{_includedir}/elfutils/elf-knowledge.h
 %{_includedir}/elfutils/libdw.h
@@ -240,7 +256,7 @@ fi
 %{_includedir}/elfutils/libdwelf.h
 %{_includedir}/elfutils/debuginfod.h
 %{_libdir}/libdw.so
-%{_libdir}/libdebuginfod*
+%{_libdir}/libdebuginfod.so
 %{_libdir}/pkgconfig/*.pc
 %{_mandir}/man3/*
 
@@ -268,6 +284,27 @@ fi
 %defattr(-,root,root)
 
 %changelog
+* Wed Oct 29 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 0.189-6
+- Patch for CVE-2024-25260
+
+* Wed Jan 15 2025 Durga Jagadeesh Palli <v-dpalli@microsoft.com> - 0.189-5
+- add patch for CVE-2025-1352
+
+* Thu Mar 20 2025 Kanishk Bansal <kanbansal@microsoft.com> - 0.189-4
+- Add patch for CVE-2025-1372, CVE-2025-1376 & CVE-2025-1377
+
+* Mon Jun 24 2024 Chris Co <chrco@microsoft.com> - 0.189-3
+- Use our own ptrace yama conf file to override default yama scope setting to be more secure
+
+* Tue Mar 12 2024 Andrew Phelps <anphel@microsoft.com> - 0.189-2
+- Re-organize debuginfod files to cut dependency on devel packages
+
+* Mon Oct 16 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 0.189-1
+- Auto-upgrade to 0.189 - Azure Linux 3.0 - package upgrades
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 0.186-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Wed Feb 16 2022 Muhammad Falak <mwani@microsoft.com> - 0.186-1
 - Bump version to 0.186
 - Skip a test which can fail 'run-reverse-sections-self'

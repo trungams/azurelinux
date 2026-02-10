@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 
 print_usage() {
     echo "Usage:"
@@ -54,8 +56,6 @@ remove_packages_for_pkggen_core () {
     sed -i '/createrepo_c-devel/d' $TmpPkgGen
     sed -i '/docbook-xml/d' $TmpPkgGen
     sed -i '/docbook-xsl/d' $TmpPkgGen
-    sed -i '/e2fsprogs-[0-9]/d' $TmpPkgGen
-    sed -i '/e2fsprogs-devel/d' $TmpPkgGen
     sed -i '/e2fsprogs-lang/d' $TmpPkgGen
     sed -i '/freetype2/d' $TmpPkgGen
     sed -i '/gfortran/d' $TmpPkgGen
@@ -66,7 +66,7 @@ remove_packages_for_pkggen_core () {
     sed -i '/gpgme-[[:alpha:]]/d' $TmpPkgGen
     sed -i '/kbd/d' $TmpPkgGen
     sed -i '/kmod/d' $TmpPkgGen
-    sed -i '/krb5-[[:alpha:]]/d' $TmpPkgGen
+    sed -i '/krb5-lang/d' $TmpPkgGen
     sed -i '/libarchive/d' $TmpPkgGen
     sed -i '/libbacktrace-static/d' $TmpPkgGen
     sed -i '/libgpg-error-[[:alpha:]]/d' $TmpPkgGen
@@ -79,10 +79,8 @@ remove_packages_for_pkggen_core () {
     sed -i '/lua-devel/d' $TmpPkgGen
     sed -i '/lua-rpm/d' $TmpPkgGen
     sed -i '/lua-srpm/d' $TmpPkgGen
-    sed -ri '/mariner-repos-(debug|extended|extras|microsoft)/d' $TmpPkgGen
-    sed -i '/nghttp2-devel/d' $TmpPkgGen
+    sed -ri '/azurelinux-repos-(debug|extended|extras|microsoft)/d' $TmpPkgGen
     sed -i '/npth-[[:alpha:]]/d' $TmpPkgGen
-    sed -i '/pcre-devel/d' $TmpPkgGen
     sed -i '/perl-5/d' $TmpPkgGen
     sed -i '/perl-A/d' $TmpPkgGen
     sed -i '/perl-a/d' $TmpPkgGen
@@ -258,6 +256,7 @@ generate_pkggen_core () {
         grep "^gtk-doc-" $TmpPkgGen
         grep "^autoconf-" $TmpPkgGen
         grep "^automake-" $TmpPkgGen
+        grep "^ocaml-srpms-macros-" $TmpPkgGen
         grep "^openssl-" $TmpPkgGen
         grep "^libcap-" $TmpPkgGen
         grep "^debugedit-" $TmpPkgGen
@@ -275,9 +274,8 @@ generate_pkggen_core () {
         grep "^libsepol-" $TmpPkgGen
         grep "^glib-" $TmpPkgGen
         grep "^libltdl-" $TmpPkgGen
-        grep "^pcre-" $TmpPkgGen
         grep "^lua-" $TmpPkgGen
-        grep "^mariner-rpm-macros-" $TmpPkgGen
+        grep "^azurelinux-rpm-macros-" $TmpPkgGen
         grep "^mariner-check-" $TmpPkgGen
         grep "^libassuan-" $TmpPkgGen
         grep "^libgpg-error-" $TmpPkgGen
@@ -287,8 +285,8 @@ generate_pkggen_core () {
         grep "^pinentry-" $TmpPkgGen
         grep "^gnupg2-" $TmpPkgGen
         grep "^gpgme-" $TmpPkgGen
-        grep "^mariner-repos-shared" $TmpPkgGen
-        grep "^mariner-repos" $TmpPkgGen
+        grep "^azurelinux-repos-shared" $TmpPkgGen
+        grep "^azurelinux-repos" $TmpPkgGen
         grep "^libffi-" $TmpPkgGen
         grep "^libtasn1-" $TmpPkgGen
         grep "^p11-kit-" $TmpPkgGen

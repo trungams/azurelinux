@@ -1,18 +1,20 @@
-%global compiler_rt_srcdir %{name}-%{version}.src
+%global maj_ver 18
+
+%global compiler_rt_srcdir llvm-project-llvmorg-%{version}
 
 Summary:        LLVM compiler support routines
 Name:           compiler-rt
-Version:        12.0.1
+Version:        18.1.8
 Release:        1%{?dist}
 License:        Apache 2.0 WITH exceptions
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Tools
 URL:            https://compiler-rt.llvm.org
-Source0:        https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}/%{compiler_rt_srcdir}.tar.xz
+Source0:        https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-%{version}.tar.gz
 BuildRequires:  cmake
 BuildRequires:  llvm-devel = %{version}
-Requires:       llvm
+Requires:       llvm = %{version}
 
 %description
 The compiler-rt project consists of several related runtime libraries for interfacing
@@ -28,8 +30,10 @@ BlocksRuntime is an implementation of Apple "blocks" interface.
 %build
 mkdir -p build
 cd build
-%cmake -DCMAKE_BUILD_TYPE=Release  \
-       -Wno-dev ..
+%cmake \
+        -DCMAKE_BUILD_TYPE=Release  \
+        -DCOMPILER_RT_INSTALL_PATH=%{_prefix}/lib/clang/%{maj_ver} \
+        -Wno-dev ../compiler-rt
 
 %make_build
 
@@ -37,24 +41,32 @@ cd build
 cd build
 %make_install
 
-mkdir -p %{buildroot}%{_libdir}/clang/%{version}/share
-mv -v %{buildroot}%{_datadir}/*list.txt  %{buildroot}%{_libdir}/clang/%{version}/share/
-
-mkdir -p %{buildroot}%{_libdir}/clang/%{version}/lib/linux
-mv -v %{buildroot}%{_prefix}/lib/linux/*clang_rt* %{buildroot}%{_libdir}/clang/%{version}/lib/linux
-
 %files
 %defattr(-,root,root)
 %license LICENSE.TXT
-
-%{_includedir}/fuzzer
-%{_includedir}/profile
-%{_includedir}/sanitizer
-%{_includedir}/xray
-%{_libdir}/clang/%{version}/lib/linux/*
-%{_libdir}/clang/%{version}/share/*
-%{_bindir}/hwasan_symbolize
+%{_libdir}/clang/%{maj_ver}/bin/*
+%{_libdir}/clang/%{maj_ver}/include/*
+%{_libdir}/clang/%{maj_ver}/lib/*
+%{_libdir}/clang/%{maj_ver}/share/*
 
 %changelog
+* Tue Jun 03 2025 Pawel Winogrodzki <pawelwi@microsoft.com> - 18.1.8-1
+- Updated to version 18.1.8.
+
+* Thu Jul 25 2024 Andrew Phelps <anphel@microsoft.com> - 18.1.2-3
+- Fix installation path
+
+* Wed May 29 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 18.1.2-2
+- Bump release to build with new llvm to fix CVE-2024-31852
+
+* Wed Apr 03 2024 Andrew Phelps <anphel@microsoft.com> - 18.1.2-1
+- Upgrade to version 18.1.2
+
+* Mon Jan 29 2024 Nicolas Guibourge <nicolasg@microsoft.com> - 17.0.6-2
+- fix install folder
+
+* Tue Jan 16 2024 Nicolas Guibourge <nicolasg@microsoft.com> - 17.0.6-1
+- Upgrade to 17.0.6
+
 * Tue Dec 06 2022 Adam Schwab <adschwab@microsoft.com> - 12.0.1-1
 - Initial CBL-Mariner import from Fedora 35 (license: MIT). License verified.

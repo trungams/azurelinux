@@ -1,15 +1,18 @@
 Summary:	    Standard Linux utility for controlling network drivers and hardware
 Name:		    ethtool
-Version:        5.16
-Release:        1%{?dist}
+Version:        6.4
+Release:        3%{?dist}
 License:	    GPLv2
 URL:		    https://www.kernel.org/pub/software/network/ethtool/
 Group:		    Productivity/Networking/Diagnostic
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Source0:	    https://www.kernel.org/pub/software/network/%{name}/%{name}-%{version}.tar.xz
 
 BuildRequires: libmnl-devel
+
+# To avoid file conflicts
+Conflicts:      mlnx-ethtool
 
 %description
 ethtool is the standard Linux utility for controlling network drivers and hardware,
@@ -30,14 +33,30 @@ make install DESTDIR=%{buildroot}
 make %{?_smp_mflags} check
 
 %files
-%doc AUTHORS COPYING NEWS README ChangeLog
+%license COPYING LICENSE
+%doc AUTHORS NEWS README ChangeLog
 %defattr(-,root,root)
-%license LICENSE
 /sbin/*
 %{_mandir}
 %{_datadir}/bash-completion/completions/ethtool
 
 %changelog
+* Tue Nov 11 2025 Mayank Singh <mayansingh@microsoft.com> - 6.4-3
+- Updated dependency handling for kexec-tools:
+  Changed from hard dependency on a single package.
+  Allows installation to satisfy dependency with either `ethtool` or `mlnx-ethtool`.
+  Ensures flexibility for image builds and user choice at install time.
+  Added mutual exclusivity between providers to prevent file conflicts.
+
+* Thu May 16 2024 Daniel McIlvaney <damcilva@microsoft.com> - 6.4-2
+- Sanitize license files
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 6.4-1
+- Auto-upgrade to 6.4 - Azure Linux 3.0 - package upgrades
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 5.16-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 *   Mon Jan 24 2022 Cameron Baird <cameronbaird@microsoft.com> - 5.16-1
 -   Update version to 5.16
 

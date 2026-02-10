@@ -2,12 +2,12 @@
 %bcond_without perl_URI_enables_Business_ISBN
 
 Name:           perl-URI
-Version:        1.76
-Release:        8%{?dist}
+Version:        5.21
+Release:        2%{?dist}
 Summary:        A Perl module implementing URI parsing and manipulation
 License:        GPL+ or Artistic
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://metacpan.org/release/URI
 Source0:        https://cpan.metacpan.org/authors/id/O/OA/OALDERS/URI-%{version}.tar.gz#/perl-URI-%{version}.tar.gz
 BuildArch:      noarch
@@ -42,6 +42,8 @@ BuildRequires:  perl(Storable)
 BuildRequires:  perl(Test)
 BuildRequires:  perl(Test::More) >= 0.96
 BuildRequires:  perl(Test::Needs)
+BuildRequires:  perl(Test::Fatal)
+BuildRequires:  perl(Test::Warnings)
 # Runtime
 Requires:       perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 Requires:       perl(Cwd)
@@ -87,18 +89,15 @@ make test
 %{perl_privlib}/URI.pm
 %{perl_privlib}/URI/
 %{_mandir}/man3/URI.3*
-%{_mandir}/man3/URI::Escape.3*
-%{_mandir}/man3/URI::Heuristic.3*
-%{_mandir}/man3/URI::QueryParam.3*
-%{_mandir}/man3/URI::Split.3*
-%{_mandir}/man3/URI::URL.3*
-%{_mandir}/man3/URI::WithBase.3*
-%{_mandir}/man3/URI::_punycode.3*
-%{_mandir}/man3/URI::data.3*
-%{_mandir}/man3/URI::file.3*
-%{_mandir}/man3/URI::ldap.3*
+%{_mandir}/man3/URI::*.3*
 
 %changelog
+* Wed May 21 2025 Riken Maharjan <rmaharjan@microsoft.com> - 5.21-2
+- Fix ptest by adding missing runtime dep
+
+* Mon Dec 18 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 5.21-1
+- Auto-upgrade to 5.21 - Azure Linux 3.0 - package upgrades
+
 * Tue Jul 26 2022 Henry Li <lihl@microsoft.com> - 1.76-8
 - License Verified
 

@@ -1,5 +1,5 @@
 # The source directory.
-%global source_directory 5.2-stable
+%global source_directory 5.3-development
 
 %ifnarch %{ocaml_native_compiler}
 %global __strip /bin/true
@@ -20,18 +20,18 @@
 
 Summary:        Tool for creating supermin appliances
 Name:           supermin
-Version:        5.2.1
-Release:        5%{?dist}
+Version:        5.3.4
+Release:        13%{?dist}
 License:        GPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://github.com/libguestfs/supermin
 Source0:        https://download.libguestfs.org/supermin/%{source_directory}/%{name}-%{version}.tar.gz
 # For automatic RPM dependency generation.
 # See: http://www.rpm.org/wiki/PackagerDocs/DependencyGenerator
 Source3:        supermin.attr
 Source4:        supermin-find-requires
-Patch0:         %{name}-mariner.patch
+Patch0:         %{name}-azurelinux.patch
 
 BuildRequires:  %{_bindir}/pod2html
 BuildRequires:  %{_bindir}/pod2man
@@ -45,7 +45,7 @@ BuildRequires:  findutils
 # into a /boot/<machine-id> subdirectory.  Read the
 # kernel-install script to understand why.
 BuildRequires:  grubby
-BuildRequires:  ocaml
+BuildRequires:  ocaml >= 5.1.1
 BuildRequires:  ocaml-findlib-devel
 BuildRequires:  rpm
 BuildRequires:  rpm-devel
@@ -54,10 +54,10 @@ BuildRequires:  systemd-udev
 %if %{with dietlibc}
 BuildRequires:  dietlibc-devel
 %else
-BuildRequires:  glibc-static >= 2.35-4%{?dist}
+BuildRequires:  glibc-static >= 2.38-18%{?dist}
 %endif
 
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  augeas
 BuildRequires:  hivex
 BuildRequires:  kernel
@@ -71,7 +71,7 @@ Requires:       dnf-plugins-core
 # RHBZ#771310
 Requires:       e2fsprogs-libs >= 1.42
 Requires:       findutils
-Requires:       mariner-release
+Requires:       azurelinux-release
 Requires:       rpm
 Requires:       tar
 Requires:       util-linux-ng
@@ -115,7 +115,7 @@ install -m 0755 %{SOURCE4} %{buildroot}%{_rpmconfigdir}/
 %check
 make check || {
     cat tests/test-suite.log
-    exit 1
+    false
 }
 
 %files
@@ -129,6 +129,80 @@ make check || {
 %{_rpmconfigdir}/supermin-find-requires
 
 %changelog
+* Thu Jan 22 2026 Kanishk Bansal <kanbansal@microsoft.com> - 5.3.4-13
+- Bump to rebuild with updated glibc
+
+* Mon Jan 19 2026 Kanishk Bansal <kanbansal@microsoft.com> - 5.3.4-12
+- Bump to rebuild with updated glibc
+
+* Mon Nov 10 2025 Andrew Phelps <anphel@microsoft.com> - 5.3.4-11
+- Bump to rebuild with updated glibc
+
+* Thu Oct 23 2025 Kanishk Bansal <kanbansal@microsoft.com> - 5.3.4-10
+- Bump to rebuild with updated glibc
+
+* Wed Oct 08 2025 Andrew Phelps <anphel@microsoft.com> - 5.3.4-9
+- Bump to rebuild with updated glibc
+
+* Thu Aug 28 2025 Kanishk Bansal <kanbansal@microsoft.com> - 5.3.4-8
+- Bump to rebuild with updated glibc
+
+* Mon Aug 25 2025 Andrew Phelps <anphel@microsoft.com> - 5.3.4-7
+- Bump to rebuild with updated glibc
+
+* Thu May 22 2025 Kanishk Bansal <kanbansal@microsoft.com> - 5.3.4-6
+- Bump to rebuild with updated glibc
+
+* Mon May 12 2025 Andrew Phelps <anphel@microsoft.com> - 5.3.4-5
+- Bump to rebuild with updated glibc
+
+* Tue Feb 25 2025 Chris Co <chrco@microsoft.com> - 5.3.4-4
+- Bump to rebuild with updated glibc
+
+* Mon Aug 26 2024 Rachel Menge <rachelmenge@microsoft.com> - 5.3.4-3
+- Update to build dep latest glibc-static version
+
+* Wed Aug 21 2024 Chris Co <chrco@microsoft.com> - 5.3.4-2
+- Bump to rebuild with updated glibc
+
+* Tue May 28 2024 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 5.3.4-1
+- Upgrade to version 5.3.4 to support building using ocaml 5.1.1
+- Fixed patch for the test suite
+
+* Wed May 22 2024 Suresh Babu Chalamalasetty <schalam@microsoft.com> - 5.2.2-5
+- update to build dep latest glibc-static version
+
+* Mon May 13 2024 Chris Co <chrco@microsoft.com> - 5.2.2-4
+- Update to build dep latest glibc-static version
+
+* Mon Mar 11 2024 Dan Streetman <ddstreet@microsoft.com> - 5.2.2-3
+- update to build dep latest glibc-static version
+
+* Tue Feb 27 2024 Dan Streetman <ddstreet@microsoft.com> - 5.2.2-2
+- updated glibc-static buildrequires release
+
+* Fri Feb 02 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 5.2.2-1
+- Auto-upgrade to 5.2.2
+
+* Thu Feb 01 2024 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 5.2.1-11
+- Fix patch file with new changed azure linux OS files.
+- Update the runtime dependency from mariner-release to azurelinux-release
+
+* Tue Nov 07 2023 Andrew Phelps <anphel@microsoft.com> - 5.2.1-10
+- Bump release to rebuild against glibc 2.38-1
+
+* Wed Oct 04 2023 Minghe Ren <mingheren@microsoft.com> - 5.2.1-9
+- Bump release to rebuild against glibc 2.35-6
+
+* Tue Oct 03 2023 Mandeep Plaha <mandeepplaha@microsoft.com> - 5.2.1-8
+- Bump release to rebuild against glibc 2.35-5
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 5.2.1-7
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
+* Fri Sep 15 2023 Pawel Winogrodzki <pawelwi@microsoft.com> - 5.2.1-6
+- Removing 'exit 1' from the '%%check' section.
+
 * Wed Jul 05 2023 Andrew Phelps <anphel@microsoft.com> - 5.2.1-5
 - Bump release to rebuild against glibc 2.35-4
 

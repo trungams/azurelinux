@@ -1,15 +1,16 @@
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Summary: A version of the MIT Athena widget set for X
 Name: Xaw3d
-Version: 1.6.3
-Release: 3%{?dist}
-Source0: https://xorg.freedesktop.org/archive/individual/lib/libXaw3d-%{version}.tar.bz2
-Source1: https://xorg.freedesktop.org/archive/individual/lib/libXaw3d-%{version}.tar.bz2.sig
-Source2: mattst88.asc
+Version: 1.6.6
+Release: 1%{?dist}
+Source0: https://xorg.freedesktop.org/archive/individual/lib/libXaw3d-%{version}.tar.xz
+Source1: https://xorg.freedesktop.org/archive/individual/lib/libXaw3d-%{version}.tar.xz.sig
+Source2: alan.coopersmith.asc
+
 Patch5: Xaw3d-1.5-debian-fixes.patch
 Patch7: Xaw3d-1.6.1-3Dlabel.patch
-Patch10: Xaw3d-1.6.1-fontset.patch
+Patch10: Xaw3d-1.6.5-fontset.patch
 Patch11: Xaw3d-1.6.1-hsbar.patch
 
 License: MIT
@@ -63,9 +64,9 @@ package.
 %setup -q -n libXaw3d-%{version}
 # This doesn't apply cleanly, but has not been applied
 #%patch5 -p1 -b .debian
-%patch7 -p1 -b .3Dlabel
-%patch10 -p1 -b .fontset
-%patch11 -p1 -b .hsbar
+%patch 7 -p1 -b .3Dlabel
+%patch 10 -p1 -b .fontset
+%patch 11 -p1 -b .hsbar
 
 
 %build
@@ -88,7 +89,7 @@ rm -r $RPM_BUILD_ROOT%{_docdir}
 
 %files
 %license COPYING
-%doc ChangeLog README src/README.XAW3D
+%doc ChangeLog README.md src/README.XAW3D
 %{_libdir}/*.so.*
 
 %files devel
@@ -97,6 +98,11 @@ rm -r $RPM_BUILD_ROOT%{_docdir}
 %{_includedir}/X11/Xaw3d
 
 %changelog
+
+* Wed Oct 16 2024 Jyoti Kanase <v-jykanase@microsoft.com> - 1.6.6-1
+- Update to 1.6.6
+- License verified
+
 * Fri Oct 15 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.6.3-3
 - Initial CBL-Mariner import from Fedora 32 (license: MIT).
 

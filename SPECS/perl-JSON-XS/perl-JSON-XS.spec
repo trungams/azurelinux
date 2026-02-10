@@ -1,21 +1,21 @@
 # Got the intial spec from Fedora and modified it
 Summary:        JSON serializing/deserializing, done correctly and fast
 Name:           perl-JSON-XS
-Version:        4.03
-Release:        2%{?dist}
+Version:        4.04
+Release:        1%{?dist}
 License:        GPL+ or Artistic
 Group:          Development/Libraries
 URL:            http://search.cpan.org/dist/JSON-XS/
 Source0:        https://cpan.metacpan.org/authors/id/M/ML/MLEHMANN/JSON-XS-%{version}.tar.gz
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 BuildRequires:  perl >= 5.28.0
 BuildRequires:  perl-Canary-Stability
 BuildRequires:  perl-common-sense
 BuildRequires:  perl-generators
 BuildRequires:  perl-Types-Serialiser
 BuildRequires:  perl(ExtUtils::MakeMaker)
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  perl(Test)
 BuildRequires:  perl(Test::More)
 BuildRequires:  perl(Tie::Array)
@@ -60,6 +60,9 @@ make test
 %{_mandir}/man[13]/*
 
 %changelog
+* Thu Sep 11 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 4.04-1
+- Auto-upgrade to 4.04 - for CVE-2025-40928
+
 * Fri Jul 29 2022 Muhammad Falak <mwani@microsoft.com> - 4.03-2
 - Add BR on `perl(ExtUtils::MakeMaker)` & `perl(Test::*)` to enable ptest
 

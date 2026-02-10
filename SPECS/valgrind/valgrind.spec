@@ -1,17 +1,17 @@
 %global security_hardening none
 Summary:        Memory Management Debugger.
 Name:           valgrind
-Version:        3.18.1
-Release:        3%{?dist}
+Version:        3.22.0
+Release:        1%{?dist}
 License:        GPL-2.0-or-later
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Debuggers
 URL:            https://valgrind.org
 Source0:        https://sourceware.org/pub/%{name}/%{name}-%{version}.tar.bz2
 Requires:       glibc-debuginfo
 BuildRequires:  pkg-config
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  docbook-dtd-xml
 %endif
 Provides:       %{name}-devel = %{version}-%{release}
@@ -50,6 +50,12 @@ make %{?_smp_mflags} -k check
 %{_libexecdir}/valgrind/*
 
 %changelog
+* Tue Aug 06 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.22.0-1
+- Bump version to 3.22.0.
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.21.0-1
+- Auto-upgrade to 3.21.0 - Azure Linux 3.0 - package upgrades
+
 * Mon Aug 08 2023 Sam Meluch <sammeluch@microsoft.com> - 3.18.1-3
 - Add glibc-debuginfo to Requires
 

@@ -1,15 +1,17 @@
-Summary: Tool for generating C-based recognizers from regular expressions
-Name: re2c
-Version: 1.1.1
-Release: 5%{?dist}
-License: Public Domain
+Summary: 	Tool for generating C, C++, and go recognizers from regular expressions
+Name: 		re2c
+Version: 	3.1
+Release: 	4%{?dist}
+License: 	Public Domain
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
-URL: http://re2c.org/
-Source: https://github.com/skvadrik/re2c/releases/download/%{version}/re2c-%{version}.tar.gz
+Distribution:   Azure Linux
+URL: 		https://re2c.org/
+Source: 	https://github.com/skvadrik/re2c/releases/download/%{version}/%{name}-%{version}.tar.xz
 
-BuildRequires:  gcc
-BuildRequires:  gcc-c++
+BuildRequires: 	gcc
+BuildRequires: 	gcc-c++
+BuildRequires: 	make
+BuildRequires: 	python3
 
 %description
 re2c is a tool for writing very fast and very flexible scanners. Unlike any
@@ -19,34 +21,73 @@ any traditional lexer offers. And Last but not least re2c generates warning
 free code that is equal to hand-written code in terms of size, speed and
 quality.
 
-
 %prep
 %setup -q
-
 
 %build
 %configure --disable-silent-rules
 %make_build
 
-
 %install
 %make_install
-
 
 %check
 make tests
 
-
 %files
-%license README
-%doc CHANGELOG README examples/ doc/*
+%license LICENSE
+%doc CHANGELOG README.md examples/ doc/*
 %{_bindir}/re2c
+%{_bindir}/re2go
+%{_bindir}/re2rust
+%{_datadir}/re2c/
 %{_mandir}/man1/re2c.1*
-
+%{_mandir}/man1/re2go.1*
+%{_mandir}/man1/re2rust.1*
 
 %changelog
-* Fri Oct 15 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.1.1-5
-- Initial CBL-Mariner import from Fedora 32 (license: MIT).
+* Thu Dec 19 2024 Akhila Guruju <v-guakhila@microsoft.com> - 3.1-4
+- Initial Azure Linux import from Fedora 41 (license: MIT).
+- License verified.
+
+* Fri Jul 19 2024 Fedora Release Engineering <releng@fedoraproject.org> - 3.1-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_41_Mass_Rebuild
+
+* Fri Jan 26 2024 Fedora Release Engineering <releng@fedoraproject.org> - 3.1-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_40_Mass_Rebuild
+
+* Fri Jan 26 2024 Orion Poplawski <orion@nwra.com> - 3.1-1
+- Update to 3.1
+
+* Mon Jan 22 2024 Fedora Release Engineering <releng@fedoraproject.org> - 2.1.1-7
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_40_Mass_Rebuild
+
+* Fri Jul 21 2023 Fedora Release Engineering <releng@fedoraproject.org> - 2.1.1-6
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_39_Mass_Rebuild
+
+* Fri Jan 20 2023 Fedora Release Engineering <releng@fedoraproject.org> - 2.1.1-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_38_Mass_Rebuild
+
+* Sat Jul 23 2022 Fedora Release Engineering <releng@fedoraproject.org> - 2.1.1-4
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_37_Mass_Rebuild
+
+* Fri Jan 21 2022 Fedora Release Engineering <releng@fedoraproject.org> - 2.1.1-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_36_Mass_Rebuild
+
+* Fri Jul 23 2021 Fedora Release Engineering <releng@fedoraproject.org> - 2.1.1-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_35_Mass_Rebuild
+
+* Sun Jun 13 2021 Kyle Lexmond <fedora@kyl191.net> - 2.1.1-1
+- Update to 2.1.1
+
+* Wed Jan 27 2021 Fedora Release Engineering <releng@fedoraproject.org> - 2.0.3-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_34_Mass_Rebuild
+
+* Wed Sep  9 21:15:59 MDT 2020 Orion Poplawski <orion@nwra.com> - 2.0.3-1
+- Update to 2.0.3
+
+* Wed Jul 29 2020 Fedora Release Engineering <releng@fedoraproject.org> - 1.1.1-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_33_Mass_Rebuild
 
 * Thu Jan 30 2020 Fedora Release Engineering <releng@fedoraproject.org> - 1.1.1-4
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_32_Mass_Rebuild

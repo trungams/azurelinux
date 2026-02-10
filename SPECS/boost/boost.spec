@@ -1,17 +1,23 @@
 %define underscore_version %(echo %{version} | cut -d. -f1-3 --output-delimiter="_")
 Summary:        Boost
 Name:           boost
-Version:        1.76.0
-Release:        3%{?dist}
+Version:        1.83.0
+Release:        2%{?dist}
 License:        Boost
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Security
 URL:            https://www.boost.org/
 Source0:        https://downloads.sourceforge.net/boost/%{name}_%{underscore_version}.tar.bz2
-Patch0:         CVE-2018-25032.patch
 BuildRequires:  bzip2-devel
 BuildRequires:  libbacktrace-static
+
+# https://bugzilla.redhat.com/show_bug.cgi?id=2178210
+# https://github.com/boostorg/phoenix/issues/111
+# https://github.com/boostorg/phoenix/issues/115
+Patch0: boost-1.81-phoenix-multiple-defn.patch
+
+%global sonamever %{version}
 
 %description
 Boost provides a set of free peer-reviewed portable C++ source libraries. It includes libraries for
@@ -35,11 +41,38 @@ Requires:       %{name} = %{version}-%{release}
 %description    static
 The boost-static package contains boost static libraries.
 
+%package filesystem
+Summary: Run-time component of boost filesystem library
+Requires: %{name}-system%{?_isa} = %{version}-%{release}
+ 
+%description filesystem
+Run-time support for the Boost Filesystem Library, which provides
+portable facilities to query and manipulate paths, files, and
+directories.
+
+%package random
+Summary: Run-time component of boost random library
+ 
+%description random
+Run-time support for boost random library.
+
+%package system
+Summary: Run-time component of boost system support library
+ 
+%description system
+Run-time component of Boost operating system support library, including
+the diagnostics support that is part of the C++11 standard library.
+
+%package program-options
+Summary:  Run-time component of boost program_options library
+ 
+%description program-options
+Run-time support of boost program options library, which allows program
+developers to obtain (name, value) pairs from the user, via
+conventional methods such as command-line and configuration file.
+
 %prep
-%setup -q -n %{name}_%{underscore_version}
-pushd libs/beast/test/extern/zlib-1.2.11
-%patch0 -p1
-popd
+%autosetup -n %{name}_%{underscore_version} -p1
 
 %build
 ./bootstrap.sh --prefix=%{buildroot}%{_prefix}
@@ -65,7 +98,35 @@ rm -rf %{buildroot}%{_libdir}/cmake
 %defattr(-,root,root)
 %{_libdir}/libboost_*.a
 
+%files filesystem
+%license LICENSE_1_0.txt
+%{_libdir}/libboost_filesystem.so.%{sonamever}
+
+%files program-options
+%license LICENSE_1_0.txt
+%{_libdir}/libboost_program_options.so.%{sonamever}
+	
+%files random
+%license LICENSE_1_0.txt
+%{_libdir}/libboost_random.so.%{sonamever}
+
+%files system
+%license LICENSE_1_0.txt
+%{_libdir}/libboost_system.so.%{sonamever}
+
 %changelog
+* Mon Apr 28 2025 Aninda Pradhan <v-anipradhan@microsoft.com> - 1.83.0-2
+- Adds boost-1.81-phoenix-multiple-defn.patch
+
+* Wed Mar 13 2024 Himaja Kesari <himajakesari@microsoft.com> 
+- Add filesystem, random, system, program-options packages 
+
+* Tue Nov 14 2023 Andrew Phelps <anphel@microsoft.com> - 1.83.0-1
+- Upgrade to version 1.83.0-1
+
+* Wed Oct 25 2023 Rohit Rawat <rohitrawat@microsoft.com> - 1.76.0-4
+- Patch CVE-2023-45853 for zlib
+
 * Thu Apr 20 2023 Sam Meluch <sammeluch@microsoft.com> - 1.76.0-3
 - Add patch for zlib
 - run spec linter

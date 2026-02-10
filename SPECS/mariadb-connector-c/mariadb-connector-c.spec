@@ -2,16 +2,15 @@
 %bcond_with     debug
 Summary:        The MariaDB Native Client library (C driver)
 Name:           mariadb-connector-c
-Version:        3.1.10
-Release:        5%{?dist}
+Version:        3.3.8
+Release:        3%{?dist}
 License:        LGPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://mariadb.org/
 Source0:        https://archive.mariadb.org/connector-c-%{version}/%{name}-%{version}-src.tar.gz
 Source2:        my.cnf
 Source3:        client.cnf
-Patch0:         cmake_3.21.4_fix.patch
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
 # auth_gssapi_client plugin
@@ -23,6 +22,7 @@ BuildRequires:  zlib-devel
 Requires:       %{name}-config = %{version}-%{release}
 # More information: https://mariadb.com/kb/en/mariadb/building-connectorc-from-source/
 Patch1:         testsuite.patch
+Patch2:         lto-type-mismatch.patch
 
 %description
 The MariaDB Native Client library (C driver) is used to connect applications
@@ -30,7 +30,7 @@ developed in C/C++ to MariaDB and MySQL databases.
 
 %package        devel
 Summary:        Development files for mariadb-connector-c
-BuildRequires:  multilib-rpm-config
+%{!?azl:BuildRequires:  multilib-rpm-config}
 Requires:       %{name} = %{version}-%{release}
 Requires:       openssl-devel
 Requires:       zlib-devel
@@ -39,6 +39,14 @@ Conflicts:      community-mysql-devel
 %description devel
 Development files for mariadb-connector-c.
 Contains everything needed to build against libmariadb.so >=3 client library.
+
+%package doc
+Summary:        Manual pages documenting API of the libmariadb.so library
+Requires:       %{name} = %{version}-%{release}
+BuildArch:      noarch
+
+%description doc
+Manual pages documenting API of the libmariadb.so library.
 
 %package        test
 Summary:        Testsuite files for mariadb-connector-c
@@ -67,9 +75,7 @@ and require this package, so the %{_sysconfdir}/my.cnf file is present.
 %autosetup -p1 -n %{name}-%{version}-src
 
 # Remove unsused parts
-rm -r win win-iconv zlib examples
-
-
+rm -rv win win-iconv
 
 %build
 # https://jira.mariadb.org/browse/MDEV-13836:
@@ -119,7 +125,10 @@ cmake -B %{__cmake_builddir} -LAH
 %install
 %cmake_install
 
+# azl does not support multilib, no need for this
+%if ! 0%{?azl}
 %{multilib_fix_c_header} --file %{_includedir}/mysql/mariadb_version.h
+%endif
 
 # Remove static linked libraries and symlinks to them
 rm %{buildroot}%{_libdir}/lib*.a
@@ -146,6 +155,9 @@ pushd unittest/libmariadb/
 %ctest || :
 popd
 
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
 
 %files
 %{_libdir}/libmariadb.so.3
@@ -156,6 +168,10 @@ popd
 
 %doc README
 %license COPYING.LIB
+
+%files doc
+# Library manual pages
+%{_mandir}/man3/{mariadb,mysql}_*.3*
 
 %files devel
 # Binary which provides compiler info for software compiling against this library
@@ -194,6 +210,20 @@ popd
 #      NEW:         PR submitted, problem explained, waiting on upstream response
 
 %changelog
+* Thu Apr 10 2025 Andy Zaugg <azaugg@linkedin.com> - 3.3.8-3
+- Run ldconfig as part of post install to ensure new libs are in ld cache
+
+* Tue Apr 09 2024 Daniel McIlvaney <damcilva@microsoft.com> - 3.3.8-2
+- Remove multilib handling since azl doesn't support it
+
+* Wed Feb 07 2024 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 3.3.8-1
+- Upgrading to version 3.3.8
+- Added docs subpackage
+- Removing unused patch files
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 3.1.10-6
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Fri Jun 17 2022 Andrew Phelps <anphel@microsoft.com> - 3.1.10-5
 - Change Requires to -config package to resolve /etc/my.cnf conflict
 

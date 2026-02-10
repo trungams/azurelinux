@@ -1,13 +1,14 @@
 %global srcname filelock
 Summary:        A platform independent file lock
-Name:           python-%{srcname}
-Version:        3.0.12
-Release:        13%{?dist}
+Name:           python-filelock
+Version:        3.20.3
+Release:        1%{?dist}
 License:        Unlicense
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
-URL:            https://github.com/benediktschmitt/py-filelock
-Source0:        https://github.com/benediktschmitt/py-%{srcname}/archive/v%{version}/py-%{srcname}-%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Distribution:   Azure Linux
+URL:            https://github.com/toxdev/filelock
+Source0:        https://files.pythonhosted.org/packages/source/f/%{srcname}/%{srcname}-%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Patch0:         remove-python-3.14-classifier.patch
 BuildArch:      noarch
 
 %description
@@ -17,22 +18,23 @@ file locking mechanism for Python.
 The lock includes a lock counter and is thread safe. This means, when locking
 the same lock object twice, it will not block.
 
-%package doc
-Summary:        Documentation for %{srcname}, %{summary}
-BuildRequires:  python%{python3_pkgversion}-devel
-BuildRequires:  python%{python3_pkgversion}-sphinx
-BuildRequires:  python%{python3_pkgversion}-sphinx-theme-alabaster
-
-%description doc
-%{summary}
-
 %package -n python%{python3_pkgversion}-%{srcname}
 %{?python_provide:%python_provide python%{python3_pkgversion}-%{srcname}}
 Summary:        %{summary}
 BuildRequires:  python%{python3_pkgversion}-devel
+BuildRequires:  python%{python3_pkgversion}-hatchling
+BuildRequires:  python%{python3_pkgversion}-hatch-vcs
+BuildRequires:  python%{python3_pkgversion}-pathspec
+BuildRequires:  python%{python3_pkgversion}-pip
+BuildRequires:  python%{python3_pkgversion}-pluggy
 BuildRequires:  python%{python3_pkgversion}-setuptools
-BuildRequires:  python%{python3_pkgversion}-sphinx
-BuildRequires:  python%{python3_pkgversion}-sphinx-theme-alabaster
+BuildRequires:  python%{python3_pkgversion}-setuptools_scm
+BuildRequires:  python%{python3_pkgversion}-trove-classifiers
+%if %{with check}
+BuildRequires:  python%{python3_pkgversion}-pytest-asyncio
+BuildRequires:  python%{python3_pkgversion}-pytest
+BuildRequires:  python%{python3_pkgversion}-pytest-mock
+%endif
 
 %description -n python%{python3_pkgversion}-%{srcname}
 This package contains a single module, which implements a platform independent
@@ -42,35 +44,45 @@ The lock includes a lock counter and is thread safe. This means, when locking
 the same lock object twice, it will not block.
 
 %prep
-%autosetup -p1 -n py-%{srcname}-%{version}
+%autosetup -p1 -n %{srcname}-%{version}
+
+%generate_buildrequires
+%pyproject_buildrequires -r
 
 %build
-%py3_build
-
-make -C docs html man SPHINXBUILD=sphinx-build3
-rm docs/build/html/.buildinfo
+%pyproject_wheel
 
 %install
-%py3_install
-
-install -p -m0644 -D docs/build/man/py-%{srcname}.1 %{buildroot}%{_mandir}/man1/py-%{srcname}.1
+%pyproject_install
+%pyproject_save_files %{srcname}
 
 %check
-python%{python3_version} test.py
+sed -i '/asyncio_default_fixture_loop_scope/d' pyproject.toml
+sed -i '/verbosity_assertions/d' pyproject.toml
+pip3 install iniconfig
+pip3 install pytest-virtualenv
+pip3 install pytest-timeout
+pip3 install pytest-asyncio
+%pytest -k "not test_mtime_zero_exit_branch" -v
 
-%files doc
-%license LICENSE
-%doc docs/build/html
-
-%files -n python%{python3_pkgversion}-%{srcname}
-%license LICENSE
+%files -n python%{python3_pkgversion}-%{srcname} -f %{pyproject_files}
 %doc README.md
-%{python3_sitelib}/%{srcname}.py
-%{python3_sitelib}/%{srcname}-%{version}-py%{python3_version}.egg-info
-%{python3_sitelib}/__pycache__/%{srcname}*.py[co]
-%{_mandir}/man1/py-%{srcname}.1.gz
+%license %{python3_sitelib}/%{srcname}-%{version}.dist-info/licenses/LICENSE
 
 %changelog
+* Tue Jan 13 2026 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.20.3-1
+- Auto-upgrade to 3.20.3 - for CVE-2026-22701
+
+* Tue Dec 23 2025 Archana Shettigar <v-shettigara@microsoft.com> - 3.20.1-1
+- Auto-upgrade to 3.20.1 - for CVE-2025-68146
+
+* Fri Apr 26 2024 Osama Esmail <osamaesmail@microsoft.com> - 3.14.0-1
+- Lot of redoing to use pyproject
+- Removing 'docs' subpackage since the new src doesn't include that folder
+- Using literal package name so autoupgrader can do its thing.
+- Updating package folder name in %%autosetup
+- Adding python-iniconfig in check section
+
 * Fri Apr 29 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.0.12-13
 - Updating source URL.
 

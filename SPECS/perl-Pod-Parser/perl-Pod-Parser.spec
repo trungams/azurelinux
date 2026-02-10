@@ -1,10 +1,10 @@
 Summary:        Basic perl modules for handling Plain Old Documentation (POD)
 Name:           perl-Pod-Parser
-Version:        1.63
-Release:        450%{?dist}
+Version:        1.66
+Release:        1%{?dist}
 License:        GPL+ or Artistic
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://metacpan.org/release/Pod-Parser
 Source0:        https://cpan.metacpan.org/authors/id/M/MA/MAREKR/Pod-Parser-%{version}.tar.gz
 BuildArch:      noarch
@@ -26,7 +26,7 @@ BuildRequires:  perl(strict)
 # Symbol not used since perl 5.6
 BuildRequires:  perl(vars)
 # Tests:
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  perl(File::Basename)
 BuildRequires:  perl(FileHandle)
 BuildRequires:  perl(Test)
@@ -72,6 +72,9 @@ make test
 %{_mandir}/man3/*
 
 %changelog
+* Mon Dec 18 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.66-1
+- Auto-upgrade to 1.66 - Azure Linux 3.0 - package upgrades
+
 * Thu Jan 13 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.63-450
 - Adding BR on "perl-generators" to automatically provide Perl modules.
 - License verified.

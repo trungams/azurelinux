@@ -1,10 +1,10 @@
 Summary:        Interface for Python to call C code
 Name:           python-cffi
-Version:        1.15.0
-Release:        2%{?dist}
+Version:        1.16.0
+Release:        1%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Languages/Python
 URL:            https://pypi.python.org/pypi/cffi
 Source0:        https://pypi.python.org/packages/source/c/cffi/cffi-%{version}.tar.gz
@@ -19,7 +19,7 @@ BuildRequires:  python3-devel
 BuildRequires:  python3-pycparser
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-xml
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  curl-devel
 BuildRequires:  openssl-devel
 BuildRequires:  python3-pip
@@ -50,6 +50,12 @@ pip3 install pytest==7.1.2
 %{python3_sitelib}/*
 
 %changelog
+* Tue Jan 23 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.16.0-1
+- Auto-upgrade to 1.16.0 - Azure Linux 3.0 - package upgrades
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 1.15.0-3
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Wed Oct 26 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.15.0-2
 - Freezing 'pytest' test dependency to version 7.1.2.
 

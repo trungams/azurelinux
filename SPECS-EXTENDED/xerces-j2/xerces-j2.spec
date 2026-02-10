@@ -1,5 +1,5 @@
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 #
 # spec file for package xerces-j2
 #
@@ -22,7 +22,7 @@ Distribution:   Mariner
 %define __requires_exclude system.bundle
 Name:           xerces-j2
 Version:        2.12.0
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Java XML parser
 License:        ASL 2.0 and Public Domain and W3C
 Group:          Development/Libraries/Java
@@ -91,10 +91,10 @@ Requires:       %{name} = %{version}-%{release}
 %setup -q -n xerces-%{cvs_version}
 find "(" -name "*.class" -o -name "*.jar" ")" -delete
 find -type f -exec dos2unix {} \;
-%patch0 -p1
-%patch1 -p1
-%patch2
-%patch3 -p1
+%patch 0 -p1
+%patch 1 -p1
+%patch 2
+%patch 3 -p1
 
 %build
 mkdir -p tools
@@ -106,7 +106,7 @@ popd
 
 # Build everything
 export ANT_OPTS="-Xmx256m -Djava.awt.headless=true -Dbuild.sysclasspath=first -Ddisconnected=true"
-ant -Djavac.source=1.6 -Djavac.target=1.6 \
+ant -Djavac.source=1.8 -Djavac.target=1.8 \
     -Dbuild.compiler=modern \
     clean jars javadocs
 
@@ -143,6 +143,8 @@ install -pD -m755 -T %{SOURCE2} %{buildroot}%{_bindir}/%{name}-constants
 install -d -m 755 %{buildroot}%{_mandir}/man1
 install -p -m 644 %{SOURCE3} %{buildroot}%{_mandir}/man1
 install -p -m 644 %{SOURCE4} %{buildroot}%{_mandir}/man1
+mv %{buildroot}%{_javadocdir}/%{name}/other/legal/ADDITIONAL_LICENSE_INFO .
+mv %{buildroot}%{_javadocdir}/%{name}/other/legal/LICENSE .
 
 # demo
 install -pD -T build/xercesSamples.jar %{buildroot}%{_datadir}/%{name}/%{name}-samples.jar
@@ -154,8 +156,8 @@ update-alternatives --remove jaxp_parser_impl %{_javadir}/%{name}.jar >/dev/null
 ln -sf %{name}.jar %{_javadir}/jaxp_parser_impl.jar
 
 %files
-%license LICENSE LICENSE.DOM-documentation.html LICENSE.DOM-software.html LICENSE.resolver.txt LICENSE-SAX.html LICENSE.DOM-documentation.html LICENSE.serializer.txt
-%doc NOTICE README
+%license NOTICE LICENSE LICENSE.DOM-software.html LICENSE.resolver.txt LICENSE-SAX.html LICENSE.DOM-documentation.html LICENSE.serializer.txt
+%doc README
 %{_bindir}/*
 %{_javadir}/*
 %{_mandir}/*/*
@@ -167,12 +169,23 @@ ln -sf %{name}.jar %{_javadir}/jaxp_parser_impl.jar
 %endif
 
 %files javadoc
-%{_javadocdir}/%{name}
+%license LICENSE
+%license ADDITIONAL_LICENSE_INFO
+%exclude /usr/share/javadoc/xerces-j2/xni/legal/ADDITIONAL_LICENSE_INFO
+%exclude /usr/share/javadoc/xerces-j2/xni/legal/LICENSE
+%exclude /usr/share/javadoc/xerces-j2/xs/legal/ADDITIONAL_LICENSE_INFO
+%exclude /usr/share/javadoc/xerces-j2/xs/legal/LICENSE
+
+# Other javadoc files
+%{_javadocdir}/%{name}/*
 
 %files demo
 %{_datadir}/%{name}
 
 %changelog
+* Thu May 22 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 2.12.0-6
+- Fixed the build for 2.12.0
+
 * Thu Oct 14 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.12.0-5
 - Converting the 'Release' tag to the '[number].[distribution]' format.
 - License verified.

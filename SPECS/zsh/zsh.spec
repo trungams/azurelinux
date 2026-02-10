@@ -3,10 +3,10 @@
 Summary:        Z shell
 Name:           zsh
 Version:        5.9
-Release:        2%{?dist}
+Release:        4%{?dist}
 License:        MIT AND GPLv2.0 AND GPLv3.0 AND GPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Shells
 URL:            http://zsh.sourceforge.net/
 Source0:        https://sourceforge.net/projects/%{name}/files/%{name}/%{version}/%{name}-%{version}.tar.xz
@@ -56,6 +56,8 @@ This package contains the Zsh manual in html format.
 
 %prep
 %autosetup -p1
+# fixing ptest
+sed -i 's/egrep/grep -E/g' Test/E01options.ztst
 
 %build
 # make loading of module's dependencies work again (#1277996)
@@ -129,6 +131,12 @@ fi
 %doc Doc/*.html
 
 %changelog
+* Tue Apr 08 2025 Riken Maharjan <rmaharjan@microsoft.com> - 5.9-4
+- Fix ptest by making test stop using egrep.
+
+* Thu Nov 30 2023 Dan Streetman <ddstreet@ieee.org> - 5.9-3
+- Remove umask 027
+
 * Thu Jun 16 2022 Olivia Crain <oliviacrain@microsoft.com> - 5.9-2
 - Fix package install by patching out bad shebangs in included scripts
 

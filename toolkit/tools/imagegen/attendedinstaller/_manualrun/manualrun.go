@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/imagegen/attendedinstaller"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/imagegen/configuration"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/logger"
+	"github.com/microsoft/azurelinux/toolkit/tools/imagegen/attendedinstaller"
+	"github.com/microsoft/azurelinux/toolkit/tools/imagegen/configuration"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/logger"
 )
 
 // manualrun is a tool to test the attendedinstaller in the current terminal window.
@@ -22,11 +22,6 @@ func main() {
 	)
 
 	logger.InitStderrLog()
-
-	// The JSON parser if responsible for filling defaults, since we are
-	// using a Go struct need to manually use the defaults.
-	verityConfig := configuration.GetDefaultReadOnlyVerityRoot()
-	verityConfig.Enable = true
 
 	baseCfg := configuration.Config{
 		SystemConfigs: []configuration.SystemConfig{
@@ -76,40 +71,6 @@ func main() {
 					"/etc/resolv.conf": "/etc/resolv.conf",
 					"/root/.bashrc":    "/root/.bashrc",
 				},
-				PostInstallScripts: []configuration.InstallScript{
-					configuration.InstallScript{
-						Path: "arglessScript.sh",
-					},
-					configuration.InstallScript{
-						Path: "thisOneNeedsArguments.sh",
-						Args: "--input abc --output cba",
-					},
-				},
-				FinalizeImageScripts: []configuration.InstallScript{
-					configuration.InstallScript{
-						Path: "arglessScript.sh",
-					},
-					configuration.InstallScript{
-						Path: "thisOneNeedsArguments.sh",
-						Args: "--input abc --output cba",
-					},
-				},
-			},
-			configuration.SystemConfig{
-				Name: "Read-Only",
-				PackageLists: []string{
-					"packagelists/core-packages-image.json",
-					"packagelists/hyperv-packages.json",
-					"packagelists/read-only-root-packages.json",
-				},
-				KernelOptions: map[string]string{
-					"default": "kernel",
-				},
-				AdditionalFiles: map[string]string{
-					"/etc/resolv.conf": "/etc/resolv.conf",
-					"/root/.bashrc":    "/root/.bashrc",
-				},
-				ReadOnlyVerityRoot: verityConfig,
 				PostInstallScripts: []configuration.InstallScript{
 					configuration.InstallScript{
 						Path: "arglessScript.sh",

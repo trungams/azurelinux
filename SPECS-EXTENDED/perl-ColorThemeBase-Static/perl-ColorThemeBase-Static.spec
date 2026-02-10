@@ -2,11 +2,11 @@
 
 Summary:        Base class for color theme modules with static list of items
 Name:           perl-ColorThemeBase-Static
-Version:        0.008
-Release:        6%{?dist}
+Version:        0.009
+Release:        1%{?dist}
 License:        GPL+ OR Artistic
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://metacpan.org/release/ColorThemeBase-Static/
 Source0:        https://cpan.metacpan.org/authors/id/P/PE/PERLANCAR/ColorThemeBase-Static-%{version}.tar.gz
 
@@ -22,7 +22,7 @@ BuildRequires:  perl(parent)
 BuildRequires:  perl(strict)
 BuildRequires:  perl(warnings)
 
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  perl(File::Spec)
 BuildRequires:  perl(IO::Handle)
 BuildRequires:  perl(IPC::Open3)
@@ -62,6 +62,10 @@ make test
 %{_mandir}/man3/*
 
 %changelog
+* Wed Dec 11 2024 Kevin Lockwood <v-klockwood@microsoft.com> - 0.009-1
+- Update to 0.009
+- License verified.
+
 * Wed Jan 26 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 0.008-6
 - Initial CBL-Mariner import from Fedora 36 (license: MIT).
 - License verified.

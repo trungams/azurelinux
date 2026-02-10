@@ -6,16 +6,16 @@ methods for serializing/deserializing.}
 Summary:        C-style structs for Python
 Name:           python-%{srcname}
 Version:        5.2
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Security
 URL:            https://pypi.python.org/pypi/%{srcname}
 Source0:        https://github.com/andreax79/%{name}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  python3-pip
 BuildRequires:  python3-pytest
 %endif
@@ -39,6 +39,7 @@ Requires:       python3
 %py3_install
 
 %check
+pip3 install iniconfig
 %pytest
 
 %files -n python3-%{srcname}
@@ -46,6 +47,9 @@ Requires:       python3
 %{python3_sitelib}/*
 
 %changelog
+* Tue May 07 2024 Sam Meluch <sammeluch@microsoft.com> - 5.2-2
+- Add missing iniconfig dependency for %check section
+
 * Tue Mar 08 2022 Dallas Delaney <dadelan@microsoft.com> - 5.2-1
 - Original version for CBL-Mariner
 - License verified

@@ -1,10 +1,10 @@
 Summary:        Metapackage with core sets of packages for distroless containers.
 Name:           distroless-packages
-Version:        0.1
-Release:        3%{?dist}
+Version:        %{azl}.0
+Release:        5%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Base
 URL:            https://aka.ms/cbl-mariner
 
@@ -14,8 +14,7 @@ Metapackage holding sets of core packages for different applications.
 %package minimal
 Summary:        The smallest useful package list.
 Requires:       filesystem
-Requires:       mariner-release
-Requires:       prebuilt-ca-certificates
+Requires:       azurelinux-release
 Requires:       tzdata
 
 %description minimal
@@ -28,9 +27,12 @@ Requires:       %{name}-minimal = %{version}-%{release}
 Requires:       filesystem
 Requires:       glibc-iconv
 Requires:       iana-etc
-Requires:       mariner-release
+Requires:       libgcc
+Requires:       azurelinux-release
 Requires:       openssl
 Requires:       openssl-libs
+Requires:       SymCrypt
+Requires:       SymCrypt-OpenSSL
 Requires:       tzdata
 
 %description base
@@ -55,6 +57,21 @@ Requires:       busybox
 %files debug
 
 %changelog
+* Fri Apr 26 2024 Tobias Brick <tobiasb@microsoft.com> - 3.0-5
+- Add SymCrypt and SymCrypt-OpenSSL
+
+* Thu Apr 04 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.0-4
+- Remove dependency on "prebuilt-ca-certificates".
+
+* Fri Mar 22 2024 Mandeep Plaha <mandeepplaha@microsoft.com> - 3.0-3
+- Explicitly add libgcc as a runtime dependency for distroless-base
+
+* Wed Feb 07 2024 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 3.0-2
+- Update the runtime dependency from mariner-release to azurelinux-release
+
+* Mon Jan 22 2024 Betty Lakes <bettylakes@microsoft.com> - 3.0-1
+- Version upgraded to 3.0
+
 * Wed Nov 16 2022 Mandeep Plaha <mandeepplaha@microsoft.com> - 0.1-3
 - Replace prebuilt-ca-certificates-base with prebuilt-ca-certificates in minimal
 - Add tzdata to minimal

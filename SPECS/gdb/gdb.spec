@@ -1,13 +1,18 @@
 Summary:        C debugger
 Name:           gdb
-Version:        11.2
-Release:        1%{?dist}
+Version:        13.2
+Release:        6%{?dist}
 License:        GPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Tools
 URL:            https://www.gnu.org/software/gdb
 Source0:        https://ftp.gnu.org/gnu/%{name}/%{name}-%{version}.tar.xz
+Patch0:         CVE-2023-39128.patch
+Patch1:         CVE-2023-39129.patch
+Patch2:         CVE-2023-39130.patch
+Patch3:         CVE-2025-7546.patch
+Patch4:         CVE-2025-11082.patch
 BuildRequires:  expat-devel
 BuildRequires:  gcc-c++
 BuildRequires:  gcc-gfortran
@@ -17,7 +22,7 @@ BuildRequires:  python3-libs
 BuildRequires:  readline-devel
 BuildRequires:  xz-devel
 BuildRequires:  zlib-devel
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  dejagnu
 BuildRequires:  systemtap-sdt-devel
 %endif
@@ -43,7 +48,9 @@ another program was doing at the moment it crashed.
     --with-system-readline \
     --with-system-zlib \
     --disable-sim \
-    --with-python=%{python3}
+    --with-python=%{python3} \
+    --enable-unit-tests \
+    --enable-targets=all
 %make_build
 
 %install
@@ -59,6 +66,7 @@ rm %{buildroot}%{_includedir}/dis-asm.h
 rm %{buildroot}%{_libdir}/libbfd.a
 rm %{buildroot}%{_libdir}/libopcodes.a
 rm %{buildroot}%{_libdir}/libctf*.a
+rm %{buildroot}%{_libdir}/libsframe.a
 rm %{buildroot}%{_datadir}/locale/de/LC_MESSAGES/opcodes.mo
 rm %{buildroot}%{_datadir}/locale/fi/LC_MESSAGES/bfd.mo
 rm %{buildroot}%{_datadir}/locale/fi/LC_MESSAGES/opcodes.mo
@@ -70,8 +78,18 @@ rm -vf %{buildroot}%{_libdir}/libaarch64-unknown-linux-gnu-sim.a
 
 %check
 # disable security hardening for tests
-rm -f $(dirname $(gcc -print-libgcc-file-name))/../specs
-%make_build check TESTS="gdb.base/default.exp"
+rm -vf $(dirname $(gcc -print-libgcc-file-name))/../specs
+
+# Run unit tests
+pushd gdb
+make run GDBFLAGS='-batch -ex "maintenance selftest"'
+popd
+
+# Remove libctf test suite, which causes compilation errors with the base tests
+rm -rvf libctf/testsuite
+
+# Run base tests
+make check TESTS='gdb.base/default.exp'
 
 %files -f %{name}.lang
 %defattr(-,root,root)
@@ -88,6 +106,28 @@ rm -f $(dirname $(gcc -print-libgcc-file-name))/../specs
 %{_mandir}/*/*
 
 %changelog
+* Fri Oct 03 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 13.2-6
+- Patch for CVE-2025-11082
+
+* Fri Jul 18 2025 Akhila Guruju <v-guakhila@microsoft.com> - 13.2-5
+- Patch CVE-2025-7546
+
+* Mon Feb 03 2025 Andrew Phelps <anphel@microsoft.com> - 13.2-4
+- Enable cross-debugging on all supported targets
+
+* Wed Oct 09 2024 Mitch Zhu <mitchzhu@microsoft.com> - 13.2-3
+- Fix CVE-2023-39128, CVE-2023-39129, CVE-2023-39130
+
+* Fri Aug 16 2024 Andrew Phelps <anphel@microsoft.com> - 13.2-2
+- Fix package tests
+- Enable and run unit tests
+
+* Tue Nov 14 2023 Andrew Phelps <anphel@microsoft.com> - 13.2-1
+- Upgrade to version 13.2
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 11.2-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Wed May 11 2022 Fanzhe Lyu <falyu@microsoft.com> - 11.2
 - Upgrade to gdb 11.2
 

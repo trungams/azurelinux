@@ -1,10 +1,10 @@
 Summary:        Time zone data
 Name:           tzdata
-Version:        2023c
+Version:        2025c
 Release:        1%{?dist}
 License:        Public Domain
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/System
 URL:            https://www.iana.org/time-zones
 Source0:        https://data.iana.org/time-zones/releases/%{name}%{version}.tar.gz
@@ -45,6 +45,18 @@ ln -svf %{_datarootdir}/zoneinfo/UTC %{buildroot}%{_sysconfdir}/localtime
 %{_datadir}/*
 
 %changelog
+* Thu Dec 11 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2025c-1
+- Auto-upgrade to 2025c - upgrade to version 2025c
+
+* Mon Nov 24 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2025b-1
+- Auto-upgrade to 2025b - upgrade to version 2025b
+
+* Sat Jan 18 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2025a-1
+- Auto-upgrade to 2025a - upgrade to version 2025a
+
+* Fri Feb 23 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2024a-1
+- Auto-upgrade to 2024a - Azure Linux 3.0 Upgrades
+
 * Thu Mar 30 2023 CBL-Mariner Service Account <cblmargh@microsoft.com> - 2023c-1
 - Update to version  "2023c".
 

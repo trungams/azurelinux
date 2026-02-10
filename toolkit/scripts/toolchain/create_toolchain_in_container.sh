@@ -10,9 +10,26 @@ MARINER_SPECS_DIR=$2
 MARINER_SOURCE_URL=$3
 INCREMENTAL_TOOLCHAIN=$4
 ARCHIVE_TOOL=$5
+LOG_DIR=$6
+
+if [ -z "$MARINER_BUILD_DIR" ] || [ -z "$MARINER_SPECS_DIR" ] || [ -z "$MARINER_SOURCE_URL" ] || [ -z "$INCREMENTAL_TOOLCHAIN" ] || [ -z "$ARCHIVE_TOOL" ] || [ -z "$LOG_DIR" ]; then
+    echo "Usage: $0 <MARINER_BUILD_DIR> <MARINER_SPECS_DIR> <MARINER_SOURCE_URL> <INCREMENTAL_TOOLCHAIN> <ARCHIVE_TOOL> <LOG_DIR>"
+    exit 1
+fi
 
 # Grab an identity for the raw toolchain components so we can avoid rebuilding it if it hasn't changed
-sha_component_tag=$(sha256sum ./container/toolchain-sha256sums ./container/toolchain_build_in_chroot.sh ./create_toolchain_in_container.sh | sha256sum | cut -d' ' -f1 )
+files_to_watch=(    "./create_toolchain_in_container.sh" \
+                    "./container/Dockerfile" \
+                    "./container/mount_chroot_start_build.sh" \
+                    "./container/sanity_check.sh" \
+                    "./container/toolchain_build_in_chroot.sh" \
+                    "./container/toolchain_build_temp_tools.sh" \
+                    "./container/toolchain_initial_chroot_setup.sh" \
+                    "./container/toolchain-remote-wget-list" \
+                    "./container/toolchain-sha256sums" \
+                    "./container/unmount_chroot.sh" \
+                    "./container/version-check-container.sh" )
+sha_component_tag=$(sha256sum "${files_to_watch[@]}" | sha256sum | cut -d' ' -f1 )
 
 # Check if we already have a committed container with the same sha_component_tag
 if [ "$INCREMENTAL_TOOLCHAIN" != "y" ] || [ -z "$(docker images -q marinertoolchain_populated:${sha_component_tag} 2>/dev/null)" ]; then
@@ -27,24 +44,23 @@ if [ "$INCREMENTAL_TOOLCHAIN" != "y" ] || [ -z "$(docker images -q marinertoolch
     # docker rmi $(docker images -a -q)
     # docker rmi $(docker history marinertoolchain -q)
 
-    # CPIO patch
-    cp -v $MARINER_SPECS_DIR/cpio/cpio_extern_nocommon.patch ./container
-    cp -v $MARINER_SPECS_DIR/cpio/CVE-2021-38185.patch ./container
-    # Coreutils aarch64 patch
-    cp -v $MARINER_SPECS_DIR/coreutils/coreutils-fix-get-sys_getdents-aarch64.patch ./container
-    # Binutils readonly patch
-    cp -v $MARINER_SPECS_DIR/binutils/linker-script-readonly-keyword-support.patch ./container/linker-script-readonly-keyword-support.patch
     # RPM LD_FLAGS patch
     cp -v $MARINER_SPECS_DIR/rpm/define-RPM_LD_FLAGS.patch ./container/rpm-define-RPM-LD-FLAGS.patch
+    # GCC patch
+    cp -v $MARINER_SPECS_DIR/gcc/CVE-2023-4039.patch ./container
 
     # Create .bashrc file for lfs user in the container
     cat > ./container/.bashrc << EOF
+set +h
 umask 022
 LFS=/temptoolchain/lfs
 LC_ALL=POSIX
 LFS_TGT=$(uname -m)-lfs-linux-gnu
-PATH=/tools/bin:/bin:/usr/bin
-export LFS LC_ALL LFS_TGT PATH
+PATH=/usr/bin
+if [ ! -L /bin ]; then PATH=/bin:$PATH; fi
+PATH=$LFS/tools/bin:$PATH
+CONFIG_SITE=$LFS/usr/share/config.site
+export LFS LC_ALL LFS_TGT PATH CONFIG_SITE
 EOF
 
     # Generate toolchain-local-wget-list
@@ -75,14 +91,17 @@ pushd $MARINER_BUILD_DIR/toolchain
 # Pull out the populated toolchain from the container
 docker rm -f marinertoolchain-container-temp 2>/dev/null || true
 temporary_toolchain_container=$(docker create --name marinertoolchain-container-temp marinertoolchain_populated:${sha_component_tag})
+rm -rf ${LOG_DIR}/logs
+mkdir -p ${LOG_DIR}/logs
 docker cp "${temporary_toolchain_container}":/temptoolchain/lfs .
+docker cp "${temporary_toolchain_container}":/temptoolchain/lfs/logs ${LOG_DIR}
 docker rm marinertoolchain-container-temp
 
-rm -rvf ./populated_toolchain
+rm -rf ./populated_toolchain
 mv ./lfs ./populated_toolchain
-rm -rvf ./populated_toolchain/.dockerenv
-rm -rvf ./populated_toolchain/sources
-rm -rvf ./populated_toolchain/tools/libexec/gcc
+rm -rf ./populated_toolchain/.dockerenv
+rm -rf ./populated_toolchain/sources
+rm -rf ./populated_toolchain/tools/libexec/gcc
 
 echo "Compressing toolchain_from_container.tar.gz"
 tar -I "$ARCHIVE_TOOL" -cf toolchain_from_container.tar.gz populated_toolchain
@@ -91,12 +110,14 @@ ls -la ./populated_toolchain
 popd
 
 # Cleanup patch files used in container
-rm -vf ./container/rpm-define-RPM-LD-FLAGS.patch
-rm -vf ./container/coreutils-fix-get-sys_getdents-aarch64.patch
-rm -vf ./container/cpio_extern_nocommon.patch
-rm -vf ./container/CVE-2021-38185.patch
-rm -vf ./container/linker-script-readonly-keyword-support.patch
+rm -vf ./container/*.patch
 rm -vf ./container/.bashrc
 rm -vf ./container/toolchain-local-wget-list
+
+# Ensure the populated toolchain was created successfully
+if [ ! -f ${LOG_DIR}/logs/status_building_in_chroot_complete ]; then
+    echo "Error: Raw toolchain container build failed, check logs in ${LOG_DIR} for details"
+    exit 1
+fi
 
 echo Raw toolchain build complete

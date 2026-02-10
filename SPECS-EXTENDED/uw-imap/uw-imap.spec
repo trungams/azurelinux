@@ -1,5 +1,5 @@
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 
 # Fedora review: http://bugzilla.redhat.com/166008
 
@@ -24,13 +24,12 @@ Distribution:   Mariner
 Summary: UW Server daemons for IMAP and POP network mail protocols
 Name:	 uw-imap 
 Version: 2007f
-Release: 26%{?dist}
+Release: 27%{?dist}
 
 # See LICENSE.txt, http://www.apache.org/licenses/LICENSE-2.0
 License: ASL 2.0 
 URL:	 https://github.com/uw-imap/imap
-# Source0: https://github.com/uw-imap/imap/archive/refs/tags/imap-2007f_upstream.tar.gz
-Source0: https://github.com/uw-imap/imap/archive/refs/tags/imap-%{version}%{?beta}%{?dev}%{?snap}.tar.gz
+Source0: https://github.com/uw-imap/imap/archive/refs/tags/imap-%{version}_upstream.tar.gz#/imap-%{version}.tar.gz
 
 %global soname    c-client
 %global shlibname lib%{soname}.so.%{somajor}
@@ -157,13 +156,13 @@ This package contains some utilities for managing UW IMAP email,including:
 %prep
 %setup -q -n imap-%{version}%{?dev}%{?snap}
 
-%patch1 -p1 -b .paths
-%patch2 -p1 -b .doc
+%patch 1 -p1 -b .paths
+%patch 2 -p1 -b .doc
 
-%patch5 -p1 -b .overflow
+%patch 5 -p1 -b .overflow
 
-%patch9 -p1 -b .shared
-%patch10 -p1 -b .authmd5
+%patch 9 -p1 -b .shared
+%patch 10 -p1 -b .authmd5
 
 
 install -p -m644 %{SOURCE20} imap.pam
@@ -175,13 +174,13 @@ install -p -m644 %{SOURCE20} imap.pam
 
 
 %if 0%{?_with_system_libc_client}
-%patch11 -p1 -b .system_c_client
+%patch 11 -p1 -b .system_c_client
 %endif
 
-%patch12 -p1 -b .fmt-sec
-%patch13 -p1 -b .poll
-%patch14 -p1 -b .openssl11
-%patch15 -p1 -b .ldflags
+%patch 12 -p1 -b .fmt-sec
+%patch 13 -p1 -b .poll
+%patch 14 -p1 -b .openssl11
+%patch 15 -p1 -b .ldflags
 
 
 %build
@@ -202,7 +201,7 @@ export EXTRACFLAGS="$EXTRACFLAGS -Wno-pointer-sign"
 
 
 echo -e "y\ny" | \
-make %{?_smp_mflags} lnp \
+make -j1 lnp \
 IP=6 \
 EXTRACFLAGS="$EXTRACFLAGS" \
 EXTRALDFLAGS="$EXTRALDFLAGS $RPM_LD_FLAGS" \
@@ -328,7 +327,7 @@ done
 %ldconfig_scriptlets -n %{imap_libs}
 
 %files -n %{imap_libs} 
-%doc LICENSE.txt NOTICE SUPPORT 
+%license LICENSE.txt NOTICE SUPPORT
 %doc docs/RELNOTES docs/*.txt
 %ghost %config(missingok,noreplace) %{_sysconfdir}/c-client.cf
 %{_libdir}/lib%{soname}.so.*
@@ -348,6 +347,10 @@ done
 
 
 %changelog
+* Thu Nov 20 2025 Akhila Guruju <v-guakhila@microsoft.com> - 2007f-27
+- Fix build
+- License verified
+
 * Fri Oct 15 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 2007f-26
 - Initial CBL-Mariner import from Fedora 32 (license: MIT).
 

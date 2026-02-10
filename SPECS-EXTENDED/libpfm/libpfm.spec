@@ -9,14 +9,14 @@
 %endif
 
 Name:		libpfm
-Version:	4.10.1
-Release:	11%{?dist}
+Version:	4.13.0
+Release:	1%{?dist}
 
 Summary:	Library to encode performance events for use by perf tool
 
 License:	MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:		http://perfmon2.sourceforge.net/
 Source0:	http://sourceforge.net/projects/perfmon2/files/libpfm4/%{name}-%{version}.tar.gz
 Patch2:		libpfm-python3-setup.patch
@@ -67,7 +67,7 @@ Python bindings for libpfm4 and perf_event_open system call.
 
 %prep
 %setup -q
-%patch2 -p1 -b .python3
+%patch 2 -p1 -b .python3
 
 %build
 %if %{with python}
@@ -115,6 +115,10 @@ make \
 %endif
 
 %changelog
+* Mon Feb 24 2025 Sandeep Karambelkar <skarambelkar@microsoft.com> - 4.13.0-1
+- Upgrade to 4.13.0 to fix build issue and support pcp upgrade
+- License verified
+
 * Fri Oct 15 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 4.10.1-11
 - Initial CBL-Mariner import from Fedora 32 (license: MIT).
 

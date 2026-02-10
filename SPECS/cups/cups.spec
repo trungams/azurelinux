@@ -6,16 +6,14 @@
 # but we use lib for compatibility with 3rd party drivers (at upstream request).
 %global cups_serverbin %{_libdir}/cups
 %global VERSION %{version}
-# Openprinting version
-%global OP_VER op2
 %bcond_with missing_dependencies
 Summary:        CUPS printing system
 Name:           cups
-Version:        2.3.3%{OP_VER}
-Release:        5%{?dist}
+Version:        2.4.16
+Release:        1%{?dist}
 License:        ASL 2.0 with exceptions
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://www.cups.org/
 # Apple stopped uploading the new versions into github, use OpenPrinting fork
 Source0:        https://github.com/OpenPrinting/cups/releases/download/v%{VERSION}/cups-%{VERSION}-source.tar.gz
@@ -231,37 +229,37 @@ to CUPS daemon. This solution will substitute printer drivers and raw queues in 
 %prep
 %setup -q -n cups-%{VERSION}
 # Use the system pam configuration.
-%patch1 -p1 -b .system-auth
+%patch 1 -p1 -b .system-auth
 # Prevent multilib conflict in cups-config script.
-%patch2 -p1 -b .multilib
+%patch 2 -p1 -b .multilib
 # Ignore rpm save/new files in the banners directory.
-%patch3 -p1 -b .banners
+%patch 3 -p1 -b .banners
 # Don't export SSLLIBS to cups-config.
-%patch4 -p1 -b .no-export-ssllibs
+%patch 4 -p1 -b .no-export-ssllibs
 # Allow file-based usb device URIs.
-%patch5 -p1 -b .direct-usb
+%patch 5 -p1 -b .direct-usb
 # Increase driverd timeout to 70s to accommodate foomatic (bug #744715).
-%patch6 -p1 -b .driverd-timeout
+%patch 6 -p1 -b .driverd-timeout
 # Support for errno==ENOSPACE-based USB paper-out reporting.
-%patch7 -p1 -b .usb-paperout
+%patch 7 -p1 -b .usb-paperout
 # Allow the usb backend to understand old-style URI formats.
-%patch8 -p1 -b .uri-compat
+%patch 8 -p1 -b .uri-compat
 # Use IP_FREEBIND socket option when binding listening sockets (bug #970809).
-%patch9 -p1 -b .freebind
+%patch 9 -p1 -b .freebind
 # Fixes for jobs with multiple files and multiple formats.
-%patch10 -p1 -b .ipp-multifile
+%patch 10 -p1 -b .ipp-multifile
 # Increase web interface get-devices timeout to 10s (bug #996664).
-%patch11 -p1 -b .web-devices-timeout
+%patch 11 -p1 -b .web-devices-timeout
 # Add failover backend (bug #1689209)
-%patch12 -p1 -b .failover
+%patch 12 -p1 -b .failover
 # Added IEEE 1284 Device ID for a Dymo device (bug #747866).
-%patch13 -p1 -b .dymo-deviceid
+%patch 13 -p1 -b .dymo-deviceid
 
 # UPSTREAM PATCHES
 
 
 # LSPP support.
-%patch100 -p1 -b .lspp
+%patch 100 -p1 -b .lspp
 
 
 # Log to the system journal by default (bug #1078781, bug #1519331).
@@ -281,7 +279,7 @@ autoconf -f -I config-scripts
 export CC=%{__cc}
 export CXX=%{__cxx}
 # add Mariner specific flags to DSOFLAGS
-export DSOFLAGS="$DSOFLAGS -L../cgi-bin -L../filter -L../ppdc -L../scheduler -Wl,-z,relro -Wl,-z,now -specs=%{_libdir}/rpm/mariner/default-hardened-ld -Wl,-z,relro,-z,now -fPIE -pie"
+export DSOFLAGS="$DSOFLAGS -L../cgi-bin -L../filter -L../ppdc -L../scheduler -Wl,-z,relro -Wl,-z,now -specs=%{_libdir}/rpm/azl/default-hardened-ld -Wl,-z,relro,-z,now -fPIE -pie"
 export CFLAGS="%{optflags} -fstack-protector-all -DLDAP_DEPRECATED=1"
 # --enable-debug to avoid stripping binaries
 %configure --with-docdir=%{_datadir}/%{name}/www --enable-debug \
@@ -513,17 +511,12 @@ rm -f %{cups_serverbin}/backend/smb
 %{_datadir}/cups/ppdc/*.h
 %dir %{_datadir}/cups/templates
 %{_datadir}/cups/templates/*.tmpl
-%dir %{_datadir}/cups/templates/de
+%{_datadir}/cups/templates/da/*.tmpl
 %{_datadir}/cups/templates/de/*.tmpl
-%dir %{_datadir}/cups/templates/es
 %{_datadir}/cups/templates/es/*.tmpl
-%dir %{_datadir}/cups/templates/fr
 %{_datadir}/cups/templates/fr/*.tmpl
-%dir %{_datadir}/cups/templates/ja
 %{_datadir}/cups/templates/ja/*.tmpl
-%dir %{_datadir}/cups/templates/pt_BR
 %{_datadir}/cups/templates/pt_BR/*.tmpl
-%dir %{_datadir}/cups/templates/ru
 %{_datadir}/cups/templates/ru/*.tmpl
 %dir %{_datadir}/%{name}/usb
 %{_datadir}/%{name}/usb/org.cups.usb-quirks
@@ -536,17 +529,14 @@ rm -f %{cups_serverbin}/backend/smb
 %{_datadir}/%{name}/www/index.html
 %{_datadir}/%{name}/www/help
 %{_datadir}/%{name}/www/robots.txt
+%{_datadir}/%{name}/www/apple-touch-icon.png
+%{_datadir}/%{name}/www/da/index.html
 %{_datadir}/%{name}/www/de/index.html
 %{_datadir}/%{name}/www/es/index.html
+%{_datadir}/%{name}/www/fr/index.html
 %{_datadir}/%{name}/www/ja/index.html
-%{_datadir}/%{name}/www/ru/index.html
 %{_datadir}/%{name}/www/pt_BR/index.html
-%{_datadir}/%{name}/www/apple-touch-icon.png
-%dir %{_datadir}/%{name}/www/de
-%dir %{_datadir}/%{name}/www/es
-%dir %{_datadir}/%{name}/www/ja
-%dir %{_datadir}/%{name}/www/pt_BR
-%dir %{_datadir}/%{name}/www/ru
+%{_datadir}/%{name}/www/ru/index.html
 %{_datadir}/pixmaps/cupsprinter.png
 %dir %attr(1770,root,lp) %{_localstatedir}/spool/cups/tmp
 %dir %attr(0710,root,lp) %{_localstatedir}/spool/cups
@@ -592,6 +582,7 @@ rm -f %{cups_serverbin}/backend/smb
 %attr(0644, root, root)%{_unitdir}/%{name}.service
 %attr(0644, root, root)%{_unitdir}/%{name}.socket
 %attr(0644, root, root)%{_unitdir}/%{name}.path
+%attr(0644, root, root)%{_unitdir}/system-%{name}.slice
 
 %files client
 %{_bindir}/cancel*
@@ -623,6 +614,7 @@ rm -f %{cups_serverbin}/backend/smb
 %{_bindir}/cups-config
 %{_includedir}/cups
 %{_libdir}/*.so
+%{_libdir}/pkgconfig/cups.pc
 %{_mandir}/man1/cups-config.1.gz
 %{_rpmconfigdir}/macros.d/macros.cups
 
@@ -650,6 +642,19 @@ rm -f %{cups_serverbin}/backend/smb
 %{_mandir}/man7/ippeveps.7.gz
 
 %changelog
+* Thu Dec 04 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.4.16-1
+- Auto-upgrade to 2.4.16 - for CVE-2025-58436, CVE-2025-61915
+
+* Fri Sep 12 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.4.13-1
+- Auto-upgrade to 2.4.13 - for CVE-2025-58060
+
+* Fri Jul 12 2024 Muhammad Falak <mwani@microsft.com> - 2.4.10-1
+- Upgrade version to 2.4.10
+- Refresh patches to apply cleanly
+
+* Thu Feb 22 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.3.3op2-6
+- Updating naming for 3.0 version of Azure Linux.
+
 * Wed Dec 08 2021 Thomas Crain <thcrain@microsoft.com> - 2.3.3op2-5
 - License verified
 - Lint spec

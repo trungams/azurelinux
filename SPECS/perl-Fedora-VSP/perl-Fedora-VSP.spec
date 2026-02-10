@@ -2,10 +2,10 @@
 Summary:        Perl version normalization for RPM
 Name:           perl-Fedora-VSP
 Version:        0.001
-Release:        19%{?dist}
+Release:        20%{?dist}
 License:        GPLv3+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://ppisar.fedorapeople.org/Fedora-VSP/
 Source0:        %{url}Fedora-VSP-%{version}.tar.gz
 
@@ -19,7 +19,7 @@ Provides:       perl(Fedora::VSP) = %{version}
 BuildRequires:  perl-generators
 %endif
 BuildRequires:  perl(ExtUtils::MakeMaker)
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  perl(Test::More)
 %endif
 
@@ -50,6 +50,9 @@ make test
 %{_mandir}/man3/*
 
 %changelog
+* Fri May 24 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 0.001-20
+- Release bump to regenerate package's requires and provides.
+
 * Tue Aug 16 2022 Muhammad Falak <mwani@microsoft.com> - 0.001-19
 - Add BR on `perl(Test::More)` to fix ptest
 

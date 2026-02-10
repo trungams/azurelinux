@@ -1,16 +1,16 @@
 Summary:        Small build system with focus on speed
 Name:           ninja-build
-Version:        1.10.2
-Release:        2%{?dist}
+Version:        1.11.1
+Release:        1%{?dist}
 License:        ASL 2.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://ninja-build.org
 Source0:        https://github.com/ninja-build/ninja/archive/v%{version}.tar.gz#/ninja-%{version}.tar.gz
 Source1:        macros.ninja
 BuildRequires:  gcc-c++
 BuildRequires:  python3-devel
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  gtest-devel
 %endif
 
@@ -45,6 +45,9 @@ install -Dpm0644 %{SOURCE1} %{buildroot}%{_libdir}/rpm/macros.d/macros.ninja
 %{_libdir}/rpm/macros.d/macros.ninja
 
 %changelog
+* Tue Nov 21 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.11.1-1
+- Auto-upgrade to 1.11.1 - Azure Linux 3.0 - package upgrades
+
 * Tue Apr 19 2022 Olivia Crain <oliviacrain@microsoft.com> - 1.10.2-2
 - Only BR gtest during check builds
 - Change gcc BR to gcc-c++

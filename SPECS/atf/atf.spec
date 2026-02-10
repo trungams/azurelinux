@@ -1,10 +1,10 @@
 Name:          atf
 Version:       0.21
-Release:       1%{?dist}
+Release:       2%{?dist}
 License:       BSD
 Summary:       Automated Testing Framework
 Vendor:        Microsoft Corporation
-Distribution:  Mariner
+Distribution:   Azure Linux
 URL:           https://github.com/jmmv/atf
 Source0:       https://github.com/jmmv/atf/releases/download/%{name}-%{version}/%{name}-%{version}.tar.gz
 Source1:       README
@@ -43,7 +43,7 @@ sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 make %{?_smp_mflags} pkgtestsdir=%{_testsdir} testsdir=%{_testsdir}
 
-%if %{with_check}
+%if 0%{?with_check}
 %check
 make check
 %endif
@@ -195,6 +195,9 @@ applications that use the ATF POSIX shell bindings.
 %{_mandir}/man3/atf-sh-api.3.gz
 
 %changelog
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 0.21-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Thu Jan 06 2022 Nicolas Guibourge <nicolasg@microsoft.com> - 0.21-1
 - Upgrade to version 0.21.
 

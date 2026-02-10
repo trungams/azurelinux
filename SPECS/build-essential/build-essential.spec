@@ -1,21 +1,26 @@
 Summary:        Metapackage to install all build tools
 Name:           build-essential
-Version:        0.1
-Release:        5%{?dist}
+Version:        %{azl}.0
+Release:        3%{?dist}
 License:        GPLv2
+Vendor:         Microsoft Corporation
+Distribution:   Azure Linux
 Requires:       autoconf
 Requires:       automake
 Requires:       binutils
 Requires:       bison
 Requires:       diffutils
+Requires:       file
 Requires:       gawk
 Requires:       gcc
 Requires:       glibc-devel
-Requires:       installkernel
+Requires:       gzip
 Requires:       kernel-headers
 Requires:       libtool
 Requires:       make
 Requires:       patch
+Requires:       pkgconf
+Requires:       tar
 
 %description
 Metapackage to install all build tools
@@ -28,6 +33,16 @@ Metapackage to install all build tools
 %defattr(-,root,root,0755)
 
 %changelog
+* Tue Sep 03 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 3.0-3
+- Add missing Vendor and Distribution tags.
+
+* Tue Feb 27 2024 Chris Gunn <chrisgun@microsoft.com> - 3.0-2
+- Remove installkernel
+
+* Thu Dec 21 2023 Muhammad Falak <mwani@microsoft.com> - 3.0-1
+- Bump version to 3.0
+- Add file, gzip, pkgconf & tar
+
 * Wed Mar 30 2022 Chris Co <chrco@microsoft.com> - 0.1-5
 - Add installkernel
 - License verified

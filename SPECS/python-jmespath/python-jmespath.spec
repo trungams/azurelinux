@@ -1,17 +1,18 @@
 Summary:        Query Language for JSON
 Name:           python-jmespath
-Version:        0.10.0
-Release:        1%{?dist}
+Version:        1.0.1
+Release:        2%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Languages/Python
 URL:            https://pypi.python.org/pypi/jmespath
 Source0:        https://github.com/jmespath/jmespath.py/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  python3-pip
+BuildRequires:  python3-pytest
 %endif
 BuildArch:      noarch
 
@@ -36,7 +37,7 @@ JMESPath (pronounced “james path”) allows you to declaratively specify how t
 ln -sfv jp.py %{buildroot}%{_bindir}/jp.py-%{python3_version}
 
 %check
-pip3 install nose mock
+pip3 install nose mock iniconfig
 %python3 setup.py test
 
 %files -n python3-jmespath
@@ -47,6 +48,9 @@ pip3 install nose mock
 %{_bindir}/jp.py-%{python3_version}
 
 %changelog
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.0.1-1
+- Auto-upgrade to 1.0.1 - Azure Linux 3.0 - package upgrades
+
 * Mon Mar 14 2022 Thomas Crain <thcrain@microsoft.com> - 0.10.0-1
 - Upgrade to latest upstream version
 - Switch source from PyPI to GitHub

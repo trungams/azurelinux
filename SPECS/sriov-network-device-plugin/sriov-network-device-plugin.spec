@@ -1,22 +1,28 @@
 Summary:        Plugin for discovering and advertising networking resources
 Name:           sriov-network-device-plugin
-Version:        3.4.0
-Release:        12%{?dist}
+Version:        3.7.0
+Release:        4%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin
 Source0:        https://github.com/k8snetworkplumbingwg/%{name}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source1:        %{name}-%{version}-vendor.tar.gz
+Patch0:         CVE-2024-45338.patch
+Patch1:		CVE-2024-45339.patch
+Patch2:         CVE-2025-22872.patch
 BuildRequires:  golang
-Requires:       hwdata
 Requires:       gawk
+Requires:       hwdata
 
 %description
 sriov-network-device-plugin is Kubernetes device plugin for discovering and advertising networking
 resources in the form of SR-IOV virtual functions and PCI physical functions
 
 %prep
-%autosetup -p1
+%autosetup -N
+tar -xf %{SOURCE1}
+%autopatch -p1
 
 %build
 go build -mod vendor -o ./build/sriovdp ./cmd/sriovdp/
@@ -24,16 +30,37 @@ go build -mod vendor -o ./build/sriovdp ./cmd/sriovdp/
 %install
 install -D -m0755 build/sriovdp %{buildroot}%{_bindir}/sriovdp
 install -D -m0755 images/entrypoint.sh %{buildroot}%{_bindir}/%{name}-entrypoint.sh
-install -D -m0755 images/ddptool-1.0.1.12.tar.gz %{buildroot}/usr/share/%{name}/ddptool-1.0.1.12.tar.gz
+install -D -m0755 images/ddptool-1.0.1.12.tar.gz %{buildroot}%{_datadir}/%{name}/ddptool-1.0.1.12.tar.gz
 
 %files
 %license LICENSE
 %doc README.md
 %{_bindir}/sriovdp
 %{_bindir}/%{name}-entrypoint.sh
-/usr/share/%{name}/ddptool-1.0.1.12.tar.gz
+%{_datadir}/%{name}/ddptool-1.0.1.12.tar.gz
 
 %changelog
+* Wed Apr 23 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 3.7.0-4
+- Patch CVE-2025-22872
+
+* Fri Jan 31 2025 Kavya Sree Kaitepalli <kkaitepalli@microsoft.com> - 3.7.0-3
+- Patch CVE-2024-45339
+
+* Tue Dec 31 2024 Rohit Rawat <rohitrawat@microsoft.com> - 3.7.0-2
+- Patch CVE-2024-45338
+
+* Thu Jun 06 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.7.0-1
+- Auto-upgrade to 3.7.0 - address CVE-2022-1996
+
+* Mon Oct 16 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.5.1-3
+- Bump release to rebuild with go 1.20.10
+
+* Tue Oct 10 2023 Dan Streetman <ddstreet@ieee.org> - 3.5.1-2
+- Bump release to rebuild with updated version of Go.
+
+* Thu Sep 28 2023 Aditya Dubey <adityadubey@microsoft.com> - 3.5.1-1
+- Upgrade to v3.5.1
+
 * Mon Aug 07 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.4.0-12
 - Bump release to rebuild with go 1.19.12
 

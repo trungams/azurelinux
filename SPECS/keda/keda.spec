@@ -1,10 +1,10 @@
 Summary:        Kubernetes-based Event Driven Autoscaling
 Name:           keda
-Version:        2.4.0
-Release:        13%{?dist}
+Version:        2.14.1
+Release:        9%{?dist}
 License:        ASL 2.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://github.com/kedacore/keda
 #Source0:       https://github.com/kedacore/%%{name}/archive/refs/tags/v%%{version}.tar.gz
 Source0:        %{name}-%{version}.tar.gz
@@ -22,6 +22,18 @@ Source0:        %{name}-%{version}.tar.gz
 #           -cf %%{name}-%%{version}-vendor.tar.gz vendor
 #
 Source1:        %{name}-%{version}-vendor.tar.gz
+Patch0:         CVE-2024-6104.patch
+Patch1:         CVE-2024-45338.patch
+Patch2:         CVE-2025-27144.patch
+Patch3:         CVE-2025-22868.patch
+Patch4:         CVE-2025-29786.patch
+Patch5:         CVE-2025-30204.patch
+Patch6:         CVE-2025-29923.patch
+Patch7:         CVE-2025-22870.patch
+Patch8:         CVE-2024-51744.patch
+Patch9:         CVE-2025-22872.patch
+Patch10:        CVE-2025-68156.patch
+Patch11:        CVE-2025-68476.patch
 BuildRequires:  golang >= 1.15
 
 %description
@@ -29,32 +41,77 @@ KEDA is a Kubernetes-based Event Driven Autoscaling component.
 It provides event driven scale for any container running in Kubernetes 
 
 %prep
-%setup -q
+%autosetup -p1 -a1
 
 %build
-# create vendor folder from the vendor tarball and set vendor mode
-tar -xf %{SOURCE1} --no-same-owner
 export LDFLAGS="-X=github.com/kedacore/keda/v2/version.GitCommit= -X=github.com/kedacore/keda/v2/version.Version=main"
 
-go build -ldflags "$LDFLAGS" -mod=vendor -v -o bin/keda main.go
+go build -ldflags "$LDFLAGS" -mod=vendor -v -o bin/keda cmd/operator/main.go
 
 gofmt -l -w -s .
 go vet ./...
 
-go build -ldflags "$LDFLAGS" -mod=vendor -v -o bin/keda-adapter adapter/main.go
+go build -ldflags "$LDFLAGS" -mod=vendor -v -o bin/keda-adapter cmd/adapter/main.go
+
+go build -ldflags "$LDFLAGS" -mod=vendor -v -o bin/keda-admission-webhooks cmd/webhooks/main.go
 
 %install
 mkdir -p %{buildroot}%{_bindir}
 cp ./bin/keda %{buildroot}%{_bindir}
 cp ./bin/keda-adapter %{buildroot}%{_bindir}
+cp ./bin/keda-admission-webhooks %{buildroot}%{_bindir}
 
 %files
 %defattr(-,root,root)
 %license LICENSE
 %{_bindir}/%{name}
 %{_bindir}/%{name}-adapter
+%{_bindir}/%{name}-admission-webhooks
 
 %changelog
+* Fri Jan 02 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.14.1-9
+- Patch for CVE-2025-68476
+
+* Fri Dec 19 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.14.1-8
+- Patch for CVE-2025-68156
+
+* Fri Apr 25 2025 Kanishk Bansal <kanbansal@microsoft.com> - 2.14.1-7
+- Patch CVE-2025-22872
+
+* Thu Apr 17 2025 Sudipta Pandit <sudpandit@microsoft.com> - 2.14.1-6
+- Fixes an incorrect patch introduced with the patch for CVE-2025-29923
+- Fixes patches being overridden during the build step
+- Fixes CVE-2025-22870 and CVE-2024-51744
+
+* Sun Mar 30 2025 Kanishk Bansal <kanbansal@microsoft.com> - 2.14.1-5
+- Patch CVE-2025-30204, CVE-2025-29923
+
+* Mon Mar 24 2025 Kshitiz Godara <kgodara@microsoft.com> - 2.14.1-4
+- Fix CVE-2025-29786 with an upstream patch
+
+* Mon Mar 03 2025 Kanishk Bansal <kanbansal@microsoft.com> - 2.14.1-3
+- Fix CVE-2025-27144, CVE-2025-22868 with an upstream patch
+
+* Wed Jan 08 2025 <rohitrawat@microsoft.com> - 2.14.1-2
+- Add patch for CVE-2024-45338
+
+* Fri Sep 27 2024 Archana Choudhary <archana1@microsoft.com> - 2.14.1-1
+- Upgrade to 2.14.1
+- Fix CVE-2024-35255 in github.com/Azure/azure-sdk-for-go/sdk/azidentity 
+
+* Thu Aug 01 2024 Bala <balakumaran.kannan@microsoft.com> - 2.14.0-2
+- Added CVE-2024-6104.patch
+
+* Mon May 06 2024 Sean Dougherty <sdougherty@microsoft.com> - 2.14.0-1
+- Upgrade to 2.14.0 for Azure Linux 3.0
+- Added keda-admission-webhooks binary, added to KEDA in v2.10.0
+
+* Mon Oct 16 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.4.0-15
+- Bump release to rebuild with go 1.20.10
+
+* Tue Oct 10 2023 Dan Streetman <ddstreet@ieee.org> - 2.4.0-14
+- Bump release to rebuild with updated version of Go.
+
 * Mon Aug 07 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.4.0-13
 - Bump release to rebuild with go 1.19.12
 

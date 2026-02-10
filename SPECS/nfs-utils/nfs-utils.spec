@@ -1,7 +1,7 @@
 Summary:        NFS client utils
 Name:           nfs-utils
-Version:        2.5.4
-Release:        2%{?dist}
+Version:        2.6.4
+Release:        4%{?dist}
 License:        MIT and GPLv2 and GPLv2+ and BSD
 URL:            https://linux-nfs.org/
 Group:          Applications/Nfs-utils-client
@@ -14,26 +14,26 @@ Source5:        nfs-utils.defaults
 Source6:        nfs-server.service
 Source7:        nfs-mountd.service
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 
-BuildRequires:  libtool
+BuildRequires:  e2fsprogs-devel
+BuildRequires:  device-mapper-devel
+BuildRequires:  keyutils-devel
 BuildRequires:  krb5-devel
 BuildRequires:  libcap-devel
-BuildRequires:  libtirpc-devel
-BuildRequires:  python3-devel
 BuildRequires:  libevent-devel
-BuildRequires:  device-mapper-devel
-BuildRequires:  systemd-devel
-BuildRequires:  keyutils-devel
+BuildRequires:  libgssglue-devel
+BuildRequires:  libtirpc-devel >= 1.3.4
+BuildRequires:  libtool
+BuildRequires:  python3-devel
 BuildRequires:  sqlite
 BuildRequires:  sqlite-devel
-BuildRequires:  libgssglue-devel
-BuildRequires:  e2fsprogs-devel
+BuildRequires:  systemd-devel
 Requires:       libnfsidmap
 Requires:       libtirpc
+Requires:       python3-libs
 Requires:       rpcbind
 Requires:       shadow-utils
-Requires:       python3-libs
 Requires(pre):  /usr/sbin/useradd /usr/sbin/groupadd
 Requires(postun):/usr/sbin/userdel /usr/sbin/groupdel
 
@@ -82,6 +82,7 @@ sed -i 's/RPCGEN_PATH" =/rpcgen_path" =/' configure
             --enable-libmount-mount     \
             --without-tcp-wrappers      \
             --enable-gss                \
+            --enable-svcgss             \
             --enable-nfsv4              \
             --with-rpcgen=internal      \
             --disable-static
@@ -90,6 +91,7 @@ sed -i 's/RPCGEN_PATH" =/rpcgen_path" =/' configure
 sed -i 's/-Werror=strict-prototypes/-Wno-error=strict-prototypes/' support/nsm/Makefile
 sed -i 's/CFLAGS = -g/CFLAGS = -Wno-error=strict-prototypes/' support/nsm/Makefile
 make %{?_smp_mflags}
+
 %install
 make DESTDIR=%{buildroot} install
 install -v -m644 utils/mount/nfsmount.conf /etc/nfsmount.conf
@@ -98,6 +100,7 @@ mkdir -p %{buildroot}/lib/systemd/system/
 mkdir -p %{buildroot}/etc/default
 mkdir -p %{buildroot}/etc/export.d
 mkdir -p %{buildroot}/var/lib/nfs/v4recovery
+mkdir -p %{buildroot}/etc/request-key.d
 touch %{buildroot}/etc/exports
 
 install -m644 %{SOURCE1} %{buildroot}/lib/systemd/system/
@@ -112,6 +115,10 @@ install -m644 systemd/nfs-idmapd.service %{buildroot}/lib/systemd/system/
 install -m644 systemd/rpc_pipefs.target  %{buildroot}/lib/systemd/system/
 install -m644 systemd/var-lib-nfs-rpc_pipefs.mount  %{buildroot}/lib/systemd/system/
 install -m644 systemd/rpc-svcgssd.service %{buildroot}/lib/systemd/system/
+install -m644 systemd/rpc-gssd.service %{buildroot}/lib/systemd/system/
+install -m644 support/nfsidmap/idmapd.conf %{buildroot}/etc/
+install -m644 utils/nfsidmap/id_resolver.conf %{buildroot}/etc/request-key.d/
+
 find %{buildroot}/%{_libdir} -name '*.la' -delete
 
 install -vdm755 %{buildroot}/usr/lib/systemd/system-preset
@@ -125,10 +132,10 @@ make check
 
 %pre
 if ! getent group nobody >/dev/null; then
-    groupadd -r nobody
+    groupadd -r -g 65534 nobody
 fi
 if ! getent passwd nobody >/dev/null; then
-    useradd -g named -s /bin/false -M -r nobody
+    useradd -g named -u 65534 -s /bin/false -M -r nobody
 fi
 
 %post
@@ -152,10 +159,14 @@ fi
 %{_sharedstatedir}/*
 %config(noreplace) /etc/default/nfs-utils
 %config(noreplace) /etc/exports
+%config(noreplace) /etc/request-key.d/id_resolver.conf
 /lib/systemd/system/*
 %{_libdir}/systemd/system-preset/50-nfs-server.preset
+%{_libexecdir}/nfsrahead
+%{_udevrulesdir}/99-nfs.rules
 
 %files -n libnfsidmap
+%config(noreplace) /etc/idmapd.conf
 %{_libdir}/libnfsidmap.so.*
 %{_libdir}/libnfsidmap/*.so
 
@@ -167,6 +178,22 @@ fi
 %{_libdir}/libnfsidmap.so
 
 %changelog
+* Tue Apr 1 2025 Bhagyashri Pathak <bhapathak@microsoft.com> - 2.6.4-4
+- Build nfs-utils to include idmapd.conf and id_resolver.conf
+
+* Mon Aug 26 2024 Suresh Thelkar <sthelkar@microsoft.com> - 2.6.4-3
+- Build nfs-utils to provide rsc.svcgssd service
+- Add rsc-gssd.service file to nfs-utils package
+
+* Tue Mar 12 2024 Rachel Menge <rachelmenge@microsoft.com> - 2.6.4-2
+- Cherry-pick fix post-install script to create nobody user instead of named user
+
+* Tue Jan 02 2024 Rachel Menge <rachelmenge@microsoft.com> - 2.6.4-1
+- Update to version 2.6.4
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 2.5.4-3
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Tue Nov 30 2021 Thomas Crain <thcrain@microsoft.com> - 2.5.4-2
 - Remove python shebang line fixes (fixed upstream)
 

@@ -1,15 +1,19 @@
 %{!?python3_sitelib: %global python3_sitelib %(python3 -c "from distutils.sysconfig import get_python_lib;print(get_python_lib())")}
 Summary:        A set of tools to gather troubleshooting information from a system
 Name:           sos
-Version:        4.4
+Version:        4.6.1
 Release:        2%{?dist}
-License:        GPLv2+
+License:        GPL-2.0-or-later
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://github.com/sosreport/sos
-#Source0:       https://github.com/sosreport/sos/archive/%%{version}.tar.gz
-Source0:        %{name}-%{version}.tar.gz
-BuildRequires:  gettext
+Source0:        https://github.com/sosreport/sos/archive/%{version}.tar.gz#/%{name}-%{version}.tar.gz
+# The sos-4.6.1.tar.gz is missing a commit to bump the version to 4.6.1
+# https://github.com/orgs/sosreport/discussions/3492
+Patch0:         bump-version-4-6-1.patch
+Patch1:         create-azure-plugin.patch
+Patch2:         copy-kernel-config.patch
+Patch3:         create-azure-kdump-class.patch
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 Requires:       bzip2
@@ -18,8 +22,9 @@ Requires:       python3-libxml2
 Requires:       python3-magic
 Requires:       python3-pexpect
 Requires:       python3-rpm
-Requires:       tar
-Requires:       xz
+Requires:       python3-setuptools
+# Mandatory just for uploading to a SFTP server:
+Recommends:     python3-requests
 BuildArch:      noarch
 
 %description
@@ -29,7 +34,7 @@ diagnostic purposes and debugging. Sos is commonly used to help
 support technicians and developers.
 
 %prep
-%autosetup -n %{name}-%{version}
+%autosetup -p1 -n %{name}-%{version}
 
 %build
 python3 setup.py build
@@ -52,7 +57,9 @@ rm -rf %{buildroot}%{_prefix}/config/
 
 %find_lang %{name} || echo 0
 
-%files -f %{name}.lang
+# internationalization is currently broken. Uncomment this line once fixed.
+# %%files -f %%{name}.lang
+%files
 %license LICENSE
 %doc AUTHORS README.md
 %{_sbindir}/sos
@@ -69,6 +76,15 @@ rm -rf %{buildroot}%{_prefix}/config/
 %config(noreplace) %{_sysconfdir}/sos/sos.conf
 
 %changelog
+* Wed Apr 24 2024 Aadhar Agarwal <aadagarwal@microsoft.com> - 4.6.1-2
+- Backport a patch that adds an AzurePlugin class
+- Backport a patch to copy the kernel config
+- Backport a patch that adds an AzureKDump class
+
+* Tue Jan 15 2024 Aadhar Agarwal <aadagarwal@microsoft.com> - 4.6.1-1
+- Upgrade to 4.6.1
+- Migrated to SPDX license
+
 * Mon Apr 03 2023 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 4.4-2
 - Fixing missing runtime dep of python3-magic
 

@@ -1,7 +1,9 @@
+%define _build_id_links none
+
 # Shared object version of libkcapi.
 %global vmajor            1
-%global vminor            3
-%global vpatch            1
+%global vminor            5
+%global vpatch            0
 # This package needs at least Linux Kernel v4.10.0.
 %global min_kernel_ver    4.10.0
 # Do we need to tweak sysctl.d? In newer versions of the Linux
@@ -17,11 +19,11 @@
 %global test_optmem_max   %(cat /proc/sys/net/core/optmem_max || echo 0)
 # For picking patches from upstream commits or pull requests.
 %global giturl            https://github.com/smuellerDD/%{name}
-%global apps_hmaccalc sha1hmac sha224hmac sha256hmac sha384hmac sha512hmac
-%global apps_fipscheck sha1sum sha224sum sha256sum sha384sum sha512sum md5sum fipscheck fipshmac
+%global apps_hmaccalc sha1hmac sha224hmac sha256hmac sha384hmac sha512hmac sm3hmac
+%global apps_fipscheck sha1sum sha224sum sha256sum sha384sum sha512sum md5sum sm3sum fipscheck fipshmac
 # Use OpenSSL to perform hmac calculations
-%global sha512hmac bash %{_sourcedir}/sha512hmac-openssl.sh
-%global fipshmac   bash %{_sourcedir}/fipshmac-openssl.sh
+%global sha512hmac bin/kcapi-hasher -n sha512hmac
+%global fipshmac   bin/kcapi-hasher -n fipshmac
 # Add generation of HMAC checksums of the final stripped
 # binaries.  %%define with lazy globbing is used here
 # intentionally, because using %%global does not work.
@@ -36,6 +38,7 @@ for app in %{apps_hmaccalc}; do                                  \
   { %{sha512hmac} "$bin_path"/$app || exit 1; }                    \\\
     | cut -f 1 -d ' ' >"$lib_path"/hmaccalc/$app.hmac            \
 done                                                             \
+mkdir "$lib_path"/fipscheck/                                     \
 for app in %{apps_fipscheck}; do                                 \
   test -e "$bin_path"/$app || continue                           \
   %{fipshmac} -d "$lib_path"/fipscheck "$bin_path"/$app || exit 1  \
@@ -44,6 +47,10 @@ done                                                             \
   "$lib_path"/libkcapi.so.%{version} || exit 1                   \
 ln -s libkcapi.so.%{version}.hmac                            \\\
   "$lib_path"/fipscheck/libkcapi.so.%{vmajor}.hmac               \
+{ %{sha512hmac} "$lib_path"/libkcapi.so.%{version} || exit 1; }      \\\
+    | cut -f 1 -d ' ' >"$lib_path"/hmaccalc/libkcapi.so.%{version}.hmac    \
+ln -s libkcapi.so.%{version}.hmac                            \\\
+  "$lib_path"/hmaccalc/libkcapi.so.%{vmajor}.hmac               \
 %{nil}
 %global fipscheck_next_evr     1.5.0-10%{?dist}
 %global hmaccalc_next_evr      0.9.14-11%{?dist}
@@ -61,11 +68,9 @@ Version:        %{vmajor}.%{vminor}.%{vpatch}
 Release:        2%{?dist}
 License:        BSD OR GPLv2
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://www.chronox.de/%{name}.html
-Source0:        https://www.chronox.de/%{name}/%{name}-%{version}.tar.xz
-Source1:        sha512hmac-openssl.sh
-Source2:        fipshmac-openssl.sh
+Source0:        https://www.chronox.de/%{name}/releases/%{version}/%{name}-1.5.0.tar.xz
 BuildRequires:  bash
 BuildRequires:  clang
 BuildRequires:  coreutils
@@ -79,6 +84,7 @@ BuildRequires:  systemd
 BuildRequires:  xmlto
 # For ownership of %%{_sysctldir}.
 Requires:       systemd
+BuildRequires:  systemd-rpm-macros
 Obsoletes:      %{name}-replacements <= %{version}-%{release}
 
 %description
@@ -202,7 +208,13 @@ install -Dpm 0644 -t %{buildroot}%{_sysctldir} \
 
 rm -f                            \
   %{buildroot}%{_bindir}/md5sum       \
-  %{buildroot}%{_bindir}/sha*sum
+  %{buildroot}%{_bindir}/sha*sum      \
+  %{buildroot}%{_bindir}/sm*sum
+
+# Create hard-links to alias dracut-expected sha* bins to new kcapi-hasher bin.
+for app in %{apps_hmaccalc}; do
+  ln %{buildroot}%{_bindir}/kcapi-hasher %{buildroot}%{_bindir}/$app || exit 1;
+done
 
 # We don't ship autocrap dumplings.
 find %{buildroot} -type f -name "*.la" -delete -print
@@ -234,28 +246,48 @@ find %{buildroot} -type f -name "*.la" -delete -print
 %{_libdir}/pkgconfig/%{name}.pc
 
 %files hmaccalc
+%{_bindir}/kcapi-hasher
 %{_bindir}/sha*hmac
+%{_bindir}/sm*hmac
+/%{_lib}/hmaccalc/%{name}.so.%{vmajor}.hmac
+/%{_lib}/hmaccalc/%{name}.so.%{version}.hmac
 /%{_lib}/hmaccalc/sha*hmac.hmac
+/%{_lib}/hmaccalc/sm*hmac.hmac
+%{_libexecdir}/%{name}/sha*hmac
+%{_libexecdir}/%{name}/sm*hmac
 
 %files fipscheck
-%{_bindir}/fips*
-/%{_lib}/fipscheck/fips*.hmac
-
-%files hmaccalc
-%{_bindir}/sha*hmac
-/%{_lib}/hmaccalc/sha*hmac.hmac
+%{_libexecdir}/%{name}/fips*
 
 %files static
 /%{_lib}/%{name}.a
 
 %files tools
-%{_bindir}/kcapi*
+%{_bindir}/kcapi
+%{_bindir}/kcapi-convenience
+%{_bindir}/kcapi-dgst
+%{_bindir}/kcapi-enc-test-large
+%{_bindir}/kcapi-rng
+%{_bindir}/kcapi-speed
 %{_mandir}/man1/kcapi*.1.*
 
 %files tests
 %{_libexecdir}/%{name}/*
 
 %changelog
+* Tue May 28 2024 Cameron Baird <cameronbaird@microsoft.com> - 1.5.0-2
+- Install hard links from apps_hmaccalc to kcapi-hasher to
+    resolve incompatibility with dracut.
+- Install sha512hmac measurement of libkcapi.so.ver in /lib/hmaccalc dir
+    to satisfy kcapi-hasher self-check during initramfs fips check.
+- Drop openssl helper scripts since we rely on kcapi-hasher instead.
+
+* Tue Feb 13 2024 Mitch Zhu <mitchzhu@microsoft.com> - 1.5.0-1
+- Upgrade to version 1.5.0
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 1.3.1-3
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Thu Jan 19 2023 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.3.1-2
 - Fixing 'Obsoletes' and 'Provides' for 'fipscheck' and 'hmaccalc' subpackages.
 

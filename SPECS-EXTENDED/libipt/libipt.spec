@@ -1,9 +1,9 @@
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 %global __cmake_in_source_build 1
 
 Name: libipt
-Version: 2.0.5
+Version: 2.1.1
 Release: 1%{?dist}
 Summary: Intel Processor Trace Decoder Library
 License: BSD
@@ -37,7 +37,7 @@ develop programs that use the Intel Processor Trace (Intel PT) Decoder Library.
 
 %prep
 %setup -q -n libipt-%{version}
-%patch0 -p1
+%patch 0 -p1
 
 %build
 %cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -71,6 +71,10 @@ ctest -V %{?_smp_mflags}
 %endif
 
 %changelog
+* Mon Nov 04 2024 Kevin Lockwood <v-klockwood@microsoft.com> - 2.1.1-1
+- Update to 2.1.1-1
+- License verified.
+
 * Fri Mar 04 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.0.5-1
 - Updating to version 2.0.5 using Fedora 36 spec (license: MIT) for guidance.
 - License verified.

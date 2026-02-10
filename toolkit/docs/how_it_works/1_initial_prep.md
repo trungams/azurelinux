@@ -45,7 +45,7 @@ If the `TOOLCHAIN_ARCHIVE` variable is not set, but `REBUILD_TOOLCHAIN=y` is, th
 The chroot worker is an archive containing all the toolchain RPMs installed into a chroot environment. This archive can be extracted into a folder, then a chroot call can be made to switch into the environment. Once in the chroot environment only the RPM based tools and filesystem are available. This creates a clean build environment.
 
 The chroot worker is used at several points to perform various tasks using the RPM packaged tools without interfering with the host system. The three major ones are:
-1) Processing spec files using Mariner's RPM macros.
+1) Processing spec files using Azure Linux's RPM macros.
 2) Using `tdnf` to download packages.
 3) Building new packages using only the RPM based compilers/tools etc.
 
@@ -88,6 +88,8 @@ The `imagepkgfetcher` tool is similar to the `graphpkgfetcher` tool. It will fin
 The `imager` tool is responsible for composing an image based on the selected configuration file. It creates partitions, installs packages, configures the users, etc. It can output either a `*.raw` file or a simple filesystem.
 #### isomaker
 The `isomaker` tool creates an installable ISO which can be booted from a CD or other device. The ISO contains the `initrd` used to boot from a read-only device, and all the packages needed to create a copy of the selected configuration on a new computer.
+#### licensechecker
+The `licensechecker` tool is used to validate the licensing files in packages. It will check all `*.rpm` files in a directory and provide a list of issues found.
 #### liveinstaller
 The `liveinstaller` tool is included in the ISO `initrd` and is responsible for installing the requested image onto a new computer.
 #### pkgworker

@@ -15,10 +15,10 @@
 Summary:        GTK+ graphical user interface library
 Name:           gtk2
 Version:        2.24.32
-Release:        10%{?dist}
+Release:        12%{?dist}
 License:        LGPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://www.gtk.org
 Source0:        https://download.gnome.org/sources/gtk+/2.24/gtk+-%{version}.tar.xz
 Source2:        update-gtk-immodules
@@ -36,6 +36,7 @@ Patch15:        window-dragging.patch
 # Backported from upstream:
 Patch20:        0001-calendar-Use-the-new-OB-format-if-supported.patch
 Patch21:        0001-Fix-compiler-warnings-with-GCC-8.1.patch
+Patch22:        CVE-2024-6655.patch
 BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  cairo-devel
@@ -317,6 +318,12 @@ gtk-query-immodules-2.0-%{__isa_bits} --update-cache
 %doc tmpdocs/examples
 
 %changelog
+* Tue Jul 23 2024 Zhichun Wan <zhichunwan@microsoft.com> - 2.24.32-12
+- Patch CVE-2024-6655
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 2.24.32-11
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Wed Dec 08 2021 Thomas Crain <thcrain@microsoft.com> - 2.24.32-10
 - License verified
 - Lint spec
@@ -457,7 +464,7 @@ gtk-query-immodules-2.0-%{__isa_bits} --update-cache
 - Resolves: #973730
 
 * Sat Jun 22 2013 Matthias Clasen <mclasen@redhat.com> - 2.24.19-2
-- Trim %%changelog
+- Trim changelog
 
 * Sun Jun 16 2013 Matthias Clasen <mclasen@redhat.com> - 2.24.19-1
 - Update to 2.24.19
@@ -476,7 +483,8 @@ gtk-query-immodules-2.0-%{__isa_bits} --update-cache
 
 * Thu Feb 21 2013 Ville Skyttä <ville.skytta@iki.fi> - 2.24.15-2
 - Fix %%postun error on one-arch erase on multilib (#696358).
-- Fix bogus dates in %%changelog, other cosmetic specfile tweaks.
+- Fix bogus dates in changelog
+- other cosmetic specfile tweaks.
 
 * Sun Feb 10 2013 Kalev Lember <kalevlember@gmail.com> - 2.24.15-1
 - Update to 2.24.15
@@ -1423,7 +1431,8 @@ gtk-query-immodules-2.0-%{__isa_bits} --update-cache
 - Fix a double free in the file chooser
 
 * Tue Feb  7 2006 Christopher Aillon <caillon@redhat.com> 2.8.11-6
-- Fix up jkeating's recent %%changelog entry to match this spec's style
+- Fix up jkeating's recent changelog
+- entry to match this spec's style
 - Make the devel package Require %%{version}-%%{release}
 
 * Tue Feb  7 2006 Jesse Keating <jkeating@redhat.com> 2.8.11-5.1
@@ -1660,7 +1669,7 @@ gtk-query-immodules-2.0-%{__isa_bits} --update-cache
 
 * Fri Jul 16 2004 Matthias Clasen <mclasen@redhat.com> - 2.4.4-2
 - Fix permissions of gdk-pixbuf-csource script.
-- Escape macros in %%changelog
+- Escape macros in changelog
 
 * Fri Jul  9 2004 Matthias Clasen <mclasen@redhat.com> - 2.4.4-1
 - Update to 2.4.4

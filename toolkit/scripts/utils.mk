@@ -13,14 +13,27 @@ ARCHIVE_TOOL ?= $(shell if command -v pigz 1>/dev/null 2>&1 ; then echo pigz ; e
 # Host and target architecture
 build_arch := $(shell uname -m)
 
+no_repo_acl = $(STATUS_FLAGS_DIR)/no_repo_acl.flag
+
+# Define newline for use in error messages and output formatting
+define newline
+
+
+endef
+
 ######## MISC. MAKEFILE Functions ########
 
 # Creates a folder if it doesn't exist. Also sets the timestamp to 0 if it is
 # created.
 #
+# To allow output to be printed, we use the $(eval) function to create a new
+# variable _out which will contain the output of the shell command. If the output
+# is not empty, we print it to the console.
+#
 # $1 - Folder path
 define create_folder
-$(call shell_real_build_only, if [ ! -d $1 ]; then mkdir -p $1 && touch -d @0 $1 ; fi )
+$(eval _out := $(call shell_real_build_only, if [ ! -d $1 ]; then mkdir -p $1 2>&1 && touch -d @0 $1 ; fi ))
+$(if $(strip $(_out)),$(warning $(_out)))
 endef
 
 # Runs a shell commannd only if we are actually doing a build rather than parsing the makefile for tab-completion etc
@@ -53,12 +66,13 @@ endef
 ######## VARIABLE DEPENDENCY TRACKING ########
 
 # List of variables to watch for changes.
-watch_vars=PACKAGE_BUILD_LIST PACKAGE_REBUILD_LIST PACKAGE_IGNORE_LIST REPO_LIST CONFIG_FILE STOP_ON_PKG_FAIL TOOLCHAIN_ARCHIVE REBUILD_TOOLCHAIN SRPM_PACK_LIST SPECS_DIR MAX_CASCADING_REBUILDS RUN_CHECK TEST_RUN_LIST TEST_RERUN_LIST TEST_IGNORE_LIST
+watch_vars=PACKAGE_BUILD_LIST PACKAGE_REBUILD_LIST PACKAGE_IGNORE_LIST REPO_LIST CONFIG_FILE STOP_ON_PKG_FAIL TOOLCHAIN_ARCHIVE REBUILD_TOOLCHAIN SRPM_PACK_LIST SPECS_DIR MAX_CASCADING_REBUILDS RUN_CHECK TEST_RUN_LIST TEST_RERUN_LIST TEST_IGNORE_LIST EXTRA_BUILD_LAYERS LICENSE_CHECK_MODE VALIDATE_TOOLCHAIN_GPG TOOLCHAIN_GPG_VALIDATION_KEYS VALIDATE_IMAGE_GPG IMAGE_GPG_VALIDATION_KEYS REPO_SNAPSHOT_TIME PACKAGE_CACHE_SUMMARY
 # Current list: $(depend_PACKAGE_BUILD_LIST) $(depend_PACKAGE_REBUILD_LIST) $(depend_PACKAGE_IGNORE_LIST) $(depend_REPO_LIST) $(depend_CONFIG_FILE) $(depend_STOP_ON_PKG_FAIL)
-#					$(depend_TOOLCHAIN_ARCHIVE) $(depend_REBUILD_TOOLCHAIN) $(depend_SRPM_PACK_LIST) $(depend_SPECS_DIR) $(depend_MAX_CASCADING_REBUILDS) $(depend_RUN_CHECK) $(depend_TEST_RUN_LIST)
-#					$(depend_TEST_RERUN_LIST) $(depend_TEST_IGNORE_LIST)
+#					$(depend_TOOLCHAIN_ARCHIVE) $(depend_REBUILD_TOOLCHAIN) $(depend_SRPM_PACK_LIST) $(depend_SPECS_DIR) $(depend_EXTRA_BUILD_LAYERS) $(depend_MAX_CASCADING_REBUILDS) $(depend_RUN_CHECK) $(depend_TEST_RUN_LIST)
+#					$(depend_TEST_RERUN_LIST) $(depend_TEST_IGNORE_LIST) $(depend_LICENSE_CHECK_MODE) $(depend_VALIDATE_TOOLCHAIN_GPG) $(depend_TOOLCHAIN_GPG_VALIDATION_KEYS) $(depend_VALIDATE_IMAGE_GPG)
+#					$(depend_IMAGE_GPG_VALIDATION_KEYS) $(depend_REPO_SNAPSHOT_TIME) $(depend_PACKAGE_CACHE_SUMMARY)
 
-.PHONY: variable_depends_on_phony clean-variable_depends_on_phony
+.PHONY: variable_depends_on_phony clean-variable_depends_on_phony setfacl_always_run_phony
 clean: clean-variable_depends_on_phony
 
 $(call create_folder,$(STATUS_FLAGS_DIR))
@@ -71,9 +85,9 @@ clean-variable_depends_on_phony:
 # they will alway run. Each rule will check the currently stored value in the file and only
 # update it if needed.
 
-# Generate a target which watches a variable for changes so rebuilds can be 
-# triggered if needed. Uses one file per variable. If the value of the variable 
-# is not the same as recorded in the file, update the file to match. This will 
+# Generate a target which watches a variable for changes so rebuilds can be
+# triggered if needed. Uses one file per variable. If the value of the variable
+# is not the same as recorded in the file, update the file to match. This will
 # force a rebuild of any dependent targets.
 #
 # $1 - name of the variable to watch for changes
@@ -91,6 +105,14 @@ endef
 # Invoke the above rule for each tracked variable
 $(foreach var,$(watch_vars),$(eval $(call depend_on_var,$(var))))
 
-# Host's extended ACLs influence the default permissions of the
-# files inside the built RPMs. Disabling them for the build directory.
-$(call shell_real_build_only, setfacl -bnR $(PROJECT_ROOT))
+# Host's ACLs influence the default permissions of the
+# files inside the built RPMs. Disabling them for the repository.
+#
+# NOTE: we depend on a phony target and create the flag only once becase we want
+#       to always run the "setfacl" command but not trigger a re-run of the targets
+#       depending on this target.
+$(no_repo_acl): setfacl_always_run_phony
+	@setfacl -bnR $(PROJECT_ROOT) &>/dev/null && \
+	if [ ! -f $@ ]; then \
+		touch $@; \
+	fi

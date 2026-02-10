@@ -2,15 +2,16 @@
 %global file_name pytest_mock
 Summary:        Thin-wrapper around the mock package for easier use with py.test
 Name:           python-%{pypi_name}
-Version:        3.7.0
+Version:        3.12.0
 Release:        2%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://github.com/pytest-dev/pytest-mock/
-Source0:        https://files.pythonhosted.org/packages/96/e1/fb53b62056e6840a36d9a4beb4e42726155594c567b574103435a7131c60/%{pypi_name}-%{version}.tar.gz
+Source0:        https://pypi.io/packages/source/p/pytest-mock/%{pypi_name}-%{version}.tar.gz
 # Can be removed once this bug is resolved: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1006736
 Patch0:         skip_broken_tests_since_3.6.1.patch
+Patch1:         fix__test_failure_message.patch
 
 BuildArch:      noarch
 
@@ -26,7 +27,7 @@ BuildRequires:  python%{python3_pkgversion}-pytest-asyncio
 BuildRequires:  python%{python3_pkgversion}-setuptools
 BuildRequires:  python%{python3_pkgversion}-setuptools_scm
 BuildRequires:  python3-devel
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  python3-pip
 %endif
 
@@ -48,12 +49,12 @@ sed -i 's/\r$//' README.rst
 %py3_install
 
 %check
-pip3 install atomicwrites>=1.3.0 \
-    attrs>=19.1.0 \
-    more-itertools>=7.0.0 \
-    pluggy>=0.11.0 \
-    pytest==7.1.2 \
-    pytest-cov>=2.7.1
+pip3 install 'atomicwrites>=1.3.0' \
+    'attrs>=19.1.0' \
+    'more-itertools>=7.0.0' \
+    'pluggy>=0.11.0' \
+    'pytest==7.1.2' \
+    'pytest-cov>=2.7.1'
 PATH=%{buildroot}%{_bindir}:${PATH} \
 PYTHONPATH=%{buildroot}%{python3_sitelib} \
     python%{python3_version} -m pytest -v tests \
@@ -67,6 +68,13 @@ PYTHONPATH=%{buildroot}%{python3_sitelib} \
 %{python3_sitelib}/%{file_name}-%{version}-py%{python3_version}.egg-info/
 
 %changelog
+* Fri Aug 16 2024 Daniel McIlvaney <damcilva@microsoft.com> - 3.12.0-2
+- Fix test requirement install command
+- Backport fixes for failing unit test
+
+* Tue Jan 23 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.12.0-1
+- Auto-upgrade to 3.12.0 - Azure Linux 3.0 - package upgrades
+
 * Wed Oct 26 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.7.0-2
 - Freezing 'pytest' test dependency to version 7.1.2.
 

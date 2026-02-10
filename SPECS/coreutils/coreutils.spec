@@ -1,28 +1,26 @@
 Summary:        Basic system utilities
 Name:           coreutils
-Version:        8.32
+Version:        9.4
 Release:        6%{?dist}
 License:        GPLv3
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Base
 URL:            https://www.gnu.org/software/coreutils
 Source0:        https://ftp.gnu.org/gnu/%{name}/%{name}-%{version}.tar.xz
 # make this package to own serial console profile since it utilizes stty tool
 Source1:        serial-console.sh
-# The following two patches are sourced from RedHat via Photon
-Patch0:         coreutils-8.32-i18n-1.patch
-Patch1:         coreutils-8.10-uname-1.patch
-Patch2:         skip_test_if_run_as_root.patch
-Patch3:         fix_test_env_signal_handler.patch
-Patch4:         coreutils-fix-get-sys_getdents-aarch64.patch
+Patch0:         coreutils-9.4-i18n-1.patch
+Patch1:         coreutils-9.4-uname-1.patch
+Patch2:         CVE-2024-0684.patch
+BuildRequires:  libacl-devel
+BuildRequires:  libattr-devel
 BuildRequires:  libselinux-devel
 BuildRequires:  libselinux-utils
 Requires:       gmp
-Requires:       libselinux
 Conflicts:      toybox
 Provides:       sh-utils
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  perl
 BuildRequires:  perl(File::Find)
 %endif
@@ -40,14 +38,7 @@ Requires:       coreutils >= %{version}
 These are the additional language files of coreutils.
 
 %prep
-%autosetup -N
-%patch0 -p1
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%ifarch aarch64
-%patch4 -p1
-%endif
+%autosetup -p1
 
 %build
 autoreconf -fi
@@ -82,8 +73,6 @@ sed -i 's/PET/-05/g' tests/misc/date-debug.sh
 sed -i 's/2>err\/merge-/2>\&1 > err\/merge-/g' tests/misc/sort-merge-fdlimit.sh
 sed -i 's/)\" = \"10x0/| head -n 1)\" = \"10x0/g' tests/split/r-chunk.sh
 sed  -i '/mb.sh/d' Makefile
-# remove capability test which incorrectly determines xattr support and then fails
-sed -i '/tests\/cp\/capability.sh/d' Makefile
 LANGUAGE=en_US.UTF-8 LC_ALL=en_US.UTF-8 make -k check
 
 %post   -p /sbin/ldconfig
@@ -103,6 +92,28 @@ LANGUAGE=en_US.UTF-8 LC_ALL=en_US.UTF-8 make -k check
 %defattr(-,root,root)
 
 %changelog
+* Thu Aug 8 2024 Chris Gunn <chrisgun@microsoft.com> - 9.4-6
+- Enable xattr and acl support.
+
+* Thu Aug 1 2024 Riken Maharjan <rmaharjan@microsoft.com> - 9.4-5
+- Remove unecessary Requires on libselinux imported from Fedora 40 (License: MIT)
+- libselinux causes dependency cycle.
+
+* Tue Jul 23 2024 Muhammad Falak <mwani@microsoft.com> - 9.4-4
+- Address CVE-2024-0684
+
+* Mon Jun 17 2024 Andrew Phelps <anphel@microsoft.com> - 9.4-3
+- add coreutils-9.4-uname-1.patch
+
+* Wed Mar 20 2024 Dan Streetman <ddstreet@microsoft.com> - 9.4-2
+- fix serial-console.sh
+
+* Fri Jan 26 2024 Andrew Phelps <anphel@microsoft.com> - 9.4-1
+- Upgrade to version 9.4
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 8.32-7
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Wed Nov 23 2022 Chris PeBenito <chpebeni@microsoft.com> - 8.32-6
 - Force rebuild to address missing SELinux features.
 

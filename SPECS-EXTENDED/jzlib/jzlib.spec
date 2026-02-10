@@ -1,5 +1,5 @@
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 #
 # spec file for package jzlib
 #
@@ -20,7 +20,7 @@ Distribution:   Mariner
 
 Name:           jzlib
 Version:        1.1.3
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Re-implementation of zlib in pure Java
 License:        BSD-3-Clause
 Group:          Development/Libraries/Java
@@ -59,7 +59,7 @@ Group:          Documentation/HTML
 
 %prep
 %setup -q
-%patch0
+%patch 0
 cp %{SOURCE1} build.xml
 
 # bnc#500524
@@ -102,6 +102,10 @@ cp -r target/site/apidocs/* %{buildroot}%{_javadocdir}/%{name}/
 %license LICENSE.txt
 
 %changelog
+* Mon Apr 28 2025 Archana Shettigar <v-shettigara@microsoft.com> - 1.1.3-6
+- Fixing the build for jzlib in 3.0-dev branch
+- License verified
+
 * Thu Oct 14 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.1.3-5
 - Converting the 'Release' tag to the '[number].[distribution]' format.
 

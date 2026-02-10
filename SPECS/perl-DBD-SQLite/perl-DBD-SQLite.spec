@@ -1,20 +1,20 @@
 # Got the intial spec from Fedora and modified it
 Summary:        SQLite DBI Driver
 Name:           perl-DBD-SQLite
-Version:        1.70
+Version:        1.74
 Release:        2%{?dist}
 Group:          Development/Libraries
 License:        (GPL+ or Artistic) and Public Domain
 URL:            http://search.cpan.org/dist/DBD-SQLite/
 Source0:        https://cpan.metacpan.org/authors/id/I/IS/ISHIGAKI/DBD-SQLite-%{version}.tar.gz
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 BuildRequires:  sqlite-devel >= 3.22.0
 BuildRequires:  perl >= 5.28.0
 BuildRequires:  perl-DBI
 BuildRequires:  perl-generators
 BuildRequires:  perl(ExtUtils::MakeMaker)
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  perl(Digest::MD5)
 BuildRequires:  perl(FindBin)
 BuildRequires:  perl(Test::More)
@@ -63,6 +63,12 @@ make test
 %{_mandir}/man3/*
 
 %changelog
+* Fri May 24 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.74-2
+- Release bump to regenerate package's requires and provides.
+
+* Mon Nov 27 2023 Andrew Phelps <anphel@microsoft.com> - 1.74-1
+- Upgrade to version 1.74
+
 * Mon Aug 01 2022 Muhammad Falak <mwani@microsoft.com> - 1.70-2
 - Add BR on `perl(Test::More)` & `perl(Digest::MD5)` to fix ptest
 

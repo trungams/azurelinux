@@ -1,10 +1,10 @@
 Summary:        WebSocket client for python
 Name:           python-websocket-client
-Version:        1.3.1
-Release:        1%{?dist}
+Version:        1.6.2
+Release:        2%{?dist}
 License:        ASL 2.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Languages/Python
 URL:            https://pypi.python.org/pypi/websocket-client
 Source0:        https://github.com/websocket-client/websocket-client/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
@@ -19,13 +19,15 @@ BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-xml
 Requires:       python3
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  curl-devel
 BuildRequires:  openssl-devel
 BuildRequires:  python3-atomicwrites
 BuildRequires:  python3-attrs
 BuildRequires:  python3-coverage
+BuildRequires:  python3-more-itertools
 BuildRequires:  python3-pip
+BuildRequires:  python3-pluggy
 BuildRequires:  python3-pytest
 BuildRequires:  python3-pytest-cov
 BuildRequires:  python3-six
@@ -45,8 +47,7 @@ WebSocket client for python3
 
 %check
 pip3 install \
-    more-itertools \
-    pluggy
+    iniconfig
 # do not execute 'echo-server' test since it requires python websockets
 # which do not work well from a chroot
 pytest3 -vv websocket/tests -k "not echo-server"
@@ -58,6 +59,12 @@ pytest3 -vv websocket/tests -k "not echo-server"
 %{_bindir}/wsdump
 
 %changelog
+* Mon May 13 2024 Sam Meluch <sammeluch@microsoft.com> - 1.6.2-2
+- Add missing iniconfig dependency to check section
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.6.2-1
+- Auto-upgrade to 1.6.2 - Azure Linux 3.0 - package upgrades
+
 * Fri Mar 25 2022 Nicolas Guibourge <nicolasg@microsoft.com> - 1.3.1-1
 - Upgrade to 1.3.1
 

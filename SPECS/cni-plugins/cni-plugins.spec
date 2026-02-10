@@ -1,27 +1,31 @@
-%define _default_cni_plugins_dir /opt/cni/bin
 Summary:        Container Network Interface (CNI) plugins
 Name:           cni-plugins
-Version:        0.9.1
-Release:        14%{?dist}
+Version:        1.4.0
+Release:        4%{?dist}
 License:        ASL 2.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Tools
 # cni moved to https://github.com/containernetworking/cni/issues/667#issuecomment-491693752
 URL:            https://github.com/containernetworking/plugins
 #Source0:       https://github.com/containernetworking/plugins/archive/v%{version}.tar.gz
 Source0:        %{name}-%{version}.tar.gz
-BuildRequires:  golang >= 1.5
+Patch0:         CVE-2024-45338.patch
+Patch1:         CVE-2025-22872.patch
+Patch2:         CVE-2025-65637.patch
 
+%define _default_cni_plugins_dir /opt/cni/bin
+BuildRequires:  golang >= 1.5
 Provides:       kubernetes-cni
+
 %description
 The CNI (Container Network Interface) project consists of a specification and libraries for writing plugins to configure network interfaces in Linux containers, along with a number of supported plugins.
 
 %prep
-%setup -q -n plugins-%{version}
+%autosetup -p1 -n plugins-%{version}
 
 %build
-./build_linux.sh
+./build_linux.sh -ldflags "-X github.com/containernetworking/plugins/pkg/utils/buildversion.BuildVersion=v%{version}"
 
 %install
 install -vdm 755 %{buildroot}%{_default_cni_plugins_dir}
@@ -39,6 +43,28 @@ make -k check |& tee %{_specdir}/%{name}-check-log || %{nocheck}
 %{_default_cni_plugins_dir}/*
 
 %changelog
+* Mon Dec 08 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 1.4.0-4
+- Patch for CVE-2025-65637
+
+* Mon Apr 28 2025 Sreeniavsulu Malavathula <v-smalavathu@microsoft.com> - 1.4.0-3
+- Patch CVE-2025-22872
+
+* Thu Jan 23 2024 Kavya Sree Kaitepalli <kkaitepalli@microsoft.com> - 1.4.0-2
+- Patch CVE-2024-45338
+
+* Mon Feb 12 2024 Betty Lakes <bettylakes@microsoft.com> - 1.4.0-1
+- Upgrade to version 1.4.0
+
+* Wed Oct 18 2023 Mateusz Gozdek <mgozdek@microsoft.com> - 1.3.0-1
+- Make plugin binaries correctly print version
+- Upgrade to version 1.3.0
+
+* Mon Oct 16 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 0.9.1-16
+- Bump release to rebuild with go 1.20.10
+
+* Tue Oct 10 2023 Dan Streetman <ddstreet@ieee.org> - 0.9.1-15
+- Bump release to rebuild with updated version of Go.
+
 * Mon Aug 07 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 0.9.1-14
 - Bump release to rebuild with go 1.19.12
 

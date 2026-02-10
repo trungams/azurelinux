@@ -48,7 +48,8 @@
                 "packagelists/hyperv-packages.json",
                 "packagelists/core-packages-image.json",
                 "packagelists/cloud-init-packages.json",
-                "packagelists/selinux-full.json"
+                "packagelists/selinux-full.json",
+                "packagelists/virt-guest-packages.json"
             ],
             "KernelCommandLine": {
                 "SELinux": "permissive"
@@ -56,7 +57,7 @@
             "KernelOptions": {
                 "default": "kernel"
             },
-            "Hostname": "cbl-mariner"
+            "Hostname": "azurelinux"
         }
     ]
 }

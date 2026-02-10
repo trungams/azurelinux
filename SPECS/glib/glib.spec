@@ -1,20 +1,28 @@
 %define majorver %(echo %{version} | cut -d. -f1-2)
 Summary:        Low-level libraries useful for providing data structure handling for C.
 Name:           glib
-Version:        2.71.0
-Release:        1%{?dist}
+Version:        2.78.6
+Release:        7%{?dist}
 License:        LGPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/System
 URL:            https://developer.gnome.org/glib/
 Source0:        https://ftp.gnome.org/pub/gnome/sources/glib/%{majorver}/%{name}-%{version}.tar.xz
+Patch0:         CVE-2024-52533.patch
+Patch1:         CVE-2025-3360.patch
+Patch2:         CVE-2025-4373.patch
+Patch3:         CVE-2025-6052.patch
+Patch4:         CVE-2025-7039.patch
+Patch5:         CVE-2025-13601.patch
+Patch6:         CVE-2025-14087.patch
+Patch7:         CVE-2025-14512.patch
+Patch8:         CVE-2026-1484.patch
 BuildRequires:  cmake
 BuildRequires:  gtk-doc
 BuildRequires:  libffi-devel
 BuildRequires:  libselinux-devel
 BuildRequires:  meson
-BuildRequires:  pcre-devel
 BuildRequires:  pkg-config
 BuildRequires:  python3-xml
 BuildRequires:  python3
@@ -23,7 +31,7 @@ BuildRequires:  which
 BuildRequires:  python3-pygments
 Requires:       libffi
 Requires:       libselinux
-Requires:       pcre-libs
+Requires:       pcre2
 Provides:       glib2 = %{version}-%{release}
 Provides:       glib2%{?_isa} = %{version}-%{release}
 Provides:       glib2-static = %{version}-%{release}
@@ -37,7 +45,6 @@ Group:          Development/Libraries
 Requires:       glib = %{version}-%{release}
 Requires:       glib-schemas = %{version}-%{release}
 Requires:       libffi-devel
-Requires:       pcre-devel
 Requires:       python3-xml
 Requires:       python3
 Provides:       glib2-devel = %{version}-%{release}
@@ -77,7 +84,7 @@ The glib2-doc package includes documentation for the GLib library.
 %install
 %meson_install
 
-mv %{buildroot}%{_bindir}/gio-querymodules %{buildroot}%{_bindir}/gio-querymodules-%{__isa_bits}
+ln -s gio-querymodules %{buildroot}%{_bindir}/gio-querymodules-%{__isa_bits}
 
 # Manually create this directory. The build procedure of glib requires setting -Dfam=true to 
 # produce this directory, but this config will introduce new BR that introduces build cycles that 
@@ -90,12 +97,13 @@ touch %{buildroot}%{_libdir}/gio/modules/giomodule.cache
 
 %files
 %defattr(-,root,root)
-%license COPYING
+%license LICENSES/LGPL-2.1-or-later.txt
 %{_libdir}/libglib-*.so.*
 %{_libdir}/libgthread-*.so.*
 %{_libdir}/libgmodule-*.so.*
 %{_libdir}/libgio-*.so.*
 %{_libdir}/libgobject-*.so.*
+%{_libexecdir}/gio-launch-desktop
 
 %files devel
 %defattr(-, root, root)
@@ -109,6 +117,7 @@ touch %{buildroot}%{_libdir}/gio/modules/giomodule.cache
 %{_libdir}/glib-*/*
 %{_includedir}/*
 %{_datadir}/*
+%license %{_datadir}/licenses/glib/LGPL-2.1-or-later.txt
 %exclude %{_datadir}/gtk-doc/html/
 %exclude %{_datadir}/glib-2.0/schemas/
 
@@ -122,6 +131,45 @@ touch %{buildroot}%{_libdir}/gio/modules/giomodule.cache
 %doc %{_datadir}/gtk-doc/html/*
 
 %changelog
+* Mon Feb 02 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.78.6-7
+- Patch for CVE-2026-1484
+
+* Mon Dec 15 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.78.6-6
+- Patch for CVE-2025-14087, CVE-2025-14512
+
+* Sat Nov 29 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.78.6-5
+- Patch for CVE-2025-13601
+
+* Mon Sep 08 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.78.6-4
+- Patch for CVE-2025-7039
+
+* Mon Jun 09 2025 Aninda Pradhan <v-anipradhan@microsoft.com> - 2.78.6-3
+- Patch CVE-2025-4373 and CVE-2025-6052.patch
+
+* Wed Apr 16 2025 Archana Shettigar <v-shettigara@microsoft.com> - 2.78.6-2
+- Patch CVE-2025-3360
+
+* Wed Mar 05 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.78.6-1
+- Auto-upgrade to 2.78.6 - for CVE-2024-34397
+
+* Thu Nov 14 2024 Sharath Srikanth Chellappa <sharathsr@microsoft.com> - 2.78.1-5
+- Patch CVE-2024-52533
+
+* Fri Apr 19 2024 Betty Lakes <bettylakes@microsoft.com> - 2.78.1-4
+- Update dependency on pcre2
+
+* Wed Apr 03 2024 Betty Lakes <bettylakes@microsoft.com> - 2.78.1-3
+- Move to pcre2
+
+* Fri Mar 15 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.78.1-2
+- Adding link for gio-querymodules.
+
+* Mon Nov 27 2023 Andrew Phelps <anphel@microsoft.com> - 2.78.1-1
+- Upgrade to version 2.78.1
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 2.71.0-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Thu Feb 10 2022 Henry Li <lihl@microsoft.com> - 2.71.0-1
 - Upgrade to version 2.71.0
 - Add python3-pygments as BR
@@ -137,7 +185,7 @@ touch %{buildroot}%{_libdir}/gio/modules/giomodule.cache
 * Wed May 19 2021 Thomas Crain <thcrain@microsoft.com> - 2.60.1-4
 - Require schemas subpackage from devel subpackage
 
-* Fri Apr 27 2021 Thomas Crain <thcrain@microsoft.com> - 2.60.1-3
+* Tue Apr 27 2021 Thomas Crain <thcrain@microsoft.com> - 2.60.1-3
 - Remove CVE-2019-13012 patch (already in the this version)
 - Exclude doubly-packaged files from devel subpackage
 - Merge the following releases from 1.0 to dev branch

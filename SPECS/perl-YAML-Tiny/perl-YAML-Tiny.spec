@@ -1,21 +1,22 @@
 # Got the intial spec from Fedora and modified it
 Summary:        Read/Write YAML files with as little code as possible
 Name:           perl-YAML-Tiny
-Version:        1.73
-Release:        6%{?dist}
+Version:        1.74
+Release:        2%{?dist}
 License:        GPL+ or Artistic
 Group:          Development/Libraries
 URL:            http://search.cpan.org/dist/YAML-Tiny/
 Source0:        https://cpan.metacpan.org/authors/id/E/ET/ETHER/YAML-Tiny-%{version}.tar.gz
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 BuildArch:      noarch
 BuildRequires:  perl >= 5.28.0
 BuildRequires:  perl-generators
 BuildRequires:  perl(ExtUtils::MakeMaker)
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  perl(JSON::PP)
 BuildRequires:  perl(Test::More)
+BuildRequires:  perl(open)
 %endif
 
 Requires:       perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
@@ -51,6 +52,12 @@ make test
 %{_mandir}/man3/YAML::Tiny.3*
 
 %changelog
+* Tue Apr 22 2025 Riken Maharjan <rmaharjan@microsoft.com> - 1.74-2
+- Add missing check dependencies.
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.74-1
+- Auto-upgrade to 1.74 - Azure Linux 3.0 - package upgrades
+
 * Mon Aug 01 2022 Muhammad Falak <mwani@microsoft.com> - 1.73-6
 - Add BR on `perl(JSON::PP)` & `perl(Test::More)` to fix ptest
 

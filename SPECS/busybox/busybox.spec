@@ -1,24 +1,32 @@
 Summary:        Statically linked binary providing simplified versions of system commands
 Name:           busybox
-Version:        1.35.0
-Release:        5%{?dist}
+Version:        1.36.1
+Release:        21%{?dist}
 License:        GPLv2
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://busybox.net/
 Source:         https://www.busybox.net/downloads/%{name}-%{version}.tar.bz2
 Source1:        busybox-static.config
 Source2:        busybox-petitboot.config
 Patch0:         busybox-1.31.1-stime-fix.patch
 Patch1:         CVE-2022-28391.patch
-Patch2:         awk-input-numbers-are-never-octal-or-hex-only-progra.patch
-Patch3:         CVE-2022-30065.patch
-Patch4:         ash-fix-use-after-free-in-pattern-substituon-code.patch
-Patch5:         ash-fix-use-after-free-in-bash-pattern-substitution.patch
+Patch2:         CVE-2021-42380.patch
+Patch3:         CVE-2023-42363.patch
+# Also Fixes CVE-2023-42364
+Patch4:         CVE-2023-42365.patch
+Patch5:         CVE-2023-42366.patch
+Patch6:         CVE-2023-39810.patch
+Patch7:         CVE-2022-48174.patch
 BuildRequires:  gcc
-BuildRequires:  glibc-static >= 2.35-4%{?dist}
+BuildRequires:  glibc-static >= 2.38-18%{?dist}
 BuildRequires:  libselinux-devel >= 1.27.7-2
 BuildRequires:  libsepol-devel
+%if 0%{?with_check}
+BuildRequires:  sharutils
+BuildRequires:  zip
+%endif
+
 # libbb/hash_md5_sha.c
 # https://bugzilla.redhat.com/1024549
 Provides:       bundled(md5-drepper2)
@@ -81,6 +89,10 @@ mkdir -p %{buildroot}/%{_mandir}/man1
 install -m 644 docs/busybox.static.1 %{buildroot}/%{_mandir}/man1/busybox.1
 install -m 644 docs/busybox.petitboot.1 %{buildroot}/%{_mandir}/man1/busybox.petitboot.1
 
+%check
+cd testsuite
+SKIP_KNOWN_BUGS=1 ./runtest
+
 %files
 %license LICENSE
 %doc README
@@ -94,6 +106,82 @@ install -m 644 docs/busybox.petitboot.1 %{buildroot}/%{_mandir}/man1/busybox.pet
 %{_mandir}/man1/busybox.petitboot.1.gz
 
 %changelog
+* Thu Jan 22 2026 Kanishk Bansal <kanbansal@microsoft.com> - 1.36.1-21
+- Bump to rebuild with updated glibc
+
+* Mon Jan 19 2026 Kanishk Bansal <kanbansal@microsoft.com> - 1.36.1-20
+- Bump to rebuild with updated glibc
+
+* Mon Nov 10 2025 Andrew Phelps <anphel@microsoft.com> - 1.36.1-19
+- Bump to rebuild with updated glibc
+
+* Thu Oct 23 2025 Kanishk Bansal <kanbansal@microsoft.com> - 1.36.1-18
+- Bump to rebuild with updated glibc
+
+* Wed Oct 08 2025 Andrew Phelps <anphel@microsoft.com> - 1.36.1-17
+- Bump to rebuild with updated glibc
+
+* Thu Aug 28 2025 Kanishk Bansal <kanbansal@microsoft.com> - 1.36.1-16
+- Bump to rebuild with updated glibc
+
+* Mon Aug 25 2025 Andrew Phelps <anphel@microsoft.com> - 1.36.1-15
+- Bump to rebuild with updated glibc
+
+* Mon Jul 07 2025 Kanishk Bansal <kanbansal@microsoft.com> - 1.36.1-14
+- Patch CVE-2022-48174
+
+* Thu May 22 2025 Kanishk Bansal <kanbansal@microsoft.com> - 1.36.1-13
+- Bump to rebuild with updated glibc
+
+* Mon May 12 2025 Andrew Phelps <anphel@microsoft.com> - 1.36.1-12
+- Bump to rebuild with updated glibc
+
+* Thu May 01 2025 Kshitiz Godara <kgodara@microsoft.com> - 1.36.1-11
+- Added patch for CVE-2023-39810
+
+* Tue Feb 25 2025 Chris Co <chrco@microsoft.com> - 1.36.1-10
+- Bump to rebuild with updated glibc
+
+* Tue Nov 12 2024 Ankita Pareek <ankitapareek@microsoft.com> - 1.36.1-9
+- Address CVE-2023-42366
+
+* Mon Aug 26 2024 Rachel Menge <rachelmenge@microsoft.com> - 1.36.1-8
+- Update to build dep latest glibc-static version
+
+* Wed Aug 21 2024 Chris Co <chrco@microsoft.com> - 1.36.1-7
+- Bump to rebuild with updated glibc
+
+* Mon Aug 12 2024 Muhammad Falak <mwani@microsoft.com> - 1.36.1-6
+- Address CVE-2021-42380, CVE-2023-42363, CVE-2023-42364 & CVE-2023-42365
+
+* Wed May 22 2024 Suresh Babu Chalamalasetty <schalam@microsoft.com> - 1.36.1-5
+- update to build dep latest glibc-static version
+
+* Mon May 13 2024 Chris Co <chrco@microsoft.com> - 1.36.1-4
+- Update to build dep latest glibc-static version
+
+* Mon Mar 11 2024 Dan Streetman <ddstreet@microsoft.com> - 1.36.1-3
+- update to build dep latest glibc-static version
+
+* Tue Feb 27 2024 Dan Streetman <ddstreet@microsoft.com> - 1.36.1-2
+- updated glibc-static buildrequires release
+
+* Thu Feb 01 2024 Rachel Menge <rachelmenge@microsoft.com> - 1.36.1-1
+- Upgrade to version 1.36.1
+- Add check section to run testsuite
+
+* Tue Nov 07 2023 Andrew Phelps <anphel@microsoft.com> - 1.35.0-9
+- Bump release to rebuild against glibc 2.38-1
+
+* Wed Oct 04 2023 Minghe Ren <mingheren@microsoft.com> - 1.35.0-8
+- Bump release to rebuild against glibc 2.35-6
+
+* Tue Oct 03 2023 Mandeep Plaha <mandeepplaha@microsoft.com> - 1.35.0-7
+- Bump release to rebuild against glibc 2.35-5
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 1.35.0-6
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Wed Jul 05 2023 Andrew Phelps <anphel@microsoft.com> - 1.35.0-5
 - Bump release to rebuild against glibc 2.35-4
 
@@ -268,10 +356,10 @@ install -m 644 docs/busybox.petitboot.1 %{buildroot}/%{_mandir}/man1/busybox.pet
 * Wed Jan 27 2010 Denys Vlasenko <dvlasenk@redhat.com> - 1:1.15.1-5
 - enable Fedora-specific uname -p behavior (#534081)
 
-* Fri Nov 26 2009 Denys Vlasenko <dvlasenk@redhat.com> - 1:1.15.1-4
+* Thu Nov 26 2009 Denys Vlasenko <dvlasenk@redhat.com> - 1:1.15.1-4
 - make uclibc use 32-bit compat struct utmp (#541587)
 
-* Fri Nov 10 2009 Denys Vlasenko <dvlasenk@redhat.com> - 1:1.15.1-3
+* Tue Nov 10 2009 Denys Vlasenko <dvlasenk@redhat.com> - 1:1.15.1-3
 - re-enable rpm applet (#534092)
 
 * Fri Oct  2 2009 Denys Vlasenko <dvlasenk@redhat.com> - 1:1.15.1-2
@@ -335,7 +423,7 @@ install -m 644 docs/busybox.petitboot.1 %{buildroot}/%{_mandir}/man1/busybox.pet
 * Fri May 16 2008 Ivana Varekova <varekova@redhat.com> - 1:1.10.2-1
 - update to 1.10.2
 
-* Thu May  9 2008 Ivana Varekova <varekova@redhat.com> - 1:1.10.1-1
+* Fri May  9 2008 Ivana Varekova <varekova@redhat.com> - 1:1.10.1-1
 - update to 1.10.1
 
 * Thu Feb 14 2008 Ivana Varekova <varekova@redhat.com> - 1:1.9.1-1
@@ -403,7 +491,7 @@ install -m 644 docs/busybox.petitboot.1 %{buildroot}/%{_mandir}/man1/busybox.pet
   id output shows context twice
 - fix iptunnel x kernel-headers problem
 
-* Mon Dec 10 2006 Ivana Varekova <varekova@redhat.com> - 1:1.2.2-2
+* Sun Dec 10 2006 Ivana Varekova <varekova@redhat.com> - 1:1.2.2-2
 - enable ash
 
 * Thu Nov 16 2006 Ivana Varekova <varekova@redhat.com> - 1:1.2.2-1
@@ -461,7 +549,7 @@ install -m 644 docs/busybox.petitboot.1 %{buildroot}/%{_mandir}/man1/busybox.pet
 * Thu Sep  1 2005 Ivana Varekova <varekova@redhat.com> - 1.01-1
 - update to 1.01
 
-* Tue May 11 2005 Ivana Varekova <varekova@redhat.com> - 1.00-5
+* Wed May 11 2005 Ivana Varekova <varekova@redhat.com> - 1.00-5
 - add debug files to debug_package
 
 * Mon Mar  7 2005 Ivana Varekova <varekova@redhat.com> - 1.00-4
@@ -548,7 +636,7 @@ install -m 644 docs/busybox.petitboot.1 %{buildroot}/%{_mandir}/man1/busybox.pet
 * Mon Jan 6 2003 Dan Walsh <dwalsh@redhat.com> 0.60.5-4
 - Upstream developers wanted to eliminate the use of floats
 
-* Thu Jan 3 2003 Dan Walsh <dwalsh@redhat.com> 0.60.5-3
+* Fri Jan 3 2003 Dan Walsh <dwalsh@redhat.com> 0.60.5-3
 - Fix free to work on large memory machines.
 
 * Sat Dec 28 2002 Jeremy Katz <katzj@redhat.com> 0.60.5-2

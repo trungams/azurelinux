@@ -6,7 +6,7 @@ package sliceutils
 import (
 	"reflect"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/pkgjson"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/pkgjson"
 )
 
 // NotFound value is returned by Find(), if a given value is not present in the slice.
@@ -59,11 +59,12 @@ func PackageVerMatch(expected, given interface{}) bool {
 	return reflect.DeepEqual(expected.(*pkgjson.PackageVer), given.(*pkgjson.PackageVer))
 }
 
-// SetToSlice converts a map[T]bool to a slice containing the map's keys.
-func SetToSlice[T comparable](inputSet map[T]bool) []T {
+// SetToSlice converts a map[K]bool to a slice containing the map's keys, iff the key's value is true.
+func SetToSlice[K comparable](inputSet map[K]bool) []K {
 	index := 0
-	outputSlice := make([]T, len(inputSet))
+	outputSlice := make([]K, len(inputSet))
 	for element, elementInSet := range inputSet {
+		// Add key to slice if value is true
 		if elementInSet {
 			outputSlice[index] = element
 			index++
@@ -72,6 +73,62 @@ func SetToSlice[T comparable](inputSet map[T]bool) []T {
 	return outputSlice[:index]
 }
 
+// MapToSlice converts a map[K]V to a slice containing the map's keys.
+func MapToSlice[K comparable, V any](inputMap map[K]V) []K {
+	outputSlice := make([]K, 0, len(inputMap))
+	for element := range inputMap {
+		outputSlice = append(outputSlice, element)
+	}
+	return outputSlice
+}
+
+// SliceToSet converts a slice of K to a map[K]bool, with each value set to true.
+func SliceToSet[K comparable](inputSlice []K) (outputSet map[K]bool) {
+	outputSet = make(map[K]bool, len(inputSlice))
+	for _, element := range inputSlice {
+		outputSet[element] = true
+	}
+	return outputSet
+}
+
+// RemoveDuplicatesFromSlice removes duplicate elements from a slice.
+func RemoveDuplicatesFromSlice[K comparable](inputSlice []K) (outputSlice []K) {
+	return SetToSlice(SliceToSet(inputSlice))
+}
+
 func nilCheck(expected interface{}, given interface{}) (checkValid, checkResult bool) {
 	return (expected == nil || given == nil), (expected == nil && given == nil)
+}
+
+// Can be replaced by slices.Contains in Go 1.21.
+func ContainsValue[K comparable](inputSlice []K, value K) bool {
+	for _, item := range inputSlice {
+		if item == value {
+			return true
+		}
+	}
+	return false
+}
+
+// Can be replaced by slices.ContainsFunc in Go 1.21.
+func ContainsFunc[K any](inputSlice []K, fn func(K) bool) bool {
+	for _, item := range inputSlice {
+		if fn(item) {
+			return true
+		}
+	}
+	return false
+}
+
+// FindValueFunc returns the first value in the slice that matches fn(item) == true along with true, otherwise it
+// returns the default value for an instance of value's type, and false.
+func FindValueFunc[K any](inputSlice []K, fn func(K) bool) (K, bool) {
+	for _, item := range inputSlice {
+		if fn(item) {
+			return item, true
+		}
+	}
+
+	var value K
+	return value, false
 }

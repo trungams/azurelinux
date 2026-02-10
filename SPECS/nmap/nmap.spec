@@ -1,10 +1,10 @@
 Summary:        Nmap Network Mapper
 Name:           nmap
-Version:        7.93
-Release:        1%{?dist}
+Version:        7.95
+Release:        3%{?dist}
 License:        Nmap
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/System
 URL:            https://nmap.org/
 Source0:        https://nmap.org/dist/%{name}-%{version}.tar.bz2
@@ -18,7 +18,10 @@ BuildRequires:  make
 BuildRequires:  openssl-devel
 BuildRequires:  zlib-devel
 
-Patch1:         remove_openssl_macro.patch
+Patch0:         remove_openssl_macro.patch
+Patch1:		CVE-2024-8006.patch
+Patch2:		CVE-2023-7256.patch
+Patch3:		CVE-2025-11961.patch
 
 %description
 Nmap ("Network Mapper") is a free and open source utility for network discovery and security auditing.
@@ -37,7 +40,8 @@ Nmap implementation of the ncat tool
 rm -rf libpcap macosx mswin32 libssh2 libz
 
 %build
-%configure
+# Remove zenmap as it's a GUI-based tool
+%configure --without-zenmap
 %make_build
 
 %install
@@ -49,9 +53,12 @@ ln -s ncat %{buildroot}%{_bindir}/nc
 %files
 %license LICENSE
 %exclude %{_mandir}
+%{_bindir}/ndiff
 %{_bindir}/nmap
 %{_bindir}/nping
+%{_bindir}/uninstall_ndiff
 %{_datadir}/nmap
+%{python3_sitelib}/*
 
 %files ncat
 %license LICENSE
@@ -59,6 +66,20 @@ ln -s ncat %{buildroot}%{_bindir}/nc
 %{_bindir}/nc
 
 %changelog
+* Mon Jan 05 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 7.95-3
+- Patch for CVE-2025-11961
+
+* Mon Nov 18 2024 Kavya Sree Kaitepalli <kkaitepalli@microsoft.com> - 7.95-2
+- Backport to fix CVE-2024-8006
+- Fix CVE-2023-7256.patch
+
+* Fri Jul 05 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 7.95-1
+- Auto-upgrade to 7.95 to fix CVE-2022-33099
+
+* Mon Jan 29 2024 Mitch Zhu <mitchzhu@microsoft.com> - 7.94-1
+- Upgrading to latest version for 3.0 release.
+- Remove zenmap as it's a GUI-based tool.
+
 * Mon Apr 17 2023 Saul Paredes <saulparedes@microsoft.com> - 7.93-1
 - Upgrading to latest version to fix CVE-2018-25032
 

@@ -1,11 +1,11 @@
 %global debug_package %{nil}
 Summary:       Git extension for versioning large files
 Name:          git-lfs
-Version:       3.1.4
-Release:       13%{?dist}
+Version:       3.6.1
+Release:       2%{?dist}
 Group:         System Environment/Programming
 Vendor:        Microsoft Corporation
-Distribution:  Mariner
+Distribution:   Azure Linux
 License:       MIT
 URL:           https://github.com/git-lfs/git-lfs
 Source0:       https://github.com/git-lfs/git-lfs/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
@@ -28,12 +28,13 @@ Source0:       https://github.com/git-lfs/git-lfs/archive/v%{version}.tar.gz#/%{
 #         See: https://reproducible-builds.org/docs/archives/
 #       - For the value of "--mtime" use the date "2021-04-26 00:00Z" to simplify future updates.
 Source1:       %{name}-%{version}-vendor.tar.gz
+Patch0:        CVE-2025-22870.patch
 
 BuildRequires: golang
 BuildRequires: which
-BuildRequires: rubygem-ronn
 BuildRequires: tar
 BuildRequires: git
+BuildRequires: rubygem-asciidoctor
 Requires:      git
 %define our_gopath %{_topdir}/.gopath
 
@@ -41,24 +42,23 @@ Requires:      git
 Git LFS is a command line extension and specification for managing large files with Git
 
 %prep
-%autosetup
+%autosetup -p1 -a1
 
 %build
-tar --no-same-owner -xf %{SOURCE1}
 export GOPATH=%{our_gopath}
 export GOFLAGS="-buildmode=pie -trimpath -mod=vendor -modcacherw -ldflags=-linkmode=external"
 go generate ./commands
 go build .
 export PATH=$PATH:%{gem_dir}/bin
-make man %{?_smp_mflags}
+make man GIT_LFS_SHA=unused VERSION=unused PREFIX=unused
 
 %install
 rm -rf %{buildroot}
 install -D git-lfs %{buildroot}%{_bindir}/git-lfs
 mkdir -p %{buildroot}%{_mandir}/man1
 mkdir -p %{buildroot}%{_mandir}/man5
-install -D man/*.1 %{buildroot}%{_mandir}/man1
-install -D man/*.5 %{buildroot}%{_mandir}/man5
+install -D man/man1/*.1 %{buildroot}%{_mandir}/man1
+install -D man/man5/*.5 %{buildroot}%{_mandir}/man5
 
 %check
 go test -mod=vendor ./...
@@ -77,6 +77,22 @@ git lfs uninstall
 %{_mandir}/man5/*
 
 %changelog
+* Tue Apr 08 2025 Rohit Rawat <rohitrawat@microsoft.com> - 3.6.1-2
+- Patch CVE-2025-22870
+
+* Thu Jan 23 2025 Rohit Rawat <rohitrawat@microsoft.com> - 3.6.1-1
+- Bump version to 3.6.1 to fix CVE-2024-53263
+
+* Fri Jan 05 2024 Muhammad Falak <mwani@microsoft.com> - 3.4.1-1
+- Bump version to 3.4.1
+- Add BR on asciidoctor & drop un-needed BR
+
+* Mon Oct 16 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.1.4-15
+- Bump release to rebuild with go 1.20.10
+
+* Tue Oct 10 2023 Dan Streetman <ddstreet@ieee.org> - 3.1.4-14
+- Bump release to rebuild with updated version of Go.
+
 * Mon Aug 07 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.1.4-13
 - Bump release to rebuild with go 1.19.12
 

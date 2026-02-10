@@ -7,17 +7,18 @@ import (
 	"os"
 	"strings"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/imagegen/configuration"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/imagegen/installutils"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/exe"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/logger"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/packagerepo/repocloner"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/packagerepo/repocloner/rpmrepocloner"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/packagerepo/repoutils"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/pkggraph"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/pkgjson"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/timestamp"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/pkg/profile"
+	"github.com/microsoft/azurelinux/toolkit/tools/imagegen/configuration"
+	"github.com/microsoft/azurelinux/toolkit/tools/imagegen/installutils"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/exe"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/logger"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/packagerepo/repocloner"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/packagerepo/repocloner/rpmrepocloner"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/packagerepo/repoutils"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/pkggraph"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/pkgjson"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/rpm"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/timestamp"
+	"github.com/microsoft/azurelinux/toolkit/tools/pkg/profile"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -38,6 +39,7 @@ var (
 	usePreviewRepo       = app.Flag("use-preview-repo", "Pull packages from the upstream preview repo").Bool()
 	disableDefaultRepos  = app.Flag("disable-default-repos", "Disable pulling packages from PMC repos").Bool()
 	disableUpstreamRepos = app.Flag("disable-upstream-repos", "Disables pulling packages from upstream repos").Bool()
+	repoSnapshotTime     = app.Flag("repo-snapshot-time", "Optional: Repo time limit for tdnf virtual snapshot").String()
 
 	tlsClientCert = app.Flag("tls-cert", "TLS client certificate to use when downloading files.").String()
 	tlsClientKey  = app.Flag("tls-key", "TLS client key to use when downloading files.").String()
@@ -48,8 +50,10 @@ var (
 	inputSummaryFile  = app.Flag("input-summary-file", "Path to a file with the summary of packages cloned to be restored").String()
 	outputSummaryFile = app.Flag("output-summary-file", "Path to save the summary of packages cloned").String()
 
-	logFile       = exe.LogFileFlag(app)
-	logLevel      = exe.LogLevelFlag(app)
+	enableGpgCheck = app.Flag("enable-gpg-check", "Enable RPM GPG signature verification for all repositories during package fetching.").Bool()
+	gpgKeyPaths    = app.Flag("gpg-key", "Path to a GPG key file for signature validation. May be specified multiple times. Required if enable-gpg-check is set.").ExistingFiles()
+
+	logFlags      = exe.SetupLogFlags(app)
 	profFlags     = exe.SetupProfileFlags(app)
 	timestampFile = app.Flag("timestamp-file", "File that stores timestamps for this program.").String()
 )
@@ -57,7 +61,7 @@ var (
 func main() {
 	app.Version(exe.ToolkitVersion)
 	kingpin.MustParse(app.Parse(os.Args[1:]))
-	logger.InitBestEffort(*logFile, *logLevel)
+	logger.InitBestEffort(logFlags)
 
 	prof, profErr := profile.StartProfiling(profFlags)
 	if profErr != nil {
@@ -73,9 +77,13 @@ func main() {
 		logger.Log.Fatal("input-graph must be provided if external-only is set.")
 	}
 
+	if *enableGpgCheck && len(*gpgKeyPaths) == 0 {
+		logger.Log.Fatal("--enable-gpg-check requires at least one --gpg-key path")
+	}
+
 	timestamp.StartEvent("initialize and configure cloner", nil)
 
-	cloner, err := rpmrepocloner.ConstructCloner(*outDir, *tmpDir, *workertar, *existingRpmDir, *existingToolchainRpmDir, *tlsClientCert, *tlsClientKey, *repoFiles)
+	cloner, err := rpmrepocloner.ConstructCloner(*outDir, *tmpDir, *workertar, *existingRpmDir, *existingToolchainRpmDir, *tlsClientCert, *tlsClientKey, *repoFiles, *repoSnapshotTime)
 	if err != nil {
 		logger.Log.Panicf("Failed to initialize RPM repo cloner. Error: %s", err)
 	}
@@ -89,7 +97,7 @@ func main() {
 		enabledRepos = enabledRepos & ^rpmrepocloner.RepoFlagUpstream
 	}
 	if *disableDefaultRepos {
-		enabledRepos = enabledRepos & ^rpmrepocloner.RepoFlagMarinerDefaults
+		enabledRepos = enabledRepos & ^rpmrepocloner.RepoFlagDistroDefaults
 	}
 	cloner.SetEnabledRepos(enabledRepos)
 
@@ -108,6 +116,14 @@ func main() {
 
 	if err != nil {
 		logger.Log.Panicf("Failed to clone RPM repo. Error: %s", err)
+	}
+
+	// Validate GPG signatures of downloaded packages if enabled
+	if *enableGpgCheck {
+		err = rpm.ValidateDirectoryRPMSignatures(cloner.CloneDirectory(), *gpgKeyPaths)
+		if err != nil {
+			logger.Log.Panicf("Failed to validate RPM signatures. Error: %s", err)
+		}
 	}
 
 	timestamp.StartEvent("finalize cloned packages", nil)
@@ -156,7 +172,17 @@ func cloneSystemConfigs(cloner repocloner.RepoCloner, configFile, baseDirPath st
 
 	logger.Log.Infof("Cloning: %v", packageVersionsInConfig)
 	// The image tools don't care if a package was created locally or not, just that it exists. Disregard if it is prebuilt or not.
-	_, err = cloner.Clone(cloneDeps, packageVersionsInConfig...)
+	_, err = cloner.CloneByPackageVerSingleTransaction(cloneDeps, packageVersionsInConfig...)
+	if err != nil {
+		// Fallback to legacy flow with multiple transactions in case we get a OOM error from a large transaction.
+		logger.Log.Warnf("Failed to clone packages in a single transaction, will retry with individual transactions... (%s)", err)
+		logger.Log.Warnf("\tCheck log file '%s' for more details from package manager.", *logFlags.LogFile)
+		_, err = cloner.CloneByPackageVer(cloneDeps, packageVersionsInConfig...)
+		if err != nil {
+			logger.Log.Errorf("Also failed to clone packages with individual transactions. Error: %s", err)
+			logger.Log.Errorf("\tCheck log file '%s' for more details from package manager.", *logFlags.LogFile)
+		}
+	}
 	return
 }
 

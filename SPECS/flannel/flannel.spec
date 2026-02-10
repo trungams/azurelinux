@@ -1,29 +1,33 @@
 %global debug_package %{nil}
 %define our_gopath %{_topdir}/.gopath
-
 Summary:        Simple and easy way to configure a layer 3 network fabric designed for Kubernetes
 Name:           flannel
-Version:        0.14.0
-Release:        16%{?dist}
+Version:        0.24.2
+Release:        24%{?dist}
 License:        ASL 2.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Libraries
 URL:            https://github.com/flannel-io/flannel
-#Source0:       https://github.com/flannel-io/flannel/archive/refs/tags/v0.14.0.tar.gz
-Source0:        %{name}-%{version}.tar.gz
-
+Source0:        https://github.com/flannel-io/%{name}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source1:        %{name}-%{version}-vendor.tar.gz
+Patch0:         CVE-2024-24786.patch
+Patch1:         CVE-2023-44487.patch
+Patch2:         CVE-2023-45288.patch
+Patch3:         CVE-2025-30204.patch
+Patch4:         CVE-2024-51744.patch
+Patch5:         CVE-2025-65637.patch
 BuildRequires:  gcc
 BuildRequires:  glibc-devel
-BuildRequires:  glibc-static >= 2.35-4%{?dist}
-BuildRequires:  golang >= 1.18.5
+BuildRequires:  glibc-static >= 2.38-18%{?dist}
+BuildRequires:  golang < 1.25
 BuildRequires:  kernel-headers
 
 %description
 Flannel is a simple and easy way to configure a layer 3 network fabric designed for Kubernetes.
 
 %prep
-%autosetup -p1
+%autosetup -p1 -a 1
 
 %build
 export GOPATH=%{our_gopath}
@@ -44,14 +48,102 @@ install -p -m 755 -t %{buildroot}%{_bindir} ./dist/flanneld
 
 %files
 %defattr(-,root,root)
+%doc README.md CONTRIBUTING.md DCO
 %license LICENSE
 %{_bindir}/flanneld
 
 %changelog
+* Thu Jan 22 2026 Kanishk Bansal <kanbansal@microsoft.com> - 0.24.2-24
+- Bump to rebuild with updated glibc
+
+* Mon Jan 19 2026 Kanishk Bansal <kanbansal@microsoft.com> - 0.24.2-23
+- Bump to rebuild with updated glibc
+
+* Mon Dec 08 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 0.24.2-22
+- Patch for CVE-2025-65637
+
+* Mon Nov 10 2025 Andrew Phelps <anphel@microsoft.com> - 0.24.2-21
+- Bump to rebuild with updated glibc
+
+* Thu Oct 23 2025 Kanishk Bansal <kanbansal@microsoft.com> - 0.24.2-20
+- Bump to rebuild with updated glibc
+
+* Wed Oct 08 2025 Andrew Phelps <anphel@microsoft.com> - 0.24.2-19
+- Bump to rebuild with updated glibc
+
+* Fri Sep 17 2025 Kanishk Bansal <kanbansal@microsoft.com> - 0.24.2-18
+- Bump to rebuild with updated glibc
+
+* Fri Sep 05 2025 Andrew Phelps <anphel@microsoft.com> - 0.24.2-17
+- Bump to rebuild with updated glibc
+
+* Sun Aug 31 2025 Andrew Phelps <anphel@microsoft.com> - 0.24.2-16
+- Set BR for golang to < 1.25
+
+* Thu May 22 2025 Kanishk Bansal <kanbansal@microsoft.com> - 0.24.2-15
+- Bump to rebuild with updated glibc
+
+* Mon May 12 2025 Andrew Phelps <anphel@microsoft.com> - 0.24.2-14
+- Bump to rebuild with updated glibc
+
+* Wed Mar 31 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 0.24.2-13
+- patch for CVE-2024-51744
+
+* Sun Mar 30 2025 Kanishk Bansal <kanbansal@microsoft.com> - 0.24.2-12
+- Patch CVE-2025-30204
+
+* Tue Feb 25 2025 Chris Co <chrco@microsoft.com> - 0.24.2-11
+- Bump to rebuild with updated glibc
+
+* Fri Feb 14 2025 Kanishk Bansal <kanbansal@microsoft.com> - 0.24.2-10
+- Patch CVE-2023-45288
+
+* Wed Feb 05 2025 corvus-callidus <108946721+corvus-callidus@users.noreply.github.com> - 0.24.2-9
+- Patch CVE-2023-44487
+
+* Fri Dec 06 2024 sthelkar <sthelkar@microsoft.com> - 0.24.2-8
+- Patch CVE-2024-24786
+
+* Mon Aug 26 2024 Rachel Menge <rachelmenge@microsoft.com> - 0.24.2-7
+- Update to build dep latest glibc-static version
+
+* Wed Aug 21 2024 Chris Co <chrco@microsoft.com> - 0.24.2-6
+- Bump to rebuild with updated glibc
+
+* Wed May 22 2024 Suresh Babu Chalamalasetty <schalam@microsoft.com> - 0.24.2-5
+- update to build dep latest glibc-static version
+
+* Mon May 13 2024 Chris Co <chrco@microsoft.com> - 0.24.2-4
+- Update to build dep latest glibc-static version
+
+* Mon Mar 11 2024 Dan Streetman <ddstreet@microsoft.com> - 0.24.2-3
+- update to build dep latest glibc-static version
+
+* Tue Feb 27 2024 Dan Streetman <ddstreet@microsoft.com> - 0.24.2-2
+- updated glibc-static buildrequires release
+
+* Tue Feb 20 2024 Sumedh Sharma <sumsharma@microsoft.com> - 0.24.2-1
+- Upgrade to version 0.24.2
+
+* Tue Nov 07 2023 Andrew Phelps <anphel@microsoft.com> - 0.14.0-21
+- Bump release to rebuild against glibc 2.38-1
+
+* Wed Oct 18 2023 Minghe Ren <mingheren@microsoft.com> - 0.14.0-20
+- Bump release to rebuild against glibc 2.35-6
+
+* Mon Oct 16 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 0.14.0-19
+- Bump release to rebuild with go 1.20.10
+
+* Tue Oct 10 2023 Dan Streetman <ddstreet@ieee.org> - 0.14.0-18
+- Bump release to rebuild with updated version of Go.
+
+* Tue Oct 03 2023 Mandeep Plaha <mandeepplaha@microsoft.com> - 0.14.0-17
+- Bump release to rebuild against glibc 2.35-5
+
 * Mon Aug 07 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 0.14.0-16
 - Bump release to rebuild with go 1.19.12
 
-* Wed Jul 14 2023 Andrew Phelps <anphel@microsoft.com> - 0.14.0-15
+* Fri Jul 14 2023 Andrew Phelps <anphel@microsoft.com> - 0.14.0-15
 - Bump release to rebuild against glibc 2.35-4
 
 * Thu Jul 13 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 0.14.0-14

@@ -1,20 +1,24 @@
 %define htmldir %{_docdir}/liblognorm/html
+
 Summary:        Fast samples-based log normalization library
 Name:           liblognorm
 Version:        2.0.6
-Release:        2%{?dist}
+Release:        4%{?dist}
 License:        LGPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://www.liblognorm.com
 Source0:        https://www.liblognorm.com/files/download/%{name}-%{version}.tar.gz
 BuildRequires:  chrpath
 BuildRequires:  gcc
 BuildRequires:  libestr-devel
 BuildRequires:  libfastjson-devel
-BuildRequires:  pcre-devel
+BuildRequires:  pcre2-devel
 BuildRequires:  python3-devel
 BuildRequires:  python3-sphinx
+
+Patch0: liblognorm-2.0.6-rhbz2105934-sphinx5.patch
+Patch1: liblognorm-2.0.6-pcre2.patch
 
 %description
 Briefly described, liblognorm is a tool to normalize log data.
@@ -52,9 +56,14 @@ The lognormalizer is the core of liblognorm, it is a utility for normalizing
 log files.
 
 %prep
-%autosetup
+%autosetup -p1
 
 %build
+# Prevent rebuild of the configure script.
+touch configure aclocal.m4 Makefile.in config.h.in
+autoreconf --verbose --force --install
+%configure --enable-regexp --enable-docs --docdir=%{htmldir} --includedir=%{_includedir}/%{name}/
+
 %configure \
     --enable-regexp \
     --enable-docs \
@@ -88,6 +97,12 @@ rm %{buildroot}%{htmldir}/{objects.inv,.buildinfo}
 %{_bindir}/lognormalizer
 
 %changelog
+* Fri Apr 05 2024 Betty Lakes <bettylakes@microsoft.com> - 2.0.6-4
+- Move to pcre2 and add patch to support it's usage
+
+* Thu Feb 29 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.0.6-3
+- Adding Fedora's Sphinx 5+ patch.
+
 * Sun Feb 13 2022 Jon Slobodzian <joslobo@microsoft.com> - 2.0.6-2
 - Add missing dependency on python-devel
 

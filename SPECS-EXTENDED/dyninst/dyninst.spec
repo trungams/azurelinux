@@ -1,9 +1,9 @@
 Summary: An API for Run-time Code Generation
 License: LGPLv2+
 Name: dyninst
-Release: 9%{?dist}
+Release: 28%{?dist}
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL: http://www.dyninst.org
 Version: 10.1.0
 ExclusiveArch: %{ix86} x86_64 ppc64le aarch64
@@ -31,7 +31,7 @@ BuildRequires: tbb tbb-devel
 
 # Extra requires just for the testsuite
 BuildRequires: gcc-gfortran libstdc++-static libxml2-devel
-BuildRequires: glibc-static >= 2.35-4%{?dist}
+BuildRequires: glibc-static >= 2.38-18%{?dist}
 
 # Testsuite files should not provide/require anything
 %{?filter_setup:
@@ -87,11 +87,11 @@ making sure that dyninst works properly.
 %setup -q -n %{name}-%{version} -c
 %setup -q -T -D -a 1
 
-%patch1 -p1 -b.result
-%patch2 -p1 -b.gettid
-%patch3 -p1 -b.386
-%patch4 -p1 -b.aarch
-%patch5 -p1
+%patch 1 -p1 -b.result
+%patch 2 -p1 -b.gettid
+%patch 3 -p1 -b.386
+%patch 4 -p1 -b.aarch
+%patch 5 -p1
 
 # cotire seems to cause non-deterministic gcc errors
 # https://bugzilla.redhat.com/show_bug.cgi?id=1420551
@@ -194,6 +194,63 @@ echo "%{_libdir}/dyninst" > %{buildroot}/etc/ld.so.conf.d/%{name}-%{_arch}.conf
 %attr(644,root,root) %{_libdir}/dyninst/testsuite/*.a
 
 %changelog
+* Thu Jan 22 2026 Kanishk Bansal <kanbansal@microsoft.com> - 10.1.0-28
+- Bump to rebuild with updated glibc
+
+* Mon Jan 19 2026 Kanishk Bansal <kanbansal@microsoft.com> - 10.1.0-27
+- Bump to rebuild with updated glibc
+
+* Mon Nov 10 2025 Andrew Phelps <anphel@microsoft.com> - 10.1.0-26
+- Bump to rebuild with updated glibc
+
+* Thu Oct 23 2025 Kanishk Bansal <kanbansal@microsoft.com> - 10.1.0-25
+- Bump to rebuild with updated glibc
+
+* Wed Oct 08 2025 Andrew Phelps <anphel@microsoft.com> - 10.1.0-24
+- Bump to rebuild with updated glibc
+
+* Thu Aug 28 2025 Kanishk Bansal <kanbansal@microsoft.com> - 10.1.0-23
+- Bump to rebuild with updated glibc
+
+* Mon Aug 25 2025 Andrew Phelps <anphel@microsoft.com> - 10.1.0-22
+- Bump to rebuild with updated glibc
+
+* Thu May 22 2025 Kanishk Bansal <kanbansal@microsoft.com> - 10.1.0-21
+- Bump to rebuild with updated glibc
+
+* Mon May 12 2025 Andrew Phelps <anphel@microsoft.com> - 10.1.0-20
+- Bump to rebuild with updated glibc
+
+* Tue Feb 25 2025 Chris Co <chrco@microsoft.com> - 10.1.0-19
+- Bump to rebuild with updated glibc
+
+* Mon Aug 26 2024 Rachel Menge <rachelmenge@microsoft.com> - 10.1.0-18
+- Update to build dep latest glibc-static version
+
+* Wed Aug 21 2024 Chris Co <chrco@microsoft.com> - 10.1.0-17
+- Bump to rebuild with updated glibc
+
+* Wed May 22 2024 Suresh Babu Chalamalasetty <schalam@microsoft.com> - 10.1.0-16
+- update to build dep latest glibc-static version
+
+* Mon May 13 2024 Chris Co <chrco@microsoft.com> - 10.1.0-15
+- Update to build dep latest glibc-static version
+
+* Mon Mar 11 2024 Dan Streetman <ddstreet@microsoft.com> - 10.1.0-14
+- update to build dep latest glibc-static version
+
+* Tue Feb 27 2024 Dan Streetman <ddstreet@microsoft.com> - 10.1.0-13
+- updated glibc-static buildrequires release
+
+* Tue Nov 07 2023 Andrew Phelps <anphel@microsoft.com> - 10.1.0-12
+- Bump release to rebuild against glibc 2.38-1
+
+* Wed Oct 04 2023 Minghe Ren <mingheren@microsoft.com> - 10.1.0-11
+- Bump release to rebuild against glibc 2.35-6
+
+* Tue Oct 03 2023 Mandeep Plaha <mandeepplaha@microsoft.com> - 10.1.0-10
+- Bump release to rebuild against glibc 2.35-5
+
 * Wed Jul 05 2023 Andrew Phelps <anphel@microsoft.com> - 10.1.0-9
 - Bump release to rebuild against glibc 2.35-4
 
@@ -212,7 +269,7 @@ echo "%{_libdir}/dyninst" > %{buildroot}/etc/ld.so.conf.d/%{name}-%{_arch}.conf
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_32_Mass_Rebuild
 
 * Fri Nov 15 2019 Stan Cox <scox@redhat.com> - 10.1.0-4
-- Fix rhbz963475 dyninst must be ported to aarch64 
+- Fix rhbz963475 dyninst must be ported to aarch64
 
 * Wed Jul 24 2019 Fedora Release Engineering <releng@fedoraproject.org> - 10.1.0-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_31_Mass_Rebuild

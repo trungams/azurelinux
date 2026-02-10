@@ -4,6 +4,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -12,14 +13,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/exe"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/logger"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/pkggraph"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/pkgjson"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/shell"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/pkg/profile"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/scheduler/buildagents"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/scheduler/schedulerutils"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/ccachemanager"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/exe"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/logger"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/pkggraph"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/pkgjson"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/shell"
+	"github.com/microsoft/azurelinux/toolkit/tools/pkg/licensecheck"
+	"github.com/microsoft/azurelinux/toolkit/tools/pkg/profile"
+	"github.com/microsoft/azurelinux/toolkit/tools/scheduler/buildagents"
+	"github.com/microsoft/azurelinux/toolkit/tools/scheduler/schedulerutils"
+	"github.com/sirupsen/logrus"
 
 	"golang.org/x/sys/unix"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -27,13 +31,16 @@ import (
 
 const (
 	// default worker count to 0 to automatically scale with the number of logical CPUs.
-	defaultWorkerCount          = "0"
-	defaultBuildAttempts        = "1"
-	defaultCheckAttempts        = "1"
-	defaultMaxCascadingRebuilds = "-1"
+	defaultWorkerCount   = "0"
+	defaultBuildAttempts = "1"
+	defaultCheckAttempts = "1"
+	defaultExtraLayers   = "0"
 )
 
-var defaultFreshness = fmt.Sprintf("%d", schedulerutils.NodeFreshnessAbsoluteMax)
+var (
+	defaultFreshness = fmt.Sprintf("%d", schedulerutils.NodeFreshnessAbsoluteMax)
+	defaultTimeout   = "99h"
+)
 
 // schedulerChannels represents the communication channels used by a build agent.
 // Unlike BuildChannels, schedulerChannels holds bidirectional channels that
@@ -59,8 +66,7 @@ var (
 	rpmDir           = app.Flag("rpm-dir", "The directory to use as the local repo and to submit RPM packages to").Required().ExistingDir()
 	toolchainDirPath = app.Flag("toolchain-rpms-dir", "Directory that contains already built toolchain RPMs. Should contain top level directories for architecture.").Required().ExistingDir()
 	srpmDir          = app.Flag("srpm-dir", "The output directory for source RPM packages").Required().String()
-	cacheDir         = app.Flag("cache-dir", "The cache directory containing downloaded dependency RPMS from Mariner Base").Required().ExistingDir()
-	ccacheDir        = app.Flag("ccache-dir", "The directory used to store ccache outputs").Required().ExistingDir()
+	cacheDir         = app.Flag("cache-dir", "The cache directory containing downloaded dependency RPMS from Azure Linux Base").Required().ExistingDir()
 	buildLogsDir     = app.Flag("build-logs-dir", "Directory to store package build logs").Required().ExistingDir()
 
 	imageConfig = app.Flag("image-config-file", "Optional image config file to extract a package list from.").String()
@@ -72,6 +78,7 @@ var (
 	rpmmacrosFile              = app.Flag("rpmmacros-file", "Optional file path to an rpmmacros file for rpmbuild to use.").ExistingFile()
 	buildAttempts              = app.Flag("build-attempts", "Sets the number of times to try building a package.").Default(defaultBuildAttempts).Int()
 	checkAttempts              = app.Flag("check-attempts", "Sets the minimum number of times to test a package if the tests fail.").Default(defaultCheckAttempts).Int()
+	extraLayers                = app.Flag("extra-layers", "Sets the number of additional layers in the graph beyond the goal packages to buid.").Default(defaultExtraLayers).Int()
 	maxCascadingRebuilds       = app.Flag("max-cascading-rebuilds", "Sets the maximum number of cascading dependency rebuilds caused by package being rebuilt (leave unset for unbounded).").Default(defaultFreshness).Uint()
 	noCleanup                  = app.Flag("no-cleanup", "Whether or not to delete the chroot folder after the build is done").Bool()
 	noCache                    = app.Flag("no-cache", "Disables using prebuilt cached packages.").Bool()
@@ -79,13 +86,22 @@ var (
 	toolchainManifest          = app.Flag("toolchain-manifest", "Path to a list of RPMs which are created by the toolchain. RPMs from this list will are considered 'prebuilt' and will not be rebuilt").ExistingFile()
 	optimizeWithCachedImplicit = app.Flag("optimize-with-cached-implicit", "Optimize the build process by allowing cached implicit packages to be used to optimize the initial build graph instead of waiting for a real package build to provide the nodes.").Bool()
 	useCcache                  = app.Flag("use-ccache", "Automatically install and use ccache during package builds").Bool()
+	ccacheDir                  = app.Flag("ccache-dir", "The directory used to store ccache outputs").String()
+	ccacheConfig               = app.Flag("ccache-config", "The ccache configuration file path.").String()
 	allowToolchainRebuilds     = app.Flag("allow-toolchain-rebuilds", "Allow toolchain packages to rebuild without causing an error.").Bool()
 	maxCPU                     = app.Flag("max-cpu", "Max number of CPUs used for package building").Default("").String()
+	timeout                    = app.Flag("timeout", "Max duration for any individual package build/test").Default(defaultTimeout).Duration()
 
 	validBuildAgentFlags = []string{buildagents.TestAgentFlag, buildagents.ChrootAgentFlag}
 	buildAgent           = app.Flag("build-agent", "Type of build agent to build packages with.").PlaceHolder(exe.PlaceHolderize(validBuildAgentFlags)).Required().Enum(validBuildAgentFlags...)
 	buildAgentProgram    = app.Flag("build-agent-program", "Path to the build agent that will be invoked to build packages.").String()
 	workers              = app.Flag("workers", "Number of concurrent build agents to spawn. If set to 0, will automatically set to the logical CPU count.").Default(defaultWorkerCount).Int()
+
+	licenseCheckMode     = app.Flag("license-check-mode", "Do additional validation of licenses after the build").Default(string(licensecheck.LicenseCheckModeDefault)).Enum(licensecheck.ValidLicenseCheckModeStrings()...)
+	licenseNameFile      = app.Flag("license-check-name-file", "File containing license names to check for.").ExistingFile()
+	licenseExceptionFile = app.Flag("license-check-exception-file", "File containing license exceptions.").ExistingFile()
+	licenseResultsFile   = app.Flag("license-results-file", "File to save the license check results to.").String()
+	licenseSummaryFile   = app.Flag("license-summary-file", "File to save the license check summary to.").String()
 
 	pkgsToIgnore = app.Flag("ignored-packages", "Space separated list of specs ignoring rebuilds if their dependencies have been updated. Will still build if all of the spec's RPMs have not been built.").String()
 
@@ -96,8 +112,7 @@ var (
 	testsToRun    = app.Flag("tests", "Space separated list of tests that should be ran. Omit this argument to run package tests.").String()
 	testsToRerun  = app.Flag("rerun-tests", "Space separated list of package tests that should be re-ran.").String()
 
-	logFile       = exe.LogFileFlag(app)
-	logLevel      = exe.LogLevelFlag(app)
+	logFlags      = exe.SetupLogFlags(app)
 	profFlags     = exe.SetupProfileFlags(app)
 	timestampFile = app.Flag("timestamp-file", "File that stores timestamps for this program.").String()
 )
@@ -105,7 +120,7 @@ var (
 func main() {
 	app.Version(exe.ToolkitVersion)
 	kingpin.MustParse(app.Parse(os.Args[1:]))
-	logger.InitBestEffort(*logFile, *logLevel)
+	logger.InitBestEffort(logFlags)
 
 	prof, err := profile.StartProfiling(profFlags)
 	if err != nil {
@@ -120,6 +135,28 @@ func main() {
 
 	if *buildAttempts <= 0 {
 		logger.Log.Fatalf("Value in --build-attempts must be greater than zero. Found %d.", *buildAttempts)
+	}
+
+	var licenseCheckerConfig = schedulerutils.PackageLicenseCheckerConfig{Mode: licensecheck.LicenseCheckModeNone}
+	if *licenseCheckMode != string(licensecheck.LicenseCheckModeNone) {
+		if *licenseNameFile == "" {
+			logger.Log.Fatalf("License check mode is set to '%s', but no license name file was provided.", *licenseCheckMode)
+		}
+		if *licenseExceptionFile == "" {
+			logger.Log.Fatalf("License check mode is set to '%s', but no license exception file was provided.", *licenseCheckMode)
+		}
+
+		licenseCheckerWorkDir := filepath.Join(*workDir, "license-checker")
+		licenseCheckerConfig = schedulerutils.PackageLicenseCheckerConfig{
+			BuildDirPath:      licenseCheckerWorkDir,
+			WorkerTarPath:     *workerTar,
+			NameFilePath:      *licenseNameFile,
+			ExceptionFilePath: *licenseExceptionFile,
+			DistTag:           *distTag,
+			Mode:              licensecheck.LicenseCheckMode(*licenseCheckMode),
+			ResultsFile:       *licenseResultsFile,
+			SummaryFile:       *licenseSummaryFile,
+		}
 	}
 
 	dependencyGraph, err := pkggraph.ReadDOTGraphFile(*inputGraphFile)
@@ -146,7 +183,6 @@ func main() {
 	buildAgentConfig := &buildagents.BuildAgentConfig{
 		Program:      *buildAgentProgram,
 		CacheDir:     *cacheDir,
-		CCacheDir:    *ccacheDir,
 		RepoFile:     *repoFile,
 		RpmDir:       *rpmDir,
 		ToolchainDir: *toolchainDirPath,
@@ -159,12 +195,15 @@ func main() {
 		DistroBuildNumber:    *distroBuildNumber,
 		RpmmacrosFile:        *rpmmacrosFile,
 
-		NoCleanup: *noCleanup,
-		UseCcache: *useCcache,
-		MaxCpu:    *maxCPU,
+		NoCleanup:    *noCleanup,
+		UseCcache:    *useCcache,
+		CCacheDir:    *ccacheDir,
+		CCacheConfig: *ccacheConfig,
+		MaxCpu:       *maxCPU,
+		Timeout:      *timeout,
 
 		LogDir:   *buildLogsDir,
-		LogLevel: *logLevel,
+		LogLevel: *logFlags.LogLevel,
 	}
 
 	agent, err := buildagents.BuildAgentFactory(*buildAgent)
@@ -185,9 +224,36 @@ func main() {
 	signal.Notify(signals, unix.SIGINT, unix.SIGTERM)
 	go cancelBuildsOnSignal(signals, agent)
 
-	err = buildGraph(*inputGraphFile, *outputGraphFile, agent, *workers, *buildAttempts, *checkAttempts, *maxCascadingRebuilds, *stopOnFailure, !*noCache, finalPackagesToBuild, packagesToRebuild, packagesToIgnore, finalTestsToRun, testsToRerun, ignoredTests, toolchainPackages, *optimizeWithCachedImplicit, *allowToolchainRebuilds)
+	err = buildGraph(*inputGraphFile, *outputGraphFile, agent, licenseCheckerConfig, *workers, *buildAttempts, *checkAttempts, *extraLayers, *maxCascadingRebuilds, *stopOnFailure, !*noCache, finalPackagesToBuild, packagesToRebuild, packagesToIgnore, finalTestsToRun, testsToRerun, ignoredTests, toolchainPackages, *optimizeWithCachedImplicit, *allowToolchainRebuilds)
 	if err != nil {
-		logger.Log.Fatalf("Unable to build package graph.\nFor details see the build summary section above.\nError: %s.", err)
+		logger.Log.Fatalf("Unable to build package graph.\nFor details see the build summary section above and the build log '%s'.\nError: %s.", *logFlags.LogFile, err)
+	}
+
+	if *useCcache {
+		logger.Log.Infof("  ccache is enabled. processing multi-package groups under (%s)...", *ccacheDir)
+		ccacheManager, ccacheErr := ccachemanager.CreateManager(*ccacheDir, *ccacheConfig)
+		if ccacheErr == nil {
+			ccacheErr = ccacheManager.UploadMultiPkgGroupCCaches()
+			if ccacheErr != nil {
+				logger.Log.Warnf("Failed to archive CCache artifacts:\n%v.", err)
+			}
+		} else {
+			logger.Log.Warnf("Failed to initialize the ccache manager:\n%v", err)
+		}
+	}
+
+	if *noCleanup {
+		message := []string{
+			"ATTENTION!",
+			"",
+			"'--no-cleanup' requested. Build agent directories will not be removed automatically.",
+			"(" + *workDir + "/*)",
+			"Manual cleanup is required.",
+			"Use 'make clean-build-packages-workers' to remove build agent directories.",
+			"",
+			"Also consider using 'make containerized-rpmbuild' to debug package build issues",
+		}
+		logger.PrintMessageBox(logrus.InfoLevel, message)
 	}
 }
 
@@ -199,7 +265,7 @@ func cancelOutstandingBuilds(agent buildagents.BuildAgent) {
 	}
 
 	// Issue a SIGINT to all children processes to allow them to gracefully exit.
-	shell.PermanentlyStopAllProcesses(unix.SIGINT)
+	shell.StopAllChildProcesses(unix.SIGINT)
 }
 
 // cancelBuildsOnSignal will stop any builds running on SIGINT/SIGTERM.
@@ -213,7 +279,7 @@ func cancelBuildsOnSignal(signals chan os.Signal, agent buildagents.BuildAgent) 
 
 // buildGraph builds all packages in the dependency graph requested.
 // It will save the resulting graph to outputFile.
-func buildGraph(inputFile, outputFile string, agent buildagents.BuildAgent, workers, buildAttempts, checkAttempts int, maxCascadingRebuilds uint, stopOnFailure, canUseCache bool, packagesToBuild, packagesToRebuild, ignoredPackages, testsToRun, testsToRerun, ignoredTests []*pkgjson.PackageVer, toolchainPackages []string, optimizeWithCachedImplicit bool, allowToolchainRebuilds bool) (err error) {
+func buildGraph(inputFile, outputFile string, agent buildagents.BuildAgent, licenseCheckerConfig schedulerutils.PackageLicenseCheckerConfig, workers, buildAttempts, checkAttempts, extraLayers int, maxCascadingRebuilds uint, stopOnFailure, canUseCache bool, packagesToBuild, packagesToRebuild, ignoredPackages, testsToRun, testsToRerun, ignoredTests []*pkgjson.PackageVer, toolchainPackages []string, optimizeWithCachedImplicit bool, allowToolchainRebuilds bool) (err error) {
 	// graphMutex guards pkgGraph from concurrent reads and writes during build.
 	var graphMutex sync.RWMutex
 
@@ -221,7 +287,7 @@ func buildGraph(inputFile, outputFile string, agent buildagents.BuildAgent, work
 	// try to avoid using the cached implicit dependencies until we have no other choice during the build, but since the graph is pruned, we will
 	// avoid building packages that are not needed. Obviously we can only do this if the cache is enabled.
 	allowEarlyImplicitOptimization := (canUseCache && optimizeWithCachedImplicit)
-	_, pkgGraph, goalNode, err := schedulerutils.InitializeGraphFromFile(inputFile, packagesToBuild, testsToRun, allowEarlyImplicitOptimization)
+	_, pkgGraph, goalNode, err := schedulerutils.InitializeGraphFromFile(inputFile, packagesToBuild, testsToRun, allowEarlyImplicitOptimization, extraLayers)
 	if err != nil {
 		return
 	}
@@ -233,7 +299,7 @@ func buildGraph(inputFile, outputFile string, agent buildagents.BuildAgent, work
 	logger.Log.Infof("Building %d nodes with %d workers", numberOfNodes, workers)
 
 	// After this call pkgGraph will be given to multiple routines and accessing it requires acquiring the mutex.
-	builtGraph, err := buildAllNodes(stopOnFailure, canUseCache, packagesToRebuild, testsToRerun, pkgGraph, &graphMutex, goalNode, channels, maxCascadingRebuilds, toolchainPackages, allowToolchainRebuilds)
+	builtGraph, err := buildAllNodes(stopOnFailure, canUseCache, packagesToRebuild, testsToRerun, pkgGraph, &graphMutex, goalNode, channels, licenseCheckerConfig, maxCascadingRebuilds, toolchainPackages, allowToolchainRebuilds)
 
 	if builtGraph != nil {
 		graphMutex.RLock()
@@ -286,7 +352,7 @@ func startWorkerPool(agent buildagents.BuildAgent, workers, buildAttempts, check
 // - Attempts to satisfy any unresolved dynamic dependencies with new implicit provides from the build result.
 // - Attempts to subgraph the graph to only contain the requested packages if possible.
 // - Repeat.
-func buildAllNodes(stopOnFailure, canUseCache bool, packagesToRebuild, testsToRerun []*pkgjson.PackageVer, pkgGraph *pkggraph.PkgGraph, graphMutex *sync.RWMutex, goalNode *pkggraph.PkgNode, channels *schedulerChannels, maxCascadingRebuilds uint, reservedFiles []string, allowToolchainRebuilds bool) (builtGraph *pkggraph.PkgGraph, err error) {
+func buildAllNodes(stopOnFailure, canUseCache bool, packagesToRebuild, testsToRerun []*pkgjson.PackageVer, pkgGraph *pkggraph.PkgGraph, graphMutex *sync.RWMutex, goalNode *pkggraph.PkgNode, channels *schedulerChannels, licenseCheckerConfig schedulerutils.PackageLicenseCheckerConfig, maxCascadingRebuilds uint, reservedFiles []string, allowToolchainRebuilds bool) (builtGraph *pkggraph.PkgGraph, err error) {
 	var (
 		// stopBuilding tracks if the build has entered a failed state and this routine should stop as soon as possible.
 		stopBuilding bool
@@ -301,6 +367,8 @@ func buildAllNodes(stopOnFailure, canUseCache bool, packagesToRebuild, testsToRe
 		// by using cached implicit provides to satisfy unresolved dynamic dependencies during the first pass of the optimizer.
 		useCachedImplicit bool
 		isGraphOptimized  bool
+
+		licenseChecker *schedulerutils.PackageLicenseChecker
 	)
 
 	// Start the build at the leaf nodes.
@@ -309,11 +377,32 @@ func buildAllNodes(stopOnFailure, canUseCache bool, packagesToRebuild, testsToRe
 	buildRunsTests := len(pkgGraph.AllTestNodes()) > 0
 	nodesToBuild := schedulerutils.LeafNodes(pkgGraph, graphMutex, goalNode, buildState, useCachedImplicit)
 
+	if licenseCheckerConfig.Mode != licensecheck.LicenseCheckModeNone {
+		logger.Log.Infof("Starting license checker with mode '%s'.", licenseCheckerConfig.Mode)
+		licenseChecker, err = schedulerutils.NewPackageLicenseChecker(licenseCheckerConfig)
+		defer func() {
+			cleanupErr := licenseChecker.CleanupPackageLicenseChecker()
+			if cleanupErr != nil {
+				if err == nil {
+					err = fmt.Errorf("failed to cleanup after license checker:\n%w", cleanupErr)
+				} else {
+					// Append the cleanup error to the existing error
+					err = fmt.Errorf("%w\nfailed to cleanup after license checker failed:\n%w", err, cleanupErr)
+				}
+			}
+		}()
+	}
+
 	for {
 		logger.Log.Debugf("Found %d unblocked nodes: %v.", len(nodesToBuild), nodesToBuild)
 
 		// Each node that is ready to build must be converted into a build request and submitted to the worker pool.
-		newRequests := schedulerutils.ConvertNodesToRequests(pkgGraph, graphMutex, nodesToBuild, packagesToRebuild, testsToRerun, buildState, canUseCache)
+		newRequests, requestError := schedulerutils.ConvertNodesToRequests(pkgGraph, graphMutex, nodesToBuild, packagesToRebuild, testsToRerun, buildState, canUseCache)
+		if requestError != nil {
+			err = fmt.Errorf("failed to convert nodes to requests:\n%w", requestError)
+			stopBuilding = true
+			break
+		}
 		for _, req := range newRequests {
 			buildState.RecordBuildRequest(req)
 			// Decide which priority the build should be. Generally we want to get any remote or prebuilt nodes out of the
@@ -357,6 +446,16 @@ func buildAllNodes(stopOnFailure, canUseCache bool, packagesToRebuild, testsToRe
 
 		// Process the the next build result
 		res := <-channels.Results
+
+		// Pass the paths to the built RPMs to the license checker if it is enabled.
+		if licenseChecker != nil && res.Err == nil {
+			res.HasLicenseWarnings, res.HasLicenseErrors, err = licenseChecker.CheckPkgLicenses(res.BuiltFiles)
+			if err != nil {
+				// The license checker itself should not fail, stop the build if it does.
+				err = fmt.Errorf("failed to check licenses for packages:\n%w", err)
+				break
+			}
+		}
 
 		schedulerutils.PrintBuildResult(res)
 		err = buildState.RecordBuildResult(res, allowToolchainRebuilds)
@@ -445,7 +544,6 @@ func buildAllNodes(stopOnFailure, canUseCache bool, packagesToRebuild, testsToRe
 				logger.Log.Infof("%d currently active test(s): %v.", len(activeTests), activeTests)
 			}
 		}
-
 	}
 
 	// Let the workers know they are done
@@ -456,11 +554,33 @@ func buildAllNodes(stopOnFailure, canUseCache bool, packagesToRebuild, testsToRe
 	time.Sleep(time.Second)
 
 	builtGraph = pkgGraph
-	schedulerutils.PrintBuildSummary(builtGraph, graphMutex, buildState, allowToolchainRebuilds)
+	schedulerutils.RecordLicenseSummary(licenseChecker)
+	schedulerutils.PrintBuildSummary(builtGraph, graphMutex, buildState, allowToolchainRebuilds, licenseChecker)
 	schedulerutils.RecordBuildSummary(builtGraph, graphMutex, buildState, *outputCSVFile)
-	if !allowToolchainRebuilds && (len(buildState.ConflictingRPMs()) > 0 || len(buildState.ConflictingSRPMs()) > 0) {
-		err = fmt.Errorf("toolchain packages rebuilt. See build summary for details. Use 'ALLOW_TOOLCHAIN_REBUILDS=y' to suppress this error if rebuilds were expected")
+
+	printErr := schedulerutils.PrintHiddenBuildBlockers(builtGraph, graphMutex, buildState, goalNode)
+	if printErr != nil {
+		logger.Log.Warnf("Failed to print hidden build blockers:\n%s", printErr)
 	}
+
+	err = errors.Join(err, performPostBuildChecks(allowToolchainRebuilds, buildState))
+
+	return
+}
+
+// performPostBuildChecks checks for any fatal post-build errors
+// and turns them into as a single error.
+func performPostBuildChecks(allowToolchainRebuilds bool, buildState *schedulerutils.GraphBuildState) (err error) {
+	if !allowToolchainRebuilds && (len(buildState.ConflictingRPMs()) > 0 || len(buildState.ConflictingSRPMs()) > 0) {
+		toolchainErr := fmt.Errorf("toolchain packages rebuilt. See build summary for details. Use 'ALLOW_TOOLCHAIN_REBUILDS=y' to suppress this error if rebuilds were expected")
+		err = errors.Join(err, toolchainErr)
+	}
+
+	if len(buildState.LicenseFailureSRPMs()) > 0 {
+		licenseErr := fmt.Errorf("license check failed for some packages. See build summary for details")
+		err = errors.Join(err, licenseErr)
+	}
+
 	return
 }
 
@@ -505,7 +625,7 @@ func setAssociatedDeltaPaths(res *schedulerutils.BuildResult, pkgGraph *pkggraph
 	}
 
 	// Now we can scan for all the run nodes that use the cached RPM path and update them to the actual RPM path.
-	for _, node := range pkgGraph.AllRunNodes() {
+	for _, node := range pkgGraph.AllPreferredRunNodes() {
 		// Get base path of the .rpm for the node and find the built file in the map
 		rpmBasePath := filepath.Base(node.RpmPath)
 		builtFile, ok := builtFileMap[rpmBasePath]

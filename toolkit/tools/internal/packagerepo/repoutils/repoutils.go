@@ -5,14 +5,15 @@ package repoutils
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/file"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/jsonutils"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/logger"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/packagerepo/repocloner"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/pkgjson"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/timestamp"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/file"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/jsonutils"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/logger"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/packagerepo/repocloner"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/pkgjson"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/timestamp"
 )
 
 // RestoreClonedRepoContents restores a cloner's repo contents using a JSON file at `srcFile`.
@@ -38,7 +39,7 @@ func RestoreClonedRepoContents(cloner repocloner.RepoCloner, srcFile string) (er
 	uniquePackages := removePackageDuplicates(repo.Repo)
 	packagesToDownload := filterOutDownloadedPackage(uniquePackages, cloner.CloneDirectory())
 
-	_, err = cloner.Clone(cloneDeps, packagesToDownload...)
+	_, err = cloner.CloneByPackageVer(cloneDeps, packagesToDownload...)
 	if err != nil {
 		return err
 	}
@@ -156,4 +157,25 @@ func verifyClonedRepoContents(clonedRepoContents, expectedPackages []*repocloner
 	logger.Log.Infof("Cloned repo contents verified successfully.")
 
 	return
+}
+
+// FindCreateRepoCommand searches for createrepo or createrepo_c in $PATH and returns the first one found
+func FindCreateRepoCommand() (cmd string, err error) {
+	creatrepo_cmds := []string{"createrepo_c", "createrepo"}
+
+	selectedCmd := ""
+	// Check if a command exists in the $PATH
+	for _, cmd := range creatrepo_cmds {
+		_, err = exec.LookPath(cmd)
+		if err == nil {
+			selectedCmd = cmd
+			break
+		}
+	}
+
+	if selectedCmd == "" {
+		return "", fmt.Errorf("failed to find a working createrepo command.\nattempted commands: %v", creatrepo_cmds)
+	}
+
+	return selectedCmd, nil
 }

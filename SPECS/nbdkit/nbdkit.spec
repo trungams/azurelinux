@@ -5,7 +5,7 @@
 %bcond_with blkio
 
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 %undefine _package_note_flags
 %global _hardened_build 1
 
@@ -51,13 +51,16 @@ Distribution:   Mariner
 
 Name:           nbdkit
 Version:        1.35.3
-Release:        2%{?dist}
+Release:        7%{?dist}
 Summary:        NBD server
 
 License:        BSD
 URL:            https://gitlab.com/nbdkit/nbdkit
 
 Source0:        http://libguestfs.org/download/nbdkit/%{source_directory}/%{name}-%{version}.tar.gz
+
+Patch0:  CVE-2025-47711.patch 
+Patch1:  CVE-2025-47712.patch
 
 BuildRequires: make
 %if 0%{patches_touch_autotools}
@@ -94,7 +97,7 @@ BuildRequires:  python3-devel
 BuildRequires:  python3-boto3
 %endif
 %if 0%{?have_ocaml}
-BuildRequires:  ocaml >= 4.03
+BuildRequires:  ocaml >= 5.1.1
 BuildRequires:  ocaml-ocamldoc
 %endif
 %if %{with ruby}
@@ -104,12 +107,13 @@ BuildRequires:  tcl-devel
 BuildRequires:  lua-devel
 
 # Only for running the test suite:
+%if 0%{?with_check}
 BuildRequires:  %{_bindir}/bc
 BuildRequires:  %{_bindir}/certtool
 BuildRequires:  %{_bindir}/cut
 BuildRequires:  expect
 BuildRequires:  %{_bindir}/hexdump
-BuildRequires:  /sbin/ip
+BuildRequires:  %{_sbindir}/ip
 BuildRequires:  jq
 BuildRequires:  %{_bindir}/nbdcopy
 BuildRequires:  %{_bindir}/nbdinfo
@@ -119,8 +123,9 @@ BuildRequires:  %{_bindir}/qemu-io
 BuildRequires:  %{_bindir}/qemu-nbd
 BuildRequires:  /sbin/sfdisk
 BuildRequires:  %{_bindir}/socat
-BuildRequires:  /sbin/ss
+BuildRequires:  %{_sbindir}/ss
 BuildRequires:  %{_bindir}/stat
+%endif
 
 # nbdkit is a metapackage pulling the server and a useful subset
 # of the plugins and filters.
@@ -1193,6 +1198,21 @@ export LIBGUESTFS_TRACE=1
 
 
 %changelog
+* Thu Jun 19 2025 Akarsh Chaudhary <v-akarshc@microsoft.com>- 1.35.3-7
+- Patch CVE-2025-47712 ,CVE-2025-47711
+
+* Thu Aug 29 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.35.3-6
+- Fixed test-time dependencies to match correct AZL paths.
+
+* Thu May 02 2024 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 1.35.3-5
+- Upgraded ocaml dependency to 5.1.1
+
+* Fri Feb 16 2024 Andrew Phelps <anphel@microsoft.com> - 1.35.3-4
+- Wrap test dependencies in with_check if block
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 1.35.3-3
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Tue May 23 2023 Vince Perri <viperri@microsoft.com> - 1.34.1-2
 - License verified.
 - Removing libxcrypt-compat requirement from vddk plugin.
@@ -2245,7 +2265,7 @@ export LIBGUESTFS_TRACE=1
 - New filters: blocksize, fua, log, nozero.
 
 * Fri Feb 09 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 1.1.28-5
-- Escape macros in %%changelog
+- Escape macros in changelog
 
 * Thu Feb 08 2018 Fedora Release Engineering <releng@fedoraproject.org> - 1.1.28-4
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild

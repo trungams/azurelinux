@@ -5,9 +5,10 @@ package configuration
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/file"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/file"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,7 +61,7 @@ func TestShouldFailParsingInvalidBootProto_Network(t *testing.T) {
 
 	err = remarshalJSON(testNetwork, &checkedNetwork)
 	assert.Error(t, err)
-	assert.Equal(t, "failed to parse [Network]: invalid input for bootproto (abcd), bootproto can only be one of dhcp, bootp, ibft and static", err.Error())
+	assert.Equal(t, "failed to parse [Network]:\ninvalid input for bootproto (abcd), bootproto can only be one of dhcp, bootp, ibft and static", err.Error())
 }
 
 func TestShouldFailParsingInvalidGateWay_Network(t *testing.T) {
@@ -70,11 +71,11 @@ func TestShouldFailParsingInvalidGateWay_Network(t *testing.T) {
 
 	err := testNetwork.ipAddressesAreValid()
 	assert.Error(t, err)
-	assert.Equal(t, "invalid input for gateway: invalid IP address (abcd)", err.Error())
+	assert.Equal(t, "invalid input for gateway:\ninvalid IP address (abcd)", err.Error())
 
 	err = remarshalJSON(testNetwork, &checkedNetwork)
 	assert.Error(t, err)
-	assert.Equal(t, "failed to parse [Network]: invalid input for gateway: invalid IP address (abcd)", err.Error())
+	assert.Equal(t, "failed to parse [Network]:\ninvalid input for gateway:\ninvalid IP address (abcd)", err.Error())
 }
 
 func TestShouldFailParsingInvalidIp_Network(t *testing.T) {
@@ -84,11 +85,11 @@ func TestShouldFailParsingInvalidIp_Network(t *testing.T) {
 
 	err := testNetwork.ipAddressesAreValid()
 	assert.Error(t, err)
-	assert.Equal(t, "invalid input for IP: invalid IP address (abcd)", err.Error())
+	assert.Equal(t, "invalid input for IP:\ninvalid IP address (abcd)", err.Error())
 
 	err = remarshalJSON(testNetwork, &checkedNetwork)
 	assert.Error(t, err)
-	assert.Equal(t, "failed to parse [Network]: invalid input for IP: invalid IP address (abcd)", err.Error())
+	assert.Equal(t, "failed to parse [Network]:\ninvalid input for IP:\ninvalid IP address (abcd)", err.Error())
 }
 
 func TestShouldFailParsingInvalidNetMask_Network(t *testing.T) {
@@ -98,11 +99,11 @@ func TestShouldFailParsingInvalidNetMask_Network(t *testing.T) {
 
 	err := testNetwork.ipAddressesAreValid()
 	assert.Error(t, err)
-	assert.Equal(t, "invalid input for netmask: invalid IP address (abcd)", err.Error())
+	assert.Equal(t, "invalid input for netmask:\ninvalid IP address (abcd)", err.Error())
 
 	err = remarshalJSON(testNetwork, &checkedNetwork)
 	assert.Error(t, err)
-	assert.Equal(t, "failed to parse [Network]: invalid input for netmask: invalid IP address (abcd)", err.Error())
+	assert.Equal(t, "failed to parse [Network]:\ninvalid input for netmask:\ninvalid IP address (abcd)", err.Error())
 }
 
 func TestShouldFailParsingInvalidNameServer_Network(t *testing.T) {
@@ -112,11 +113,11 @@ func TestShouldFailParsingInvalidNameServer_Network(t *testing.T) {
 
 	err := testNetwork.ipAddressesAreValid()
 	assert.Error(t, err)
-	assert.Equal(t, "invalid input for nameserver: invalid IP address (abcd)", err.Error())
+	assert.Equal(t, "invalid input for nameserver:\ninvalid IP address (abcd)", err.Error())
 
 	err = remarshalJSON(testNetwork, &checkedNetwork)
 	assert.Error(t, err)
-	assert.Equal(t, "failed to parse [Network]: invalid input for nameserver: invalid IP address (abcd)", err.Error())
+	assert.Equal(t, "failed to parse [Network]:\ninvalid input for nameserver:\ninvalid IP address (abcd)", err.Error())
 }
 
 func TestShouldFailParsingInvalidDevice_Network(t *testing.T) {
@@ -130,32 +131,16 @@ func TestShouldFailParsingInvalidDevice_Network(t *testing.T) {
 
 	err = remarshalJSON(testNetwork, &checkedNetwork)
 	assert.Error(t, err)
-	assert.Equal(t, "failed to parse [Network]: invalid input for device, device cannot be empty", err.Error())
+	assert.Equal(t, "failed to parse [Network]:\ninvalid input for device, device cannot be empty", err.Error())
 }
 
 func TestShouldPassCreatingNetworkFile_Network(t *testing.T) {
-	const (
-		networkFileDir  = "/etc/systemd/network"
-		testNetworkFile = "/etc/systemd/network/10-static-eth1.network"
-	)
-
-	// Some systems may not have systemd-networkd service configured, and thus
-	// /etc/systemd/network may not exist. For this test case, manually create this directory
-	// if it does not exist
-	exists, err := file.DirExists(networkFileDir)
-	assert.NoError(t, err)
-	if !exists {
-		err = os.Mkdir(networkFileDir, os.ModePerm)
-		assert.NoError(t, err)
-		t.Cleanup(func() {
-			err = os.RemoveAll(networkFileDir)
-			assert.NoError(t, err)
-		})
-	}
+	testNetworkFileDir := t.TempDir()
+	testNetworkFile := filepath.Join(testNetworkFileDir, "10-static-eth1.network")
 
 	testNetwork := validNetworks[0]
 
-	err = createNetworkConfigFile(nil, testNetwork, "eth1")
+	err := createNetworkConfigFile(nil, testNetwork, "eth1", testNetworkFileDir)
 	assert.NoError(t, err)
 	t.Cleanup(func() {
 		os.Remove(testNetworkFile)

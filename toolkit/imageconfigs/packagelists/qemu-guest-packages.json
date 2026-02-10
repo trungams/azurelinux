@@ -1,0 +1,6 @@
+{
+    "packages": [
+        "qemu-guest-agent",
+        "dracut-virtio"
+    ]
+}

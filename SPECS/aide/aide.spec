@@ -1,9 +1,9 @@
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Summary:        Intrusion detection environment
 Name:           aide
-Version:        0.16
-Release:        16%{?dist}
+Version:        0.18.6
+Release:        2%{?dist}
 URL:            https://github.com/aide/aide
 License:        GPLv2+
 
@@ -11,11 +11,13 @@ Source0:        %{url}/releases/download/v%{version}/%{name}-%{version}.tar.gz
 Source1:        aide.conf
 Source2:        README.quickstart
 Source3:        aide.logrotate
+Patch0:         CVE-2025-54389.patch
+Patch1:         CVE-2025-54409.patch
 
 BuildRequires:  gcc
 BuildRequires:  make
 BuildRequires:  bison flex
-BuildRequires:  pcre-devel
+BuildRequires:  pcre2-devel
 BuildRequires:  libgpg-error-devel libgcrypt-devel
 BuildRequires:  zlib-devel
 BuildRequires:  libcurl-devel
@@ -26,18 +28,6 @@ BuildRequires:  e2fsprogs-devel
 BuildRequires:  audit-libs-devel
 BuildRequires:  autoconf automake libtool
 
-# Customize the database file location in the man page.
-Patch1: aide-0.16rc1-man.patch
-# fix aide in FIPS mode
-Patch2: aide-0.16b1-fipsfix.patch
-# Bug 1674637 - aide: FTBFS in Fedora rawhide/f30
-Patch3: aide-0.16-Use-LDADD-for-adding-curl-library-to-the-linker-comm.patch
-
-Patch4: aide-0.15-syslog-format.patch
-Patch5: aide-0.16-crypto-disable-haval-and-others.patch
-Patch6: coverity.patch
-Patch7: aide-0.16-crash-elf.patch
-
 %description
 AIDE (Advanced Intrusion Detection Environment) is a file integrity
 checker and intrusion detection program.
@@ -47,7 +37,6 @@ checker and intrusion detection program.
 cp -a %{S:2} .
 
 %build
-autoreconf -ivf
 %configure  \
   --disable-static \
   --with-config_file=%{_sysconfdir}/aide.conf \
@@ -70,7 +59,7 @@ mkdir -p -m0700 %{buildroot}%{_localstatedir}/lib/aide
 
 %files
 %license COPYING
-%doc AUTHORS ChangeLog NEWS README doc/manual.html contrib/
+%doc AUTHORS ChangeLog NEWS README contrib/
 %doc README.quickstart
 %{_sbindir}/aide
 %{_mandir}/man1/*.1*
@@ -81,6 +70,12 @@ mkdir -p -m0700 %{buildroot}%{_localstatedir}/lib/aide
 %dir %attr(0700,root,root) %{_localstatedir}/log/aide
 
 %changelog
+* Tue Aug 26 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 0.18.6-2
+- Patch for CVE-2025-54409, CVE-2025-54389
+
+* Wed Jan 03 2024 Rakshaa Viswanathan <rviswanathan@microsoft.com> - 0.18.6-1
+- Bump version to 0.18.6
+
 * Thu Jan 05 2023 Thien Trung Vuong <tvuong@microsoft.com> - 0.16-16
 - Updated project URL to Github
 - Verified license

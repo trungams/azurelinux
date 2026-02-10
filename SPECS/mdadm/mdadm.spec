@@ -1,40 +1,43 @@
 %bcond_with libreport
 
-Summary:        The mdadm program controls Linux md devices (software RAID arrays)
-Name:           mdadm
-Version:        4.1
-Release:        8%{?dist}
-License:        GPLv2+
-Vendor:         Microsoft Corporation
-Distribution:   Mariner
-URL:            https://www.kernel.org/pub/linux/utils/raid/mdadm/
-Source0:        http://www.kernel.org/pub/linux/utils/raid/mdadm/%{name}-%{version}.tar.xz
-Source1:        raid-check
-Source2:        mdadm.rules
-Source3:        mdadm-raid-check-sysconfig
-Source4:        mdmonitor.service
-Source5:        mdadm.conf
-Source6:        mdadm_event.conf
-Source7:        raid-check.timer
-Source8:        raid-check.service
-# Build without -Werror. From Debian.
-Patch00:        https://sources.debian.org/data/main/m/mdadm/4.1-2/debian/patches/debian-no-Werror.diff#/mdadm-4.1-no-Werror.patch
-# Fedora customization patches, keeping in Mariner for now.
-Patch97:        mdadm-3.3-udev.patch
-Patch98:        mdadm-2.5.2-static.patch
+Name:         mdadm
+Version:      4.3
+Release:      1%{?dist}
+Summary:      The mdadm program controls Linux md devices (software RAID arrays)
+Vendor:       Microsoft Corporation
+Distribution: Azure Linux
+URL:          http://www.kernel.org/pub/linux/utils/raid/mdadm/
+License:      GPLv2+
+Source0:      https://www.kernel.org/pub/linux/utils/raid/mdadm/%{name}-%{version}.tar.gz
+Source1:      raid-check
+Source2:      mdadm-raid-check-sysconfig
+Source3:      mdmonitor.service
+Source4:      mdadm.conf
+Source5:      mdadm_event.conf
+Source6:      raid-check.timer
+Source7:      raid-check.service
+Source8:      mdcheck
 
-BuildRequires:  binutils-devel
-BuildRequires:  gcc
-BuildRequires:  systemd-rpm-macros
+# Fedora customization patches
+Patch0:       mdadm-udev.patch
+Patch1:       mdadm-2.5.2-static.patch
 
-Requires(post): coreutils
-Requires(post): systemd
+
+BuildRequires:    make
+BuildRequires:    systemd-rpm-macros
+BuildRequires:    binutils-devel
+BuildRequires:    gcc
+BuildRequires:    systemd-devel
+BuildRequires:    mandoc
+%if %{with libreport}
+Requires:         libreport-filesystem
+%endif
+Requires(preun):  systemd
+Requires(post):   coreutils
+Requires(post):   systemd
 Requires(postun): coreutils
 Requires(postun): systemd
-Requires(preun): systemd
-%if %{with libreport}
-Requires:       libreport-filesystem
-%endif
+
 
 %description
 The mdadm program is used to create, manage, and monitor Linux MD (software
@@ -43,62 +46,108 @@ package.  However, mdadm is a single program, and it can perform
 almost all functions without a configuration file, though a configuration
 file can be used to help with some common tasks.
 
+
 %prep
-%autosetup -p1 -n %{name}-%{version}%{?subversion:_%{subversion}}
+%autosetup -p1
+
 
 %build
-make %{?_smp_mflags} CXFLAGS="%{optflags}" LDFLAGS="$RPM_LD_FLAGS" SYSCONFDIR="%{_sysconfdir}" mdadm mdmon
+%make_build CXFLAGS="$RPM_OPT_FLAGS" LDFLAGS="$RPM_LD_FLAGS" SYSCONFDIR="%{_sysconfdir}" mdadm mdmon
+
 
 %install
-make DESTDIR=%{buildroot} MANDIR=%{_mandir} BINDIR=%{_sbindir} SYSTEMD_DIR=%{_unitdir} UDEVDIR=%{_libdir}/udev/ install install-systemd
+%make_install MANDIR=%{_mandir} BINDIR=%{_sbindir} SYSTEMD_DIR=%{_unitdir} UDEVDIR=%{_prefix}/lib/udev/ install install-systemd
 install -Dp -m 755 %{SOURCE1} %{buildroot}%{_sbindir}/raid-check
-install -Dp -m 644 %{SOURCE2} %{buildroot}%{_udevrulesdir}/65-md-incremental.rules
-install -Dp -m 644 %{SOURCE3} %{buildroot}%{_sysconfdir}/sysconfig/raid-check
-mkdir -p -m 710 %{buildroot}/run/mdadm
+install -Dp -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/sysconfig/raid-check
+mkdir -p -m 710 %{buildroot}/run/%{name}
+mkdir -p -m 700 %{buildroot}%{_datadir}/%{name}
+install -Dp -m 755 %{SOURCE8} %{buildroot}%{_datadir}/%{name}/mdcheck
 
 # systemd
-mkdir -p %{buildroot}%{_unitdir}
-install -m644 %{SOURCE4} %{buildroot}%{_unitdir}
-install -m644 %{SOURCE7} %{buildroot}%{_unitdir}
-install -m644 %{SOURCE8} %{buildroot}%{_unitdir}
+install -Dm644 %{SOURCE3} %{buildroot}%{_unitdir}
+install -Dm644 %{SOURCE6} %{buildroot}%{_unitdir}
+install -Dm644 %{SOURCE7} %{buildroot}%{_unitdir}
 
 # tmpfile
-mkdir -p %{buildroot}%{_tmpfilesdir}
-install -m 0644 %{SOURCE5} %{buildroot}%{_tmpfilesdir}/%{name}.conf
+install -Dm 0644 %{SOURCE4} %{buildroot}%{_tmpfilesdir}/%{name}.conf
 mkdir -p %{buildroot}%{_localstatedir}/run/
 install -d -m 0710 %{buildroot}/run/%{name}/
 
 # abrt
 %if %{with libreport}
-mkdir -p %{buildroot}%{_sysconfdir}/libreport/events.d
-install -m644 %{SOURCE6} %{buildroot}%{_sysconfdir}/libreport/events.d
+install -Dm644 %{SOURCE5} %{buildroot}%{_sysconfdir}/libreport/events.d/%{name}_event.conf
 %endif
 
 %post
 %systemd_post mdmonitor.service raid-check.timer
+# leftover from this service removal years ago (f18 era).
+# we probably don't really need this anymore.
+# https://bugzilla.redhat.com/show_bug.cgi?id=901651
+%{_bindir}/systemctl disable mdmonitor-takeover.service  >/dev/null 2>&1 || :
+
 
 %preun
 %systemd_preun mdmonitor.service raid-check.timer
 
+
 %postun
 %systemd_postun_with_restart mdmonitor.service
+
 
 %files
 %license COPYING
 %doc mdadm.conf-example misc/*
-%{_udevrulesdir}/*
-%{_sbindir}/*
-%{_unitdir}/*
+%{_udevrulesdir}/*-md-*
+%{_sbindir}/%{name}
+%{_sbindir}/mdmon
+%{_sbindir}/raid-check
+%{_unitdir}/md*
+%{_unitdir}/raid-check.*
 %{_mandir}/man*/md*
-%{_libdir}/systemd/system-shutdown/*
-%config(noreplace) %{_sysconfdir}/sysconfig/*
-%dir /run/%{name}/
+%{_prefix}/lib/systemd/system-shutdown/mdadm.shutdown
+%config(noreplace) %{_sysconfdir}/sysconfig/raid-check
+%{_rundir}/%{name}/
 %config(noreplace) %{_tmpfilesdir}/%{name}.conf
 %if %{with libreport}
-%{_sysconfdir}/libreport/events.d/*
+%{_sysconfdir}/libreport/events.d/mdadm_event.conf
 %endif
+%{_datadir}/%{name}/
+
 
 %changelog
+* Wed Sep 11 2024 Vince Perri <viperri@microsoft.com> - 4.3-1
+- Upgrade to mdadm-4.3 using Fedora 41:
+-   Kept translation of %{with abrt} to %{with libreport}
+-   Kept removal of tar.sign and asc sources and related code
+-   Kept removing gnupg2 since it's only used to verify the tarball signature
+-   Kept requiring systmed (pre/post/postun)
+-   Kept not building raid6check and raid6check.man
+-   Otherwise minimized diff between Fedora 41 and Azure Linux
+
+* Tue Sep 03 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 4.2-7
+- Add missing Vendor and Distribution tags.
+
+* Mon Aug 26 2024 Rachel Menge <rachelmenge@microsoft.com> - 4.2-6
+- Update to build dep latest glibc-static version
+
+* Wed Aug 21 2024 Chris Co <chrco@microsoft.com> - 4.2-5
+- Bump to rebuild with updated glibc
+
+* Wed May 22 2024 Suresh Babu Chalamalasetty <schalam@microsoft.com> - 4.2-4
+- update to build dep latest glibc-static version
+
+* Mon May 13 2024 Chris Co <chrco@microsoft.com> - 4.2-3
+- Update to build dep latest glibc-static version
+
+* Mon Mar 11 2024 Dan Streetman <ddstreet@microsoft.com> - 4.2-2
+- update to build dep latest glibc-static version
+
+* Thu Feb 29 2024 Yash Panchal <yashpanchal@microsoft.com> - 4.2-1
+- Upgrade mdadm to 4.2
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 4.1-9
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Fri Apr 01 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 4.1-8
 - Cleaning-up spec. License verified.
 
@@ -111,9 +160,9 @@ install -m644 %{SOURCE6} %{buildroot}%{_sysconfdir}/libreport/events.d
 - Initial CBL-Mariner import from Fedora 32 (license: MIT).
 - Converting the 'Release' tag to the '[number].[distribution]' format.
 
-* Wed Apr 01 2020 Xiao Ni <xni@redhat.com> - 4.1-5
-- Fix raid check systemd config errors
-- Resolves bz1801010
+* Wed May 27 2020 Xiao Ni <xni@redhat.com> - 4.1-5
+- Don't enable raid-check.service to avoid raid check after every boot
+- Resolves bz1838409
 
 * Sun Mar 08 2020 Peter Robinson <pbrobinson@fedoraproject.org> - 4.1-4
 - Fix install location of udev rules (rhbz 1809117)
@@ -188,7 +237,7 @@ install -m644 %{SOURCE6} %{buildroot}%{_sysconfdir}/libreport/events.d
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild
 
 * Thu Jan 12 2017 Xiao Ni <xni@redhat.com> - 4.0-1
-- Upgrade to mdadm-4.0 
+- Upgrade to mdadm-4.0
 - Resolves bz1411555
 
 * Mon Aug 15 2016 Jes Sorensen <Jes.Sorensen@redhat.com> - 3.4-3
@@ -285,7 +334,7 @@ install -m644 %{SOURCE6} %{buildroot}%{_sysconfdir}/libreport/events.d
 
 * Wed Oct 9 2013 Jes Sorensen <Jes.Sorensen@redhat.com> - 3.3-3
 - Check for DM_UDEV_DISABLE_OTHER_RULES_FLAG instead of
-  DM_UDEV_DISABLE_DISK_RULES_FLAG in 65-md-incremental.rules 
+  DM_UDEV_DISABLE_DISK_RULES_FLAG in 65-md-incremental.rules
 - Resolves bz1015521
 
 * Tue Oct 8 2013 Jes Sorensen <Jes.Sorensen@redhat.com> - 3.3-2
@@ -306,7 +355,7 @@ install -m644 %{SOURCE6} %{buildroot}%{_sysconfdir}/libreport/events.d
 
 * Wed Apr 24 2013 Jes Sorensen <Jes.Sorensen@redhat.com> - 3.2.6-19
 - Fix problem where  rebuild of IMSM RAID5 volume started in OROM,
-  does not proceed in OS 
+  does not proceed in OS
 - Resolves bz956021 (f18), bz956026 (f17), bz956031 (f19)
 
 * Tue Apr 23 2013 Jes Sorensen <Jes.Sorensen@redhat.com> - 3.2.6-18
@@ -419,7 +468,7 @@ install -m644 %{SOURCE6} %{buildroot}%{_sysconfdir}/libreport/events.d
 
 * Wed Jul 18 2012 Karsten Hopp <karsten@redhat.com> 3.2.5-5
 - include <linux/types.h> in some to avoid type clashes.
-  same problem as rhbz #840902  
+  same problem as rhbz #840902
 
 * Mon Jul 16 2012 Jes Sorensen <Jes.Sorensen@redhat.com> - 3.2.5-4
 - Move /etc/tmpfiles.d/mdadm.conf to /lib/tmpfiles.d/ to comply with
@@ -494,7 +543,7 @@ install -m644 %{SOURCE6} %{buildroot}%{_sysconfdir}/libreport/events.d
 * Thu Feb 16 2012 Jes Sorensen <Jes.Sorensen@redhat.com> - 3.2.3-5
 - Fix issue with devices failing to be added to a raid using bitmaps,
   due to trying to write the bitmap with mis-aligned buffers using
-  O_DIRECT 
+  O_DIRECT
 - Resolves: bz789898 (f16) bz791189 (f15)
 
 * Mon Jan 30 2012 Jes Sorensen <Jes.Sorensen@redhat.com> - 3.2.3-4
@@ -794,7 +843,7 @@ install -m644 %{SOURCE6} %{buildroot}%{_sysconfdir}/libreport/events.d
 - Modify mdadm to put its mapfile in /dev/md instead of /var/run/mdadm
   since at startup /var/run/mdadm is read-only by default and this
   breaks incremental assembly
-- Change how mdadm decides to assemble incremental devices using their 
+- Change how mdadm decides to assemble incremental devices using their
   preferred name or a random name to avoid possible conflicts when plugging
   a foreign array into a host
 

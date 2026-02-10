@@ -1,4 +1,5 @@
 %global debug_package %{nil}
+%global efidir BOOT
 %ifarch x86_64
 %global buildarch x86_64
 %global grubefiname grubx64.efi
@@ -12,10 +13,10 @@
 Summary:        Signed GRand Unified Bootloader for %{buildarch} systems
 Name:           grub2-efi-binary-signed-%{buildarch}
 Version:        2.06
-Release:        10%{?dist}
+Release:        26%{?dist}
 License:        GPLv3+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://www.gnu.org/software/grub
 # This package's "version" and "release" must reflect the unsigned version that
 # was signed.
@@ -41,6 +42,9 @@ specifically created for installing on %{buildarch} systems
 %package -n     grub2-efi-binary
 Summary:        GRand Unified Bootloader
 Group:          Applications/System
+Requires:       grub2-tools-minimal = %{version}-%{release}
+Recommends:     shim >= 15.8-3
+Conflicts:      shim < 15.8-3
 
 # Some distros split 'grub2' into more subpackages. For now we're bundling it all together
 # inside the default package and adding these 'Provides' to make installation more user-friendly
@@ -56,6 +60,9 @@ specifically created for installing on %{buildarch} systems
 %package -n     grub2-efi-binary-noprefix
 Summary:        GRand Unified Bootloader
 Group:          Applications/System
+Requires:       grub2-tools-minimal = %{version}-%{release}
+Recommends:     shim >= 15.8-3
+Conflicts:      shim < 15.8-3
 
 %description -n grub2-efi-binary-noprefix
 This package contains the GRUB EFI image with no prefix directory set and is signed for secure boot. The package is
@@ -66,17 +73,65 @@ specifically created for installing on %{buildarch} systems
 %build
 
 %install
-mkdir -p %{buildroot}/boot/efi/EFI/BOOT
-cp %{SOURCE2} %{buildroot}/boot/efi/EFI/BOOT/%{grubefiname}
-cp %{SOURCE3} %{buildroot}/boot/efi/EFI/BOOT/%{grubpxeefiname}
+mkdir -p %{buildroot}/boot/efi/EFI/%{efidir}
+cp %{SOURCE2} %{buildroot}/boot/efi/EFI/%{efidir}/%{grubefiname}
+cp %{SOURCE3} %{buildroot}/boot/efi/EFI/%{efidir}/%{grubpxeefiname}
 
 %files -n grub2-efi-binary
-/boot/efi/EFI/BOOT/%{grubefiname}
+/boot/efi/EFI/%{efidir}/%{grubefiname}
 
 %files -n grub2-efi-binary-noprefix
-/boot/efi/EFI/BOOT/%{grubpxeefiname}
+/boot/efi/EFI/%{efidir}/%{grubpxeefiname}
 
 %changelog
+* Mon Nov 24 2025 Akhila Guruju <v-guakhila@microsoft.com> - 2.06-26
+- Bump release number to match grub release
+
+* Tue Jun 17 2025 Kshitiz Godara <kgodara@microsoft.com> - 2.06-25
+- Bump release number to match grub release
+
+* Mon Jun 02 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 2.06-24
+- Bump release number to match grub release
+
+* Thu Apr 17 2025 Kavya Sree Kaitepalli <kkaitepalli@microsoft.com> - 2.06-23
+- Bump release number to match grb release
+
+* Sun Nov 10 2024 Chris Co <chrco@microsoft.com> - 2.06-22
+- Set efidir location to BOOT for eventual use in changing to "azurelinux"
+
+* Mon Oct 28 2024 Chris Co <chrco@microsoft.com> - 2.06-21
+- Bump release number to match grub release
+
+* Tue Aug 13 2024 Daniel McIlvaney <damcilva@microsoft.com> - 2.06-20
+- Move grub2-rpm-macros to the azurelinux-rpm-macros package
+
+* Wed Jun 12 2024 George Mileka <gmileka@microsoft.com> - 2.06-19
+- disable code optimization for ip checksum calculation
+
+* Mon Apr 15 2024 Dan Streetman <ddstreet@microsoft.com> - 2.06-18
+- update grub to sbat 4
+
+* Wed Mar 20 2024 Cameron Baird <cameronbaird@microsoft.com> - 2.06-17
+- Bump release number to match grub release number
+
+* Wed Mar 07 2024 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 2.06-16
+- Bumping release version to match with `grub2` release version
+
+* Tue Mar 05 2024 Cameron Baird <cameronbaird@microsoft.com> - 2.06-15
+- Bump release number to match grub release number
+
+* Thu Jan 25 10:55:03 EST 2024 Dan Streetman <ddstreet@ieee.org> - 2.06-14
+- match grub2 version
+
+* Mon Nov 27 2023 Cameron Baird <cameronbaird@microsoft.com> - 2.06-13
+- Bump release number to match grub release number
+
+* Wed Oct 18 2023 Gary Swalling <gaswal@microsoft.com> - 2.06-12
+- Bump release number to match grub release number
+
+* Tue Aug 29 2023 Cameron Baird <cameronbaird@microsoft.com> - 2.06-11
+- Bump release number to match grub release number
+
 * Thu Jun 08 2023 Daniel McIlvaney <damcilva@microsoft.com> - 2.06-10
 - CVE-2022-3775
 

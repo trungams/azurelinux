@@ -1,13 +1,14 @@
 Summary:        ODBC driver manager
 Name:           unixODBC
-Version:        2.3.9
+Version:        2.3.12
 Release:        2%{?dist}
 License:        GPLv2+ AND LGPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Libraries
 URL:            http://www.unixodbc.org/
 Source0:        http://www.unixodbc.org/%{name}-%{version}.tar.gz
+Patch0:         CVE-2024-1013.patch
 BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  libtool
@@ -27,8 +28,7 @@ To develop programs that will access data through
 ODBC, you need to install this package.
 
 %prep
-
-%setup -q
+%autosetup -p1
 
 %build
 ./configure --prefix=%{_prefix}               \
@@ -72,6 +72,12 @@ rm -rf %{buildroot}%{_datadir}/libtool
 %{_libdir}/pkgconfig
 
 %changelog
+* Wed May 29 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 2.3.12-2
+- Patch CVE-2024-1013
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.3.12-1
+- Auto-upgrade to 2.3.12 - Azure Linux 3.0 - package upgrades
+
 * Thu May 26 2022 Evan Lee <evlee@microsoft.com> - 2.3.9-2
 - Require glibc-iconv as a runtime dependency for unixODBC.
 

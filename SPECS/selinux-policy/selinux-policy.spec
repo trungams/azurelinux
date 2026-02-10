@@ -3,61 +3,61 @@
 %define monolithic n
 %define policy_name targeted
 %define refpolicy_major 2
-%define refpolicy_minor 20221101
+%define refpolicy_minor 20240226
 %define POLICYCOREUTILSVER 3.2
 %define CHECKPOLICYVER 3.2
 Summary:        SELinux policy
 Name:           selinux-policy
 Version:        %{refpolicy_major}.%{refpolicy_minor}
-Release:        3%{?dist}
+Release:        12%{?dist}
 License:        GPLv2
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://github.com/SELinuxProject/refpolicy
 Source0:        %{url}/releases/download/RELEASE_%{refpolicy_major}_%{refpolicy_minor}/refpolicy-%{version}.tar.bz2
 Source1:        Makefile.devel
 Source2:        booleans_targeted.conf
 Source3:        modules_targeted.conf
 Source4:        macros.selinux-policy
-Patch1:         0001-cronyd-Add-dac_read_search.patch
-Patch2:         0002-Temporary-fix-for-wrong-audit-log-directory.patch
+Patch1:         0001-Add-dac_read_search-perms.patch
+Patch2:         0002-systemd-systemd-logind-reads-cloud-init-state.patch
 Patch3:         0003-Set-default-login-to-unconfined_u.patch
 Patch4:         0004-Add-compatibility-for-container-selinux.patch
-Patch5:         0005-Add-dac_read_search-perms.patch
-Patch6:         0006-unconfined-Manage-own-fds.patch
-Patch7:         0007-systemd-systemd-cgroups-reads-kernel.cap_last_cap-sy.patch
-Patch8:         0008-kernel-hv_utils-shutdown-on-systemd-systems.patch
-Patch9:         0009-Container-Minor-fixes-from-interactive-container-use.patch
-Patch10:        0010-systemd-Minor-coredump-fixes.patch
-Patch11:        0011-rpm-Minor-fixes.patch
-Patch12:        0012-init-Allow-nnp-nosuid-transitions-from-systemd-initr.patch
-Patch13:        0013-selinuxutil-Semanage-reads-policy-for-export.patch
-Patch14:        0014-sysnetwork-ifconfig-searches-debugfs.patch
-Patch15:        0015-usermanage-Add-dac_read_search-to-useradd.patch
-Patch16:        0016-Temp-kubernetes-fix.patch
-Patch17:        0017-usermanage-Add-sysctl-access-for-groupadd-to-get-num.patch
-Patch18:        0018-container-docker-Fixes-for-containerd-and-kubernetes.patch
-Patch19:        0019-iscsi-Read-initiatorname.iscsi.patch
-Patch20:        0020-lvm-Add-fc-entry-for-etc-multipath.patch
-Patch21:        0021-files-Handle-symlinks-for-media-and-srv.patch
-Patch22:        0022-cloudinit-Add-support-for-installing-RPMs-and-settin.patch
-Patch23:        0023-kdump-Fixes-from-testing-kdumpctl.patch
-Patch24:        0024-usermanage-Handle-symlinks-in-usr-share-cracklib.patch
-Patch25:        0025-unconfined-Add-remaining-watch_-permissions.patch
-Patch26:        0026-chronyd-Read-dev-urandom.patch
-Patch27:        0027-cloud-init-Allow-use-of-sudo-in-runcmd.patch
-Patch28:        0028-cloud-init-Add-systemd-permissions.patch
-Patch29:        0029-usermanage-Add-dac_read_search-to-passwd_t.patch
-Patch30:        0030-cloud-init-Change-udev-rules.patch
-Patch31:        0031-Port-tomcat-module-from-Fedora-policy.patch
-Patch32:        0032-Port-PKI-module-from-Fedora-policy.patch
-Patch33:        0033-domain-Unconfined-can-transition-to-other-domains.patch
-Patch34:        0034-systemd-Updates-for-systemd-locale.patch
-Patch35:        0035-modutils-Handle-running-dracut-during-rpm-postinst.patch
-Patch36:        0036-iptables-Support-Mariner-non-standard-config-locatio.patch
-Patch37:        0037-cloudinit-Add-permissions-derived-from-sysadm.patch
-Patch38:        0038-systemd-Fix-run-systemd-shutdown-handling.patch
-Patch39:        0039-modutils-Temporary-fix-for-mkinitrd-dracut.patch
+Patch5:         0005-Temp-kubernetes-fix.patch
+Patch6:         0006-container-docker-Fixes-for-containerd-and-kubernetes.patch
+Patch7:         0007-Port-tomcat-module-from-Fedora-policy.patch
+Patch8:         0008-Port-PKI-module-from-Fedora-policy.patch
+Patch9:         0009-domain-Unconfined-can-transition-to-other-domains.patch
+Patch10:        0010-modutils-Handle-running-dracut-during-rpm-postinst.patch
+Patch11:        0011-iptables-Support-Mariner-non-standard-config-locatio.patch
+Patch12:        0012-systemd-Fix-run-systemd-shutdown-handling.patch
+Patch13:        0013-modutils-Temporary-fix-for-mkinitrd-dracut.patch
+Patch14:        0014-Add-additional-Fedora-policy-compatibility.patch
+Patch15:        0015-various-Add-new-pidfd-uses.patch
+Patch16:        0016-various-Add-use-of-pressure-stall-information-in-sys.patch
+Patch17:        0017-various-Add-additional-logging-access-for-domains-ru.patch
+Patch18:        0018-unconfined-Add-user-namespace-creation.patch
+Patch19:        0019-sysnet-The-ip-command-reads-various-files-in-usr-sha.patch
+Patch20:        0020-rpm-Minor-fixes.patch
+Patch21:        0021-systemd-Minor-fixes.patch
+Patch22:        0022-irqbalance-Dontaudit-net_admin.patch
+Patch23:        0023-systemd-tmpfiles-loadkeys-Read-var_t-symlinks.patch
+Patch24:        0024-systemd-tmpfiles-create-root-and-root-.ssh.patch
+Patch25:        0025-kernel-Exec-systemctl.patch
+Patch26:        0026-getty-grant-checkpoint_restore.patch
+Patch27:        0027-systemd-Add-basic-systemd-analyze-rules.patch
+Patch28:        0028-cloudinit-Add-support-for-cloud-init-growpart.patch
+Patch29:        0029-filesystem-systemd-memory.pressure-fixes.patch
+Patch30:        0030-init-Add-homectl-dbus-access.patch
+Patch31:        0031-Temporary-workaround-for-memory.pressure-labeling-is.patch
+Patch32:        0032-rpm-Fixes-from-various-post-scripts.patch
+Patch33:        0033-kmod-fix-for-run-modprobe.d.patch
+Patch34:        0034-systemd-Fix-dac_override-use-in-systemd-machine-id-s.patch
+Patch35:        0035-rpm-Run-systemd-sysctl-from-post.patch
+Patch36:        0036-fstools-Add-additional-perms-for-cloud-utils-growpar.patch
+Patch37:        0037-docker-Fix-dockerc-typo-in-container_engine_executab.patch
+Patch38:        0038-enable-liveos-iso-flow.patch
+Patch41:        0041-rpm-Allow-gpg-agent-run-in-rpm-scripts-to-watch-secr.patch
 BuildRequires:  bzip2
 BuildRequires:  checkpolicy >= %{CHECKPOLICYVER}
 BuildRequires:  m4
@@ -131,12 +131,10 @@ enforced by the kernel when running with SELinux enabled.
 %{_sharedstatedir}/selinux/%{policy_name}/active/homedir_template
 %{_sharedstatedir}/selinux/%{policy_name}/active/seusers
 %{_sharedstatedir}/selinux/%{policy_name}/active/file_contexts
-%exclude %{_sharedstatedir}/selinux/%{policy_name}/active/policy.kern
-%exclude %{_sharedstatedir}/selinux/%{policy_name}/active/policy.linked
-%exclude %{_sharedstatedir}/selinux/%{policy_name}/active/seusers.linked
-%exclude %{_sharedstatedir}/selinux/%{policy_name}/active/users_extra.linked
+%{_sharedstatedir}/selinux/%{policy_name}/active/modules_checksum
+%verify(not md5 size mtime) %{_sharedstatedir}/selinux/%{policy_name}/active/policy.kern
 %verify(not md5 size mtime) %{_sharedstatedir}/selinux/%{policy_name}/active/file_contexts.homedirs
-%{_sharedstatedir}/selinux/%{policy_name}/active/modules/100/base
+%{_sharedstatedir}/selinux/%{policy_name}/active/modules/100/*
 
 %package modules
 Summary:        SELinux policy modules
@@ -144,18 +142,17 @@ Requires:       selinux-policy = %{version}-%{release}
 Requires(pre):  selinux-policy = %{version}-%{release}
 
 %description modules
-Additional SELinux policy modules
+Additional SELinux policy modules -- deprecated: all policy modules are now
+in selinux-policy.  This package will be removed in Azure Linux 4.0.
 
 %files modules
-%{_sharedstatedir}/selinux/%{policy_name}/active/modules/100/*
-%exclude %{_sharedstatedir}/selinux/%{policy_name}/active/modules/100/base
-%exclude %{_sharedstatedir}/selinux/%{policy_name}/active/modules/disabled
 
 %package devel
 Summary:        SELinux policy devel
 Requires:       %{_bindir}/make
 Requires:       checkpolicy >= %{CHECKPOLICYVER}
 Requires:       m4
+Requires:       selinux-policy = %{version}-%{release}
 Requires(post): policycoreutils-devel >= %{POLICYCOREUTILSVER}
 
 %description devel
@@ -196,18 +193,12 @@ install -m0644 %{_sourcedir}/modules_%{1}.conf policy/modules.conf \
 %make_build UNK_PERMS=%{4} NAME=%{1} TYPE=%{2} UBAC=%{3} %{common_makeopts} conf \
 install -m0644 %{_sourcedir}/booleans_%{1}.conf policy/booleans.conf
 
-# After all the modules are inserted into the module store, the non-base
-# modules are disabled so the selinux-policy package only has the base module.
-# The selinux-policy-modules RPM then drops the disable flags using %exclude
-# in the %files section so the entire policy is enabled when the
-# selinux-policy-modules RPM is installed.
 %define installCmds() \
 %make_build UNK_PERMS=%{4} NAME=%{1} TYPE=%{2} UBAC=%{3} %{common_makeopts} base.pp \
 %make_build validate UNK_PERMS=%{4} NAME=%{1} TYPE=%{2} UBAC=%{3} %{common_makeopts} modules \
 make UNK_PERMS=%{4} NAME=%{1} TYPE=%{2} UBAC=%{3} %{common_makeopts} install \
 make UNK_PERMS=%{4} NAME=%{1} TYPE=%{2} UBAC=%{3} %{common_makeopts} install-appconfig \
 make UNK_PERMS=%{4} NAME=%{1} TYPE=%{2} UBAC=%{3} SEMODULE="semodule -p %{buildroot} -X 100 " load \
-semodule -p %{buildroot} -l | grep -v base | xargs semodule -p %{buildroot} -d \
 mkdir -p %{buildroot}/%{_sysconfdir}/selinux/%{1}/logins \
 touch %{buildroot}%{_sysconfdir}/selinux/%{1}/contexts/files/file_contexts.subs \
 install -m0644 config/appconfig-%{2}/securetty_types %{buildroot}%{_sysconfdir}/selinux/%{1}/contexts/securetty_types \
@@ -225,10 +216,10 @@ rm -f %{buildroot}%{_sharedstatedir}/selinux/%{1}/active/*.linked \
 FILE_CONTEXT=%{_sysconfdir}/selinux/%{1}/contexts/files/file_contexts; \
 %{_sbindir}/selinuxenabled; \
 if [ $? = 0  -a "${SELINUXTYPE}" = %{1} -a -f ${FILE_CONTEXT}.pre ]; then \
-     /sbin/fixfiles -C ${FILE_CONTEXT}.pre restore &> /dev/null > /dev/null; \
+     /sbin/fixfiles -C ${FILE_CONTEXT}.pre restore; \
      rm -f ${FILE_CONTEXT}.pre; \
 fi; \
-if /sbin/restorecon -e /run/media -R /root %{_var}/log %{_var}/run %{_sysconfdir}/passwd* %{_sysconfdir}/group* %{_sysconfdir}/*shadow* 2> /dev/null;then \
+if /sbin/restorecon -e /run/media -R /root %{_var}/log %{_var}/run %{_sysconfdir}/passwd* %{_sysconfdir}/group* %{_sysconfdir}/*shadow* ;then \
     continue; \
 fi;
 %define preInstall() \
@@ -250,7 +241,7 @@ if [ -e %{_sysconfdir}/selinux/%{2}/.rebuild ]; then \
 fi; \
 [ "${SELINUXTYPE}" == "%{2}" ] && selinuxenabled && load_policy; \
 if [ %{1} -eq 1 ]; then \
-   /sbin/restorecon -R /root %{_var}/log /run %{_sysconfdir}/passwd* %{_sysconfdir}/group* %{_sysconfdir}/*shadow* 2> /dev/null; \
+   /sbin/restorecon -R /root %{_var}/log /run %{_sysconfdir}/passwd* %{_sysconfdir}/group* %{_sysconfdir}/*shadow* ; \
 else \
 %relabel %{2} \
 fi;
@@ -313,16 +304,11 @@ SELINUXTYPE=%{policy_name}
 " > %{_sysconfdir}/selinux/config
 
      ln -sf ../selinux/config %{_sysconfdir}/sysconfig/selinux
-     restorecon %{_sysconfdir}/selinux/config 2> /dev/null || :
+     restorecon %{_sysconfdir}/selinux/config || :
 else
      . %{_sysconfdir}/selinux/config
 fi
 %postInstall $1 %{policy_name}
-exit 0
-
-%post modules
-%{_sbindir}/semodule -B -n -s %{policy_name}
-[ "${SELINUXTYPE}" == "%{policy_name}" ] && selinuxenabled && load_policy
 exit 0
 
 %postun
@@ -343,6 +329,63 @@ exit 0
 selinuxenabled && semodule -nB
 exit 0
 %changelog
+* Thu Aug 18 2025 Chris PeBenito <chpebeni@microsoft.com> - 2.20240226-12
+- Include policy.kern otherwise some semanage operations fail without it.
+
+* Fri Apr 04 2025 Chris PeBenito <chpebeni@microsoft.com> - 2.20240226-11
+- Add fix for gpg-agent use in rpm scripts for watching root's secrets dir.
+
+* Thu Mar 06 2025 Chris PeBenito <chpebeni@microsoft.com> - 2.20240226-10
+- Add tmpfs fix for cloud-utils-growpart.
+
+* Wed Nov 20 2024 George Mileka <gmileka@microsoft.com> - 2.20240226-9
+- Enable SELinux for LiveOS ISO.
+
+* Wed Sep 11 2024 Chris PeBenito <chpebeni@microsoft.com> - 2.20240226-8
+- Add additional required permissions for cloud-utils-growpart.
+- Cherry-pick upstream fix for typo in docker module.
+
+* Tue Aug 13 2024 Chris PeBenito <chpebeni@microsoft.com> - 2.20240226-7
+- Change policy composition so the base module only consits of policy modules
+  that must be in the base.  This will allow dowstream users to disable or
+  override the individual policy modules.
+
+* Thu Jul 18 2024 Chris PeBenito <chpebeni@microsoft.com> - 2.20240226-6
+- Drop rules that are specific to AzureLinux testing systems.
+- Add fix for systemd-machine-id-setup CAP_DAC_OVERRIDE use.
+- Run systemd-sysctl from RPM scripts.
+
+* Tue Jul 16 2024 Chris PeBenito <chpebeni@microsoft.com> - 2.20240226-5
+- Change unconfined to a separate module so it can be disabled.
+
+* Mon Jul 01 2024 Chris PeBenito <chpebeni@microsoft.com> - 2.20240226-4
+- Add cloud-init and kmod fixes.
+
+* Tue May 14 2024 Chris PeBenito <chpebeni@microsoft.com> - 2.20240226-3
+- Fix systemd-analyze issues.
+- Add selinux-policy-modules to selinux.json package list since it has rules for cloud-init
+- Add fixes and new systemd access to memory.pressure
+- Remove redirections in %post to make it easier to debug issues
+
+* Mon Mar 25 2024 Chris PeBenito <chpebeni@microsoft.com> - 2.20240226-2
+- Add fixes from BVTs
+- Add new systemd pidfd uses
+- Add new pressure stall information in systemd
+- Fixes for systemd-tmpfiles and loadkeys
+
+* Tue Mar 12 2024 Chris PeBenito <chpebeni@microsoft.com> - 2.20240226-1
+- Rebase to upstream release 2.20240226.
+
+* Fri Dec 15 2023 Aditya Dubey <adityadubey@microsoft.com> - 2.20221101-6
+- Adding modules_checksum file
+- removed exclude for policy.linked, seusers.linked, and users_extra.linked files
+
+* Tue Oct 17 2023 Chris PeBenito <chpebeni@microsoft.com> - 2.20221101-5
+- Silence noise in containerd io.containerd.internal.v1.opt plugin.
+
+* Thu Sep 28 2023 Chris PeBenito <chpebeni@microsoft.com> - 2.20221101-4
+- Cherry pick systemd-hostnamed fix for handling /run/systemd/default-hostname.
+
 * Tue May 16 2023 Chris PeBenito <chpebeni@microsoft.com> - 2.20221101-3
 - Fix missing role associations in cloud-init patch.
 - Fix missing require in mkinitrd patch.

@@ -1,6 +1,5 @@
 {
- "Signatures": {
-  "python-kubernetes-21.7.0.tar.gz": "0990b708f838a4cfad555ee5ea886aa7e5b9c1a83d3d10ce5eac13095b6f1338",
-  "python-kubernetes-base-21.7.0.tar.gz": "fca2f3c0c57c6f4ca50ec6f25ea824be6fa9020841f8b28612a467fe1a6793ed"
- }
+  "Signatures": {
+    "python-kubernetes-29.0.0.tar.gz": "b532d65763cab592783287bc9bf8007a09aa54345706e5b8cd377825cbd30b16"
+  }
 }

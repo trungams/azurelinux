@@ -1,29 +1,38 @@
 Summary:        The GnuTLS Transport Layer Security Library
 Name:           gnutls
-Version:        3.7.7
-Release:        2%{?dist}
+Version:        3.8.3
+Release:        8%{?dist}
 License:        GPLv3+ AND LGPLv2.1+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Libraries
 URL:            https://www.gnutls.org
-Source0:        https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/%{name}-%{version}.tar.xz
-Patch0:         CVE-2023-0361.patch
+Source0:        https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/%{name}-%{version}.tar.xz
+# Patch taken from 3.8.4 release
+Patch1:         CVE-2024-28834.patch
+# Patch taken from 3.8.4 release
+Patch2:         CVE-2024-28835.patch
+Patch3:         CVE-2024-12133.patch
+Patch4:         CVE-2024-12243.patch
+Patch5:         CVE-2025-32990.patch
+Patch6:         CVE-2025-32989.patch
+Patch7:         CVE-2025-32988.patch
+Patch8:         CVE-2025-6395.patch
+Patch9:         CVE-2025-13151.patch
+Patch10:        CVE-2025-9820.patch
 BuildRequires:  autogen-libopts-devel
 BuildRequires:  gc-devel
-BuildRequires:  guile-devel
 BuildRequires:  libtasn1-devel
 BuildRequires:  nettle-devel >= 3.7.2
 BuildRequires:  openssl-devel
 BuildRequires:  p11-kit-devel
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  net-tools
 BuildRequires:  which
 %endif
 Requires:       autogen-libopts
 Requires:       gc
 Requires:       gmp
-Requires:       guile
 Requires:       libtasn1
 Requires:       nettle >= 3.7.2
 Requires:       openssl
@@ -82,9 +91,6 @@ sed -i 's/TESTS += test-ciphers-openssl.sh//'  tests/slow/Makefile.am
 %{_mandir}/man1/*
 %{_datadir}/locale/*
 %{_docdir}/gnutls/*.png
-%{_libdir}/guile/2.0/extensions/*.so*
-%{_libdir}/guile/2.0/site-ccache/gnutls*
-%{_datadir}/guile/site/2.0/gnutls*
 %config(noreplace) %{_sysconfdir}/gnutls/default-priorities
 
 %files devel
@@ -95,6 +101,37 @@ sed -i 's/TESTS += test-ciphers-openssl.sh//'  tests/slow/Makefile.am
 %{_mandir}/man3/*
 
 %changelog
+* Wed Jan 28 2026 Akhila Guruju <v-guakhila@microsoft.com> - 3.8.3-8
+- Patch CVE-2025-9820
+
+* Mon Jan 12 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 3.8.3-7
+- Patch for CVE-2025-13151
+
+* Tue Jul 15 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 3.8.3-6
+- Patch for CVE-2025-6395
+
+* Mon Jul 14 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 3.8.3-5
+- Patch for CVE-2025-32990, CVE-2025-32989, CVE-2025-32988
+
+* Tue Mar 11 2025 Sreeniavsulu Malavathula <v-smalavathu@microsoft.com> - 3.8.3-4
+- Patch CVE-2024-12243
+
+* Wed Feb 26 2025 Ankita Pareek <ankitapareek@microsoft.com> - 3.8.3-3
+- Address CVE-2024-12133 with a patch
+
+* Wed Oct 30 2024 Daniel McIlvaney <damcilva@microsoft.com> - 3.8.3-2
+- Fix CVE-2024-28834 and CVE-2024-28835 with patches from 3.8.4
+
+* Fri May 24 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 3.8.3-1
+- Update to version 3.8.3 to fix CVE-2024-0553
+
+* Mon Jan 08 2024 Brian Fjeldstad <bfjelds@microsoft.com> - 3.8.2-1
+- Update to version 3.8.2
+- Remove patch that has been incorporated into gnutls
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 3.7.7-3
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Mon Mar 06 2023 Nan Liu <liunan@microsoft.com> - 3.7.7-2
 - Add patch to fix CVE-2023-0361
 

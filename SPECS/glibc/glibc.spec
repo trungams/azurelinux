@@ -4,19 +4,22 @@
 # Don't depend on bash by default
 %define __requires_exclude ^/(bin|usr/bin).*$
 
+# Enable frame pointers for package
+%define _include_frame_pointers 1
+
 Summary:        Main C library
 Name:           glibc
-Version:        2.35
-Release:        4%{?dist}
+Version:        2.38
+Release:        18%{?dist}
 License:        BSD AND GPLv2+ AND Inner-Net AND ISC AND LGPLv2+ AND MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/System
 URL:            https://www.gnu.org/software/libc
 Source0:        https://ftp.gnu.org/gnu/glibc/%{name}-%{version}.tar.xz
 Source1:        locale-gen.sh
 Source2:        locale-gen.conf
-Patch0:         https://www.linuxfromscratch.org/patches/downloads/glibc/glibc-2.35-fhs-1.patch
+Patch0:         https://www.linuxfromscratch.org/patches/downloads/glibc/glibc-2.38-fhs-1.patch
 # Only applicable on ARMv7 targets.
 Patch1:         CVE-2020-6096.nopatch
 # Only applicable on x32 targets.
@@ -26,7 +29,34 @@ Patch3:         CVE-2020-1751.nopatch
 # Marked by upstream/Ubuntu/Red Hat as not a security bug, no fix available
 # Rationale: Exploit requires crafted pattern in regex compiler meant only for trusted content
 Patch4:         CVE-2018-20796.nopatch
-Patch5:         glibc-2.34_pthread_cond_wait.patch
+Patch5:         https://www.linuxfromscratch.org/patches/downloads/glibc/glibc-2.38-memalign_fix-1.patch
+Patch6:         CVE-2023-4911.patch
+Patch7:         CVE-2023-6246.patch
+Patch8:         CVE-2023-6779.patch
+Patch9:         CVE-2023-6780.patch
+# Upstream backport for fixing: nscd fails to build with cleanup handler if built with -fexceptions
+Patch10:        nscd-Do-not-rebuild-getaddrinfo-bug-30709.patch
+Patch11:        glibc-2.38_pthread_lost_wakeup_fix.patch
+Patch12:        CVE-2023-4527.patch
+Patch13:        CVE-2023-4806.patch
+Patch14:        CVE-2023-5156.patch
+Patch15:        CVE-2024-33599.patch
+Patch16:        CVE-2024-33600.patch
+# Patch of CVE-2024-33601 fixes CVE-2024-33602 also
+Patch17:        CVE-2024-33601.patch
+Patch18:        CVE-2025-0395.patch
+Patch19:        CVE-2025-4802.patch
+# Add test for CVE-2025-4802. Requires additional patch for a support function
+Patch20:        add_support_record_failure_barrier.patch
+Patch21:        test-CVE-2025-4802.patch
+Patch22:        CVE-2025-8058.patch
+
+# Patches for testing
+Patch100:       0001-Remove-Wno-format-cflag-from-tests.patch
+Patch101:       CVE-2026-0861.patch
+Patch102:       CVE-2026-0915.patch
+Patch103:       CVE-2025-15281.patch
+
 BuildRequires:  bison
 BuildRequires:  gawk
 BuildRequires:  gettext
@@ -104,6 +134,16 @@ Requires:       %{name} = %{version}-%{release}
 %description nscd
 Name Service Cache Daemon
 
+%package locales-all
+Summary:        Locale Data for Localized Programs
+Group:          Applications/System
+Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}-i18n = %{version}-%{release}
+Requires:       %{name}-lang = %{version}-%{release}
+
+%description locales-all
+Locale data for the internationalization features of glibc
+
 %prep
 %autosetup -p1
 sed -i 's/\\$$(pwd)/`pwd`/' timezone/Makefile
@@ -142,18 +182,19 @@ export CFLAGS
 export CXXFLAGS
 
 cd %{_builddir}/%{name}-build
+echo "rootsbindir=/usr/sbin" > configparms
 ../%{name}-%{version}/configure \
         --prefix=%{_prefix} \
         --disable-profile \
         --disable-werror \
-        --enable-kernel=3.2 \
+        --enable-kernel=4.14 \
         --enable-bind-now \
         --enable-static-pie \
-        --disable-experimental-malloc \
 %ifarch x86_64
         --enable-cet \
 %endif
-        --disable-silent-rules
+        --disable-silent-rules \
+        libc_cv_slibdir=/usr/lib
 
 make %{?_smp_mflags}
 
@@ -168,7 +209,7 @@ install -vdm 755 %{buildroot}%{_libdir}/locale
 cp -v ../%{name}-%{version}/nscd/nscd.conf %{buildroot}%{_sysconfdir}/nscd.conf
 #       Install locale generation script and config file
 cp -v %{SOURCE2} %{buildroot}%{_sysconfdir}
-cp -v %{SOURCE1} %{buildroot}/sbin
+cp -v %{SOURCE1} %{buildroot}%{_sbindir}
 #       Remove unwanted cruft
 rm -rf %{buildroot}%{_infodir}
 #       Install configuration files
@@ -200,14 +241,21 @@ cat > %{buildroot}%{_sysconfdir}/ld.so.conf <<- "EOF"
 EOF
 popd
 %find_lang %{name} --all-name
-pushd localedata
-# Generate out of locale-archive an (en_US.) UTF-8 locale
-mkdir -p %{buildroot}%{_libdir}/locale
-I18NPATH=. GCONV_PATH=../../glibc-build/iconvdata LC_ALL=C ../../glibc-build/locale/localedef --no-archive --prefix=%{buildroot} -A ../intl/locale.alias -i locales/en_US -c -f charmaps/UTF-8 en_US.UTF-8
-mv %{buildroot}%{_libdir}/locale/en_US.utf8 %{buildroot}%{_libdir}/locale/en_US.UTF-8
+
+# Generate all locales
+pushd %{_builddir}/%{name}-build
+# Install locales
+make %{?_smp_mflags} install_root=%{buildroot} localedata/install-locale-files
+
+# To reduce footprint of localedata
+# hardlink identical locale files together
+hardlink -vc %{buildroot}%{_libdir}/locale
 popd
+
 # to do not depend on /bin/bash
 sed -i 's@#! /bin/bash@#! /bin/sh@' %{buildroot}%{_bindir}/ldd
+# Fix a hard coded path to the executable loader in the ldd script
+sed '/RTLDLIST=/s@/usr@@g' -i %{buildroot}%{_bindir}/ldd
 sed -i 's@#!/bin/bash@#!/bin/sh@' %{buildroot}%{_bindir}/tzselect
 
 # Determine which static libs are needed in `glibc-devel` - the rest will be put
@@ -215,31 +263,42 @@ sed -i 's@#!/bin/bash@#!/bin/sh@' %{buildroot}%{_bindir}/tzselect
 # in `libc.so` (since 2.34 - see https://developers.redhat.com/articles/2021/12/17/why-glibc-234-removed-libpthread)
 # and the "statically linked bit" of `libc.so` (called `libc_nonshared.a`)
 static_libs_in_devel_pattern="lib\(c_nonshared\|pthread\|dl\|rt\|g\|util\|mcheck\).a"
-ls -1 %{buildroot}%{_lib64dir}/*.a | grep -e "$static_libs_in_devel_pattern" | sed "s:^%{buildroot}::g" > devel.filelist
-ls -1 %{buildroot}%{_lib64dir}/*.a | grep -v -e "$static_libs_in_devel_pattern" | sed "s:^%{buildroot}::g" > static.filelist
+ls -1 %{buildroot}%{_libdir}/*.a | grep -e "$static_libs_in_devel_pattern" | sed "s:^%{buildroot}::g" > devel.filelist
+ls -1 %{buildroot}%{_libdir}/*.a | grep -v -e "$static_libs_in_devel_pattern" | sed "s:^%{buildroot}::g" > static.filelist
 
 %check
 cd %{_builddir}/glibc-build
+
+# Results have varied based on the environment the tests are being built
+# Summary of test results in local VM:
+#      3 FAIL : nptl/tst-cancel1, io/tst-lchmod, nptl/tst-mutex10
+#   5040 PASS
+#    152 UNSUPPORTED
+#     12 XFAIL
+#      8 XPASS
+# Summary of test results in pipeline (this has shown varying results):
+#       7 FAIL
+#    5110 PASS
+#      79 UNSUPPORTED
+#      12 XFAIL
+#       8 XPASS
 make %{?_smp_mflags} check ||:
-# These 2 persistant false positives are OK
-# XPASS for: elf/tst-protected1a and elf/tst-protected1b
-[ `grep ^XPASS tests.sum | wc -l` -ne 2 -a `grep "^XPASS: elf/tst-protected1[ab]" tests.sum | wc -l` -ne 2 ] && exit 1 ||:
-
-# FAIL (intermittent) in chroot but PASS in container:
-# posix/tst-spawn3 and stdio-common/test-vfprintf
 n=0
-grep "^FAIL: posix/tst-spawn3" tests.sum >/dev/null && n=$((n+1)) ||:
-grep "^FAIL: stdio-common/test-vfprintf" tests.sum >/dev/null && n=$((n+1)) ||:
-# FAIL always on overlayfs/aufs (in container)
-grep "^FAIL: posix/tst-dir" tests.sum >/dev/null && n=$((n+1)) ||:
-
-#https://sourceware.org/glibc/wiki/Testing/Testsuite
-grep "^FAIL: nptl/tst-eintr1" tests.sum >/dev/null && n=$((n+1)) ||:
-#This happens because the kernel fails to reap exiting threads fast enough,
-#eventually resulting an EAGAIN when pthread_create is called within the test.
-
-# check for exact 'n' failures
-[ `grep ^FAIL tests.sum | wc -l` -ne $n ] && exit 1 ||:
+# expected failures in local VM
+grep "^FAIL: nptl/tst-cancel1" tests.sum >/dev/null && n=$((n+1)) ||:
+grep "^FAIL: io/tst-lchmod" tests.sum >/dev/null && n=$((n+1)) ||:
+grep "^FAIL: nptl/tst-mutex10" tests.sum >/dev/null && n=$((n+1)) ||:
+# expected failures in pipeline test runs (due to timeouts or test environment)
+grep "^FAIL: elf/tst-env-setuid-tunables" tests.sum >/dev/null && n=$((n+1)) ||:
+grep "^FAIL: malloc/tst-malloc-tcache-leak" tests.sum >/dev/null && n=$((n+1)) ||:
+grep "^FAIL: nptl/tst-pthread-setuid-loop" tests.sum >/dev/null && n=$((n+1)) ||:
+grep "^FAIL: nptl/tst-robust-fork" tests.sum >/dev/null && n=$((n+1)) ||:
+grep "^FAIL: nptl/tst-thread-affinity-pthread" tests.sum >/dev/null && n=$((n+1)) ||:
+grep "^FAIL: nptl/tst-thread-affinity-pthread2" tests.sum >/dev/null && n=$((n+1)) ||:
+grep "^FAIL: nss/tst-nss-files-hosts-getent" tests.sum >/dev/null && n=$((n+1)) ||:
+grep "^FAIL: string/test-mempcpy" tests.sum >/dev/null && n=$((n+1)) ||:
+# consider the test passed if the only failures are expected ones above
+[ `grep ^FAIL tests.sum | wc -l` -eq $n ]
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
@@ -247,21 +306,22 @@ grep "^FAIL: nptl/tst-eintr1" tests.sum >/dev/null && n=$((n+1)) ||:
 %files
 %defattr(-,root,root)
 %license COPYING COPYING.LIB LICENSES
-%{_libdir}/locale/*
+%{_libdir}/locale/en_US.utf8
+%{_libdir}/locale/C.utf8
 %dir %{_sysconfdir}/ld.so.conf.d
 %config(noreplace) %{_sysconfdir}/nsswitch.conf
 %config(noreplace) %{_sysconfdir}/ld.so.conf
 %config(noreplace) %{_sysconfdir}/rpc
 %config(missingok,noreplace) %{_sysconfdir}/ld.so.cache
 %config %{_sysconfdir}/locale-gen.conf
-/lib64/*
 %ifarch aarch64
-/lib/ld-linux-aarch64.so.1
+/usr/lib/ld-linux-aarch64.so.1
 %endif
-%exclude /lib64/libpcprofile.so
-%{_lib64dir}/*.so
-/sbin/ldconfig
-/sbin/locale-gen.sh
+#%%exclude /lib64/libpcprofile.so
+%{_libdir}/*.so*
+%{_sbindir}/ldconfig
+%{_sbindir}/locale-gen.sh
+
 #%%{_sbindir}/zdump
 %{_sbindir}/zic
 %{_sbindir}/iconvconfig
@@ -278,16 +338,16 @@ grep "^FAIL: nptl/tst-eintr1" tests.sum >/dev/null && n=$((n+1)) ||:
 
 %files iconv
 %defattr(-,root,root)
-%{_lib64dir}/gconv/*
+%{_libdir}/gconv/*
 
 %files tools
 %defattr(-,root,root)
 %{_bindir}/mtrace
 %{_bindir}/pcprofiledump
 %{_bindir}/xtrace
-/sbin/sln
-%{_lib64dir}/audit/*
-/lib64/libpcprofile.so
+%{_sbindir}/sln
+%{_libdir}/audit/*
+#/lib64/libpcprofile.so
 
 %files nscd
 %defattr(-,root,root)
@@ -305,20 +365,88 @@ grep "^FAIL: nptl/tst-eintr1" tests.sum >/dev/null && n=$((n+1)) ||:
 # TODO: Excluding for now to remove dependency on PERL
 # /usr/bin/mtrace
 # C Runtime files for `-pie`, `-no-pie` and profiled executables as well as for shared libs
-%{_lib64dir}/{,g,M,S}crt1.o
+%{_libdir}/{,g,M,S}crt1.o
 # C Runtime files needed for all targets
-%{_lib64dir}/crt{i,n}.o
+%{_libdir}/crt{i,n}.o
 %{_includedir}/*
 
 %files static -f static.filelist
 %defattr(-,root,root)
 # C Runtime files for `-static-pie` and profiled `-static-pie`
-%{_lib64dir}/{r,gr}crt1.o
+%{_libdir}/{r,gr}crt1.o
 
 %files -f %{name}.lang lang
 %defattr(-,root,root)
 
+%files locales-all
+%defattr(-,root,root)
+%{_libdir}/locale/*
+%exclude %{_libdir}/locale/en_US.utf8
+%exclude %{_libdir}/locale/C.utf8
+
 %changelog
+* Thu Jan 22 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.38-18
+- Patch for CVE-2025-15281
+
+* Mon Jan 19 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.38-17
+- Patch for CVE-2026-0861, CVE-2026-0915
+
+* Fri Nov 07 2025 Andrew Phelps <anphel@microsoft.com> - 2.38-16
+- Ignore additional expected package test failures
+
+* Thu Oct 23 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.38-15
+- Patch for CVE-2025-8058
+
+* Tue Oct 08 2025 Andrew Phelps <anphel@microsoft.com> - 2.38-14
+- Replace mitigation patch for glibc bug #25847 with proper upstream fix
+
+* Thu Aug 28 2025 Kanishk Bansal <kanbansal@microsoft.com> - 2.38-13
+- Fix Patch application of CVE-2025-4802
+- Add test for CVE-2025-4802
+
+* Mon Aug 25 2025 Andrew Phelps <anphel@microsoft.com> - 2.38-12
+- Bump to rebuild with build-id fix from toolchain gcc
+
+* Thu May 22 2025 Kanishk Bansal <kanbansal@microsoft.com> - 2.38-11
+- Patch CVE-2023-4527, CVE-2023-4806, CVE-2024-33599, CVE-2024-33600, CVE-2024-33601, CVE-2025-0395, CVE-2025-4802
+- Fix CVE-2023-5156
+
+* Mon May 12 2025 Andrew Phelps <anphel@microsoft.com> - 2.38-10
+- Add glibc-2.34_pthread_cond_wait.patch
+
+* Wed Feb 19 2025 Chris Co <chrco@microsoft.com> - 2.38-9
+- Re-enable nscd build and packaging
+
+* Mon Aug 26 2024 Rachel Menge <rachelmenge@microsoft.com> - 2.38-8
+- Enable check section for glibc
+
+* Wed Aug 21 2024 Chris Co <chrco@microsoft.com> - 2.38-7
+- Fix syslog failing to print issue
+
+* Mon Jun 17 2024 Nicolas Guibourge <nicolasg@microsoft.com> - 2.38-6
+- Address CVE-2023-4911, CVE-2023-5156, CVE-2023-6246, CVE-2023-6779, CVE-2023-6780
+
+* Wed May 22 2024 Suresh Babu Chalamalasetty <schalam@microsoft.com> - 2.38-5
+- Generate and provide glibc all locales in a sub-package
+
+* Fri May 10 2024 Chris Co <chrco@microsoft.com> - 2.38-4
+- Enable frame pointers compiler flag
+
+* Mon Mar 11 2024 Dan Streetman <ddstreet@microsoft.com> - 2.38-3
+- provide C.utf8 locale
+
+* Tue Feb 27 2024 Dan Streetman <ddstreet@ieee.org> - 2.38-2
+- Do NOT rename en_US.utf8 to en_US.UTF-8 (glibc will reduce UTF-8 to utf8, but NOT utf8 to UTF-8)
+
+* Thu Nov 02 2023 Andrew Phelps <anphel@microsoft.com> - 2.38-1
+- Upgrade to version 2.38
+
+* Wed Oct 04 2023 Minghe Ren <mingheren@microsoft.com> - 2.35-6
+- Add patches for CVE-2023-4806 and CVE-2023-5156
+
+* Tue Oct 03 2023 Mandeep Plaha <mandeepplaha@microsoft.com> - 2.35-5
+- Patch CVE-2023-4911
+
 * Fri Jun 30 2023 Andrew Phelps <anphel@microsoft.com> - 2.35-4
 - Restore glibc-debuginfo package
 

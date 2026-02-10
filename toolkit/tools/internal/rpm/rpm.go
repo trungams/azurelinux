@@ -5,15 +5,19 @@ package rpm
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/file"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/logger"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/shell"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/sliceutils"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/exe"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/file"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/logger"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/shell"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/sliceutils"
 )
 
 const (
@@ -33,7 +37,7 @@ const (
 	DistTagDefine = "dist"
 
 	// DistroReleaseVersionDefine specifies the distro release version option for rpm tool commands
-	DistroReleaseVersionDefine = "mariner_release_version"
+	DistroReleaseVersionDefine = "distro_release_version"
 
 	// DistroBuildNumberDefine specifies the distro build number option for rpm tool commands
 	DistroBuildNumberDefine = "mariner_build_number"
@@ -50,21 +54,36 @@ const (
 	// NoCompatibleArchError specifies the error message when processing a SPEC written for a different architecture.
 	NoCompatibleArchError = "error: No compatible architectures found for build"
 
-	// MarinerModuleLdflagsDefine specifies the variable used to enable linking ELF binaries with module_info.ld metadata.
-	MarinerModuleLdflagsDefine = "mariner_module_ldflags"
+	// Azure LinuxModuleLdflagsDefine specifies the variable used to enable linking ELF binaries with module_info.ld metadata.
+	AzureLinuxModuleLdflagsDefine = "distro_module_ldflags "
 
-	// MarinerCCacheDefine enables ccache in the Mariner build system
-	MarinerCCacheDefine = "mariner_ccache_enabled"
+	// Azure LinuxCCacheDefine enables ccache in the Azure Linux build system
+	AzureLinuxCCacheDefine = "ccache_enabled"
 
 	// MaxCPUDefine specifies the max number of CPUs to use for parallel build
 	MaxCPUDefine = "_smp_ncpus_max"
 )
 
 const (
-	installedRPMRegexRPMIndex        = 1
-	installedRPMRegexArchIndex       = 2
-	installedRPMRegexExpectedMatches = 3
+	packageFQNRegexMatchSubString  = iota
+	packageFQNRegexNameIndex       = iota
+	packageFQNRegexEpochIndex      = iota
+	packageFQNRegexVersionIndex    = iota
+	packageFQNRegexReleaseIndex    = iota
+	packageFQNRegexArchIndex       = iota
+	packageFQNRegexExtensionIndex  = iota
+	packageFQNRegexExpectedMatches = iota
+)
 
+const (
+	installedRPMRegexMatchSubString  = iota
+	installedRPMRegexRPMIndex        = iota
+	installedRPMRegexVersionIndex    = iota
+	installedRPMRegexArchIndex       = iota
+	installedRPMRegexExpectedMatches = iota
+)
+
+const (
 	rpmProgram      = "rpm"
 	rpmSpecProgram  = "rpmspec"
 	rpmBuildProgram = "rpmbuild"
@@ -80,15 +99,64 @@ var (
 	// It works multi-line strings containing the whole file content, thus the need for the 'm' flag.
 	checkSectionRegex = regexp.MustCompile(`(?m)^\s*%check`)
 
+	// A full qualified RPM name contains the package name, epoch, version, release, architecture, and extension.
+	// Optional fields:
+	// 	- epoch,
+	// 	- architecture.
+	//	- "rpm" extension.
+	//
+	// Sample match:
+	//
+	//	pkg-name-0:1.2.3-4.azl3.x86_64.rpm
+	//
+	// Groups can be used to split it into:
+	//   - name:			pkg-name
+	//   - epoch:			0
+	//   - version:			1.2.3
+	//   - release:			4.azl3
+	//   - architecture:	x86_64
+	//   - extension:		rpm
+	packageFQNRegex = regexp.MustCompile(`^\s*(\S+[^-])-(?:(\d+):)?(\d[^-:_]*)-(\d+(?:[^-\s]*?))(?:\.(noarch|x86_64|aarch64|src))?(?:\.(rpm))?\s*$`)
+
 	// Output from 'rpm' prints installed RPMs in a line with the following format:
 	//
-	//	D: ========== +++ [name]-[version]-[release].[distribution] [architecture]-linux [hex_value]
+	//	D: ========== +++ [name]-([epoch]:)[version]-[release].[distribution] [architecture]-linux [hex_value]
 	//
 	// Example:
 	//
-	//	D: ========== +++ systemd-devel-239-42.cm2 x86_64-linux 0x0
-	installedRPMRegex = regexp.MustCompile(`^D: =+ \+{3} (\S+) (\S+)-linux.*$`)
+	//	D: ========== +++ systemd-devel-239-42.azl3 x86_64-linux 0x0
+	installedRPMRegex = regexp.MustCompile(`^D: =+ \+{3} (\S+)-([^-]+-[^-]+) (\S+)-linux.*$`)
+
+	// For most use-cases, the distro name abbreviation and major version are set by the exe package. However, if the
+	// module is used outside of the main Azure Linux build system, the caller can override these values with SetDistroMacros().
+	distNameAbreviation, distMajorVersion = loadLdDistroFlags()
 )
+
+// checkDistroMacros validates the distro macro values.
+func checkDistroMacros(nameAbreviation string, majorVersion int) error {
+	if majorVersion < 1 || nameAbreviation == "" {
+		err := fmt.Errorf("failed to set distro defines (%s, %d), invalid name or version", nameAbreviation, majorVersion)
+		return err
+	}
+	return nil
+}
+
+// loadDistroFlags will load the values of exe.DistroNameAbbreviation and exe.DistroMajorVersion into the local copies
+// after validating them.
+func loadLdDistroFlags() (string, int) {
+	version, err := strconv.Atoi(exe.DistroMajorVersion)
+	if err != nil {
+		err = fmt.Errorf("failed to convert distro major version (%s) to int:\n%w", exe.DistroMajorVersion, err)
+		panic(err)
+	}
+
+	err = checkDistroMacros(exe.DistroNameAbbreviation, version)
+	if err != nil {
+		err = fmt.Errorf("failed to load distro defines from exe package:\n%w", err)
+		panic(err)
+	}
+	return exe.DistroNameAbbreviation, version
+}
 
 // GetRpmArch converts the GOARCH arch into an RPM arch
 func GetRpmArch(goArch string) (rpmArch string, err error) {
@@ -99,24 +167,70 @@ func GetRpmArch(goArch string) (rpmArch string, err error) {
 	return
 }
 
-// SetMacroDir adds RPM_CONFIGDIR=$(newMacroDir) into the shell's environment for the duration of a program.
-// To restore the environment the caller can use shell.SetEnvironment() with the returned origenv.
-// On an empty string argument return success immediately and do not modify the environment.
-func SetMacroDir(newMacroDir string) (origenv []string, err error) {
-	origenv = shell.CurrentEnvironment()
-	if newMacroDir == "" {
-		return
-	}
-	exists, err := file.DirExists(newMacroDir)
-	if err != nil || exists == false {
-		err = fmt.Errorf("directory %s does not exist", newMacroDir)
-		return
+func GetBasePackageNameFromSpecFile(specPath string) (basePackageName string, err error) {
+
+	baseName := filepath.Base(specPath)
+	if baseName == "" {
+		return "", fmt.Errorf("failed to extract file name from specPath (%s)", specPath)
 	}
 
-	env := append(shell.CurrentEnvironment(), fmt.Sprintf("RPM_CONFIGDIR=%s", newMacroDir))
-	shell.SetEnvironment(env)
+	fileExtension := filepath.Ext(baseName)
+	if fileExtension == "" {
+		return "", fmt.Errorf("failed to extract file extension from file name (%s)", baseName)
+	}
+
+	basePackageName = baseName[:len(baseName)-len(fileExtension)]
 
 	return
+}
+
+func GetMacroDir() (macroDir string, err error) {
+	return getMacroDirWithFallback(false)
+}
+
+// Queries rpm for the current macro directory via --eval %_rpmmacrodir
+func getMacroDirWithFallback(allowDefault bool) (macroDir string, err error) {
+	const (
+		macro         = "%_rpmmacrodir"
+		defaultRpmDir = "/usr/lib/rpm/macros.d"
+	)
+
+	// This should continue to work even if the rpm command is not available (ie unit tests).
+	rpmFound, err := file.CommandExists(rpmProgram)
+	if err != nil {
+		return "", fmt.Errorf("failed to check if rpm is installed:\n%w", err)
+	}
+	if !rpmFound {
+		if allowDefault {
+			return defaultRpmDir, nil
+		} else {
+			return "", fmt.Errorf("rpm is not installed, can't query for macro directory")
+		}
+	}
+
+	lines, err := executeRpmCommand(rpmProgram, "--eval", macro)
+	if err != nil {
+		return "", fmt.Errorf("failed to get macro directory:\n%w", err)
+	}
+	if len(lines) != 1 {
+		return "", fmt.Errorf("unexpected output from 'rpm --eval %s': '%v'", macro, lines)
+	}
+	return lines[0], nil
+}
+
+// ExtractNameFromRPMPath strips the version from an RPM file name. i.e. pkg-name-1.2.3-4.cm2.x86_64.rpm -> pkg-name
+func ExtractNameFromRPMPath(rpmFilePath string) (packageName string, err error) {
+	baseName := filepath.Base(rpmFilePath)
+
+	matches := packageFQNRegex.FindStringSubmatch(baseName)
+
+	// If the path is invalid, return empty string. We consider any string that has at least 1 '-' characters valid.
+	if matches == nil {
+		err = fmt.Errorf("invalid RPM file path (%s), can't extract name", rpmFilePath)
+		return
+	}
+
+	return matches[packageFQNRegexNameIndex], nil
 }
 
 // getCommonBuildArgs will generate arguments to pass to 'rpmbuild'.
@@ -206,16 +320,34 @@ func executeRpmCommandRaw(program string, args ...string) (stdout string, err er
 	return
 }
 
-// DefaultDefinesWithDist returns a new map of default defines that can be used during RPM queries that also includes
-// the dist tag.
-func DefaultDefinesWithDist(runChecks bool, distTag string) map[string]string {
-	defines := DefaultDefines(runChecks)
+// DefaultDistroDefines returns a new map of default defines that can be used during RPM queries that also includes
+// the distro tags like '%dist', '%azl'.
+func DefaultDistroDefines(runChecks bool, distTag string) map[string]string {
+	defines := defaultDefines(runChecks)
 	defines[DistTagDefine] = distTag
+	defines[distNameAbreviation] = fmt.Sprintf("%d", distMajorVersion)
 	return defines
 }
 
+// DisableBuildRequiresDefines sets the macro to disable documentation files when installing RPMs.
+// - defines: optional map of defines to update. If nil, a new map will be created.
+func DisableDocumentationDefines() map[string]string {
+	return map[string]string{
+		"_excludedocs": "1",
+	}
+}
+
+// OverrideLocaleDefines sets the macro to override the default locales when installing RPMs.
+// - defines: optional map of defines to update. If nil, a new map will be created.
+// - overrideLocale: the locale string to set as the default. Should be of the form ""
+func OverrideLocaleDefines(overrideLocale string) map[string]string {
+	return map[string]string{
+		"_install_langs": overrideLocale,
+	}
+}
+
 // DefaultDefines returns a new map of default defines that can be used during RPM queries.
-func DefaultDefines(runCheck bool) map[string]string {
+func defaultDefines(runCheck bool) map[string]string {
 	// "with_check" definition should align with the RUN_CHECK Make variable whenever possible
 	withCheckSetting := "0"
 	if runCheck {
@@ -229,7 +361,7 @@ func DefaultDefines(runCheck bool) map[string]string {
 
 // GetInstalledPackages returns a string list of all packages installed on the system
 // in the "[name]-[version]-[release].[distribution].[architecture]" format.
-// Example: tdnf-2.1.0-4.cm1.x86_64
+// Example: tdnf-2.1.0-4.azl3.x86_64
 func GetInstalledPackages() (result []string, err error) {
 	const queryArg = "-qa"
 
@@ -266,6 +398,50 @@ func QueryPackage(packageFile, queryFormat string, defines map[string]string, ex
 	args := formatCommandArgs(extraArgs, packageFile, queryFormat, defines)
 
 	return executeRpmCommand(rpmProgram, args...)
+}
+
+// QueryPackageFiles queries an RPM for its file contents. The results are split into several categories:
+// - allFilesAndDirectories: all files and directories in the package
+// - files: all files in the package (ie allFilesAndDirectories minus directories)
+// - directories: all directories in the package (ie allFilesAndDirectories minus files, symlinks etc.)
+// - documentFiles: all files marked as documentation (%doc)
+// - licenseFiles: all files marked as license (%license)
+func QueryPackageFiles(packageFile string, defines map[string]string,
+) (allFilesAndDirectories, files, directories, documentFiles, licenseFiles []string, err error) {
+	const allFilesQueryFormat = "[%{FILEMODES:perms} %{FILENAMES}\n]"
+	allFilesWithPerms, err := QueryPackage(packageFile, allFilesQueryFormat, defines)
+	if err != nil {
+		return nil, nil, nil, nil, nil, fmt.Errorf("failed to query package (%s) files:\n%w", packageFile, err)
+	}
+	// Parse the output of the query to separarate directories. Output will be of the form:
+	// 	drwxr-xr-x /a/directory
+	// 	-rw-r--r-- /a/directory/a_file
+	// Any line that starts with a 'd' is a directory, everything else is a file (or symlink etc.).
+	for _, fileLine := range allFilesWithPerms {
+		perms, filePath, found := strings.Cut(fileLine, " ")
+		if !found {
+			return nil, nil, nil, nil, nil, fmt.Errorf("failed to parse package (%s) file contents (%s)", packageFile, fileLine)
+		}
+		if strings.HasPrefix(perms, "d") {
+			directories = append(directories, filePath)
+		} else {
+			files = append(files, filePath)
+		}
+		allFilesAndDirectories = append(allFilesAndDirectories, filePath)
+	}
+
+	// rpm has dedicated tags for documentation and license files, so we can query them directly.
+	documentFiles, err = QueryPackage(packageFile, "", defines, "-d")
+	if err != nil {
+		return nil, nil, nil, nil, nil, fmt.Errorf("failed to query package (%s) documentation files:\n%w", packageFile, err)
+	}
+
+	licenseFiles, err = QueryPackage(packageFile, "", defines, "-L")
+	if err != nil {
+		return nil, nil, nil, nil, nil, fmt.Errorf("failed to query package (%s) license files:\n%w", packageFile, err)
+	}
+
+	return allFilesAndDirectories, files, directories, documentFiles, licenseFiles, nil
 }
 
 // BuildRPMFromSRPM builds an RPM from the given SRPM file but does not run its '%check' section.
@@ -307,7 +483,7 @@ func GenerateSRPMFromSPEC(specFile, topDir string, defines map[string]string) (e
 	args := formatCommandArgs(extraArgs, specFile, queryFormat, allDefines)
 	_, stderr, err := shell.Execute(rpmBuildProgram, args...)
 	if err != nil {
-		logger.Log.Warn(stderr)
+		err = fmt.Errorf("%v\n%w", stderr, err)
 	}
 
 	return
@@ -321,10 +497,95 @@ func InstallRPM(rpmFile string) (err error) {
 
 	_, stderr, err := shell.Execute(rpmProgram, installOption, rpmFile)
 	if err != nil {
-		logger.Log.Warn(stderr)
+		err = fmt.Errorf("%v\n%w", stderr, err)
 	}
 
 	return
+}
+
+const rpmKeysProgram = "rpmkeys"
+
+// importGPGKeysToRPMDb imports GPG keys into an RPM database for signature verification.
+// - rpmDbRoot: path to a directory to use as the RPM database root (will be created if it doesn't exist)
+// - gpgKeyPaths: paths to GPG key files to import into the RPM database
+// This should be called once before validating multiple RPMs with checkRPMSignature.
+func importGPGKeysToRPMDb(rpmDbRoot string, gpgKeyPaths []string) (err error) {
+	if _, err := exec.LookPath(rpmKeysProgram); err != nil {
+		return fmt.Errorf("%s command not found - explicit GPG signature enforcement requires this tool:\n%w", rpmKeysProgram, err)
+	}
+	for _, keyPath := range gpgKeyPaths {
+		_, stderr, importErr := shell.Execute(rpmKeysProgram, "--root", rpmDbRoot, "--import", keyPath)
+		if importErr != nil {
+			return fmt.Errorf("failed to import GPG key (%s) into RPM database: %v:\n%w", keyPath, stderr, importErr)
+		}
+	}
+	return nil
+}
+
+// checkRPMSignature validates the GPG signature of an RPM file.
+// - rpmFile: path to the RPM file to validate
+// - rpmDbRoot: path to a directory used as the RPM database root (must have GPG keys already imported via importGPGKeysToRpmDb)
+// Returns an error if the RPM signature is missing or invalid.
+func checkRPMSignature(rpmFile string, rpmDbRoot string) (err error) {
+	_, stderr, err := shell.Execute(rpmKeysProgram, "--root", rpmDbRoot, "--checksig", rpmFile, "-D", "%_pkgverify_level signature")
+	if err != nil {
+		return fmt.Errorf("RPM signature validation failed for (%s): %v\n%w", rpmFile, stderr, err)
+	}
+	return nil
+}
+
+// ValidateDirectoryRPMSignatures validates the GPG signatures of all RPM files in a directory.
+// It creates an isolated RPM database, imports the provided GPG keys, and validates each RPM.
+// Returns an error if any RPM has a missing or invalid signature.
+func ValidateDirectoryRPMSignatures(rpmDir string, gpgKeyPaths []string) (err error) {
+	logger.Log.Info("Validating GPG signatures of downloaded packages")
+
+	// Create a temporary directory for the isolated RPM database
+	rpmDbRoot, err := os.MkdirTemp("", "rpm-gpg-check-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary directory for RPM database:\n%w", err)
+	}
+	defer os.RemoveAll(rpmDbRoot)
+
+	// Import GPG keys once before validating all RPMs
+	err = importGPGKeysToRPMDb(rpmDbRoot, gpgKeyPaths)
+	if err != nil {
+		return err
+	}
+
+	// Find all RPM files in the directory (recursively)
+	var rpmFiles []string
+	err = filepath.WalkDir(rpmDir, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if !d.IsDir() && filepath.Ext(path) == ".rpm" {
+			rpmFiles = append(rpmFiles, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to find RPM files in (%s):\n%w", rpmDir, err)
+	}
+
+	if len(rpmFiles) == 0 {
+		logger.Log.Debug("No RPM files found to validate")
+		return nil
+	}
+
+	logger.Log.Infof("Validating %d RPM files", len(rpmFiles))
+
+	// Validate each RPM
+	for _, rpmFile := range rpmFiles {
+		logger.Log.Debugf("Validating signature of: %s", filepath.Base(rpmFile))
+		err = checkRPMSignature(rpmFile, rpmDbRoot)
+		if err != nil {
+			return fmt.Errorf("GPG signature validation failed:\n%w", err)
+		}
+	}
+
+	logger.Log.Info("All downloaded RPMs have valid GPG signatures")
+	return nil
 }
 
 // QueryRPMProvides returns what an RPM file provides.
@@ -335,7 +596,7 @@ func QueryRPMProvides(rpmFile string) (provides []string, err error) {
 	logger.Log.Debugf("Querying RPM provides (%s)", rpmFile)
 	stdout, stderr, err := shell.Execute(rpmProgram, queryProvidesOption, rpmFile)
 	if err != nil {
-		logger.Log.Warn(stderr)
+		err = fmt.Errorf("%v\n%w", stderr, err)
 		return
 	}
 
@@ -359,22 +620,32 @@ func ResolveCompetingPackages(rootDir string, rpmPaths ...string) (resolvedRPMs 
 	// Output of interest is printed to stderr.
 	_, stderr, err := shell.Execute(rpmProgram, args...)
 	if err != nil {
-		logger.Log.Warn(stderr)
+		err = fmt.Errorf("%v\n%w", stderr, err)
 		return
 	}
 
 	splitStdout := strings.Split(stderr, "\n")
 	uniqueResolvedRPMs := map[string]bool{}
 	for _, line := range splitStdout {
-		matches := installedRPMRegex.FindStringSubmatch(line)
-		if len(matches) == installedRPMRegexExpectedMatches {
-			rpmName := fmt.Sprintf("%s.%s", matches[installedRPMRegexRPMIndex], matches[installedRPMRegexArchIndex])
+		if match, rpmName := extractCompetingPackageInfoFromLine(line); match {
 			uniqueResolvedRPMs[rpmName] = true
 		}
 	}
 
 	resolvedRPMs = sliceutils.SetToSlice(uniqueResolvedRPMs)
 	return
+}
+
+func extractCompetingPackageInfoFromLine(line string) (match bool, pkgName string) {
+	matches := installedRPMRegex.FindStringSubmatch(line)
+	if len(matches) == installedRPMRegexExpectedMatches {
+		pkgName := matches[installedRPMRegexRPMIndex]
+		version := matches[installedRPMRegexVersionIndex]
+		arch := matches[installedRPMRegexArchIndex]
+
+		return true, fmt.Sprintf("%s-%s.%s", pkgName, version, arch)
+	}
+	return false, ""
 }
 
 // SpecExclusiveArchIsCompatible verifies the "ExclusiveArch" tag is compatible with the current machine's architecture.
@@ -387,7 +658,7 @@ func SpecExclusiveArchIsCompatible(specfile, sourcedir, arch string, defines map
 	// Sanity check that this SPEC is meant to be built for the current machine architecture
 	queryOutput, err := QuerySPEC(specfile, sourcedir, exclusiveArchQuery, arch, defines, QueryHeaderArgument)
 	if err != nil {
-		logger.Log.Warnf("Failed to query SPEC (%s), error: %s", specfile, err)
+		err = fmt.Errorf("failed to query SPEC (%s):\n%w", specfile, err)
 		return
 	}
 
@@ -411,7 +682,7 @@ func SpecExcludeArchIsCompatible(specfile, sourcedir, arch string, defines map[s
 
 	queryOutput, err := QuerySPEC(specfile, sourcedir, excludeArchQuery, arch, defines, QueryHeaderArgument)
 	if err != nil {
-		logger.Log.Warnf("Failed to query SPEC (%s), error: %s", specfile, err)
+		err = fmt.Errorf("failed to query SPEC (%s):\n%w", specfile, err)
 		return
 	}
 
@@ -477,6 +748,39 @@ func BuildCompatibleSpecsList(baseDir string, inputSpecPaths []string, defines m
 	return filterCompatibleSpecs(specPaths, defines)
 }
 
+// StripEpochFromPackageFullQualifiedName removes the epoch from a package full qualified name if it is present.
+// Example:
+//
+//	"pkg-name-0:1.2.3-4.azl3.x86_64" -> "pkg-name-1.2.3-4.azl3.x86_64"
+func StripEpochFromPackageFullQualifiedName(packageFQN string) string {
+	var packageFQNBuilder strings.Builder
+
+	matches := packageFQNRegex.FindStringSubmatch(packageFQN)
+	if matches == nil {
+		return packageFQN
+	}
+
+	packageFQNBuilder.WriteString(matches[packageFQNRegexNameIndex])
+	packageFQNBuilder.WriteString("-")
+
+	packageFQNBuilder.WriteString(matches[packageFQNRegexVersionIndex])
+	packageFQNBuilder.WriteString("-")
+
+	packageFQNBuilder.WriteString(matches[packageFQNRegexReleaseIndex])
+
+	if matches[packageFQNRegexArchIndex] != "" {
+		packageFQNBuilder.WriteString(".")
+		packageFQNBuilder.WriteString(matches[packageFQNRegexArchIndex])
+	}
+
+	if matches[packageFQNRegexExtensionIndex] != "" {
+		packageFQNBuilder.WriteString(".")
+		packageFQNBuilder.WriteString(matches[packageFQNRegexExtensionIndex])
+	}
+
+	return packageFQNBuilder.String()
+}
+
 // TestRPMFromSRPM builds an RPM from the given SRPM and runs its '%check' section SRPM file
 // but it does not generate any RPM packages.
 func TestRPMFromSRPM(srpmFile, outArch string, defines map[string]string) (err error) {
@@ -499,7 +803,8 @@ func buildAllSpecsList(baseDir string) (specPaths []string, err error) {
 
 	specPaths, err = filepath.Glob(specFilesGlob)
 	if err != nil {
-		logger.Log.Errorf("Failed while trying to enumerate all spec files with (%s). Error: %v.", specFilesGlob, err)
+		specPaths, err = nil, fmt.Errorf("failed to enumerate all spec files with (%s):\n%w", specFilesGlob, err)
+		return
 	}
 
 	return
@@ -514,17 +819,37 @@ func filterCompatibleSpecs(inputSpecPaths []string, defines map[string]string) (
 		return
 	}
 
+	type specArchResult struct {
+		compatible bool
+		path       string
+		err        error
+	}
+	resultsChannel := make(chan specArchResult, len(inputSpecPaths))
+
 	for _, specFilePath := range inputSpecPaths {
 		specDirPath := filepath.Dir(specFilePath)
 
-		specCompatible, err = SpecArchIsCompatible(specFilePath, specDirPath, buildArch, defines)
-		if err != nil {
-			logger.Log.Errorf("Failed while querrying spec (%s). Error: %v.", specFilePath, err)
+		go func(pathIter string) {
+			specCompatible, err = SpecArchIsCompatible(pathIter, specDirPath, buildArch, defines)
+			if err != nil {
+				err = fmt.Errorf("failed while querrying spec (%s). Error: %v.", pathIter, err)
+			}
+			resultsChannel <- specArchResult{
+				compatible: specCompatible,
+				path:       pathIter,
+				err:        err,
+			}
+		}(specFilePath)
+	}
+
+	for i := 0; i < len(inputSpecPaths); i++ {
+		result := <-resultsChannel
+		if result.err != nil {
+			err = result.err
 			return
 		}
-
-		if specCompatible {
-			filteredSpecPaths = append(filteredSpecPaths, specFilePath)
+		if result.compatible {
+			filteredSpecPaths = append(filteredSpecPaths, result.path)
 		}
 	}
 

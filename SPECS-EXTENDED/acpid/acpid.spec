@@ -1,5 +1,5 @@
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 # hardened build if not overridden
 %{!?_hardened_build:%global _hardened_build 1}
 
@@ -9,10 +9,10 @@ Distribution:   Mariner
 
 Summary: ACPI Event Daemon
 Name: acpid
-Version: 2.0.32
-Release: 3%{?dist}
+Version: 2.0.34
+Release: 1%{?dist}
 License: GPLv2+
-Source: http://downloads.sourceforge.net/acpid2/%{name}-%{version}.tar.xz
+Source: https://downloads.sourceforge.net/acpid2/%{name}-%{version}.tar.xz
 Source2: acpid.video.conf
 Source3: acpid.power.conf
 Source4: acpid.power.sh
@@ -34,7 +34,7 @@ acpid is a daemon that dispatches ACPI events to user-space programs.
 
 %prep
 %setup -q
-%patch0 -p1 -b .kacpimon-dynamic-connections
+%patch 0 -p1 -b .kacpimon-dynamic-connections
 
 %build
 %configure
@@ -101,6 +101,11 @@ fi
 	/bin/systemctl try-restart acpid.service >/dev/null 2>&1 || :
 
 %changelog
+
+* Tue Nov 18 2024 Jyoti Kanase <v-jykanase@microsoft.com> - 2.0.34-1
+- Update to version 2.0.34
+- License verified
+
 * Fri Oct 15 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.0.32-3
 - Initial CBL-Mariner import from Fedora 32 (license: MIT).
 

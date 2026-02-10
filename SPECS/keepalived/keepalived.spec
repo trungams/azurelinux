@@ -1,14 +1,15 @@
 Summary:        HA monitor built upon LVS, VRRP and services poller
 Name:           keepalived
-Version:        2.2.7
-Release:        1%{?dist}
+Version:        2.3.1
+Release:        2%{?dist}
 License:        GPLv2
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/System
 URL:            https://www.keepalived.org/
 Source0:        https://www.keepalived.org/software/%{name}-%{version}.tar.gz
 Source1:        %{name}.service
+Patch0:         CVE-2024-41184.patch
 
 BuildRequires:  autoconf
 BuildRequires:  automake
@@ -45,7 +46,7 @@ failover. So in short keepalived is a userspace daemon for LVS cluster nodes
 healthchecks and LVS directors failover.
 
 %prep
-%setup -q
+%autosetup -p1
 
 %build
 autoreconf -f -i
@@ -109,6 +110,16 @@ fi
 %{_mandir}/man8/keepalived.8*
 
 %changelog
+* Tue Jan 06 2026 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.3.1-2
+- Bumping release to rebuild with new 'net-snmp' libs.
+
+* Thu Sep 19 2024 Suresh Thelkar <sthelkar@microsoft.com> - 2.3.1-1
+- Add patch for CVE-2024-41184.patch.
+- Use autosetup.
+
+* Mon Nov 06 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.2.8-1
+- Auto-upgrade to 2.2.8 - Azure Linux 3.0 - package upgrades
+
 * Tue Feb 08 2022 Cameron Baird <cameronbaird@microsoft.com> - 2.2.7-1
 - Update source to v2.2.7
 - Using Fedora 36 spec (license: MIT) for guidance.

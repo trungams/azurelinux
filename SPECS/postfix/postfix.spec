@@ -1,6 +1,8 @@
 # plugins have unresolvable symbols in compile time
 %undefine _strict_symbol_defs_build
 
+%bcond_with db
+
 %bcond_without mysql
 %bcond_without pgsql
 %bcond_without sqlite
@@ -12,6 +14,12 @@
 %bcond_without tls
 %bcond_without ipv6
 %bcond_without pflogsumm
+
+%if %{without db} && %{with lmdb}
+%global defmap_lmdb 1
+%else
+%global defmap_lmdb 0
+%endif
 
 %global sysv2systemdnvr 2.8.12-2
 
@@ -52,11 +60,11 @@
 
 Summary:        Postfix Mail Transport Agent
 Name:           postfix
-Version:        3.7.0
-Release:        1%{?dist}
+Version:        3.9.0
+Release:        2%{?dist}
 License:        (IBM AND GPLv2+) OR (EPL-2.0 AND GPLv2+)
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            http://www.postfix.org
 Source0:        ftp://ftp.porcupine.org/mirrors/postfix-release/official/%{name}-%{version}.tar.gz
 Source1:        postfix-etc-init.d-postfix
@@ -87,7 +95,6 @@ Patch14:        pflogsumm-1.1.5-syslog-name-underscore-fix.patch
 
 BuildRequires:  findutils
 BuildRequires:  gcc
-BuildRequires:  libdb-devel
 BuildRequires:  libicu-devel
 BuildRequires:  libnsl2-devel
 BuildRequires:  m4
@@ -102,15 +109,20 @@ BuildRequires:  pkg-config
 BuildRequires:  systemd-units
 BuildRequires:  zlib-devel
 
+%{?with_db:BuildRequires: libdb-devel}
 %{?with_ldap:BuildRequires: openldap-devel}
 %{?with_lmdb:BuildRequires: lmdb-devel}
 %{?with_sasl:BuildRequires: cyrus-sasl-devel}
-%{?with_pcre:BuildRequires: pcre-devel}
+%{?with_pcre:BuildRequires: pcre2-devel}
 %{?with_mysql:BuildRequires: mariadb-connector-c-devel}
 %{?with_pgsql:BuildRequires: libpq-devel}
 %{?with_sqlite:BuildRequires: sqlite-devel}
 %{?with_cdb:BuildRequires: tinycdb-devel}
 %{?with_tls:BuildRequires: openssl-devel}
+
+%if 0%{?defmap_lmdb}
+Requires: %{name}-lmdb%{?_isa} = %{version}-%{release}
+%endif
 
 # Required by /usr/libexec/postfix/postfix-script
 Requires:       diffutils
@@ -228,10 +240,10 @@ maps with Postfix, you need this.
 %prep
 %setup -q
 # Apply obligatory patches
-%patch1 -p1 -b .config
-%patch2 -p1 -b .files
-%patch3 -p1 -b .alternatives
-%patch4 -p1 -b .large-fs
+%patch 1 -p1 -b .config
+%patch 2 -p1 -b .files
+%patch 3 -p1 -b .alternatives
+%patch 4 -p1 -b .large-fs
 
 # Change DEF_SHLIB_DIR according to build host
 sed -i \
@@ -241,25 +253,35 @@ src/global/mail_params.h
 %if %{with pflogsumm}
 gzip -dc %{SOURCE53} | tar xf -
 pushd pflogsumm-%{pflogsumm_ver}
-%patch9 -p1 -b .datecalc
-%patch10 -p1 -b .ipv6-warnings-fix
+%patch 9 -p1 -b .datecalc
+%patch 10 -p1 -b .ipv6-warnings-fix
 popd
 %endif
-%patch11 -p1 -b .chroot-example-fix
-%patch12 -p1 -b .glibc-234-build-fix
-%patch13 -p1 -b .whitespace-name-fix
-%patch14 -p1 -b .pflogsumm-1.1.5-syslog-name-underscore-fix
+%patch 11 -p1 -b .chroot-example-fix
+%patch 12 -p1 -b .glibc-234-build-fix
+%patch 13 -p1 -b .whitespace-name-fix
+%patch 14 -p1 -b .pflogsumm-1.1.5-syslog-name-underscore-fix
 
 for f in README_FILES/TLS_{LEGACY_,}README TLS_ACKNOWLEDGEMENTS; do
 	iconv -f iso8859-1 -t utf8 -o ${f}{_,} &&
 		touch -r ${f}{,_} && mv -f ${f}{_,}
 done
 
+# fix default maps
+%if 0%{?defmap_lmdb}
+  sed -i '/^\s*alias_maps\s*=\s*hash:\/etc\/aliases/ s|hash:|lmdb:|g' conf/main.cf
+  sed -i '/^\s*alias_database\s*=\s*hash:\/etc\/aliases/ s|hash:|lmdb:|g' conf/main.cf
+%endif
+
 %build
 %set_build_flags
 unset AUXLIBS AUXLIBS_LDAP AUXLIBS_LMDB AUXLIBS_PCRE AUXLIBS_MYSQL AUXLIBS_PGSQL AUXLIBS_SQLITE AUXLIBS_CDB
 CCARGS="-fPIC -fcommon"
 AUXLIBS="-lnsl"
+
+%if %{without db}
+  CCARGS="${CCARGS} -DNO_DB"
+%endif
 
 %ifarch s390 s390x ppc
 CCARGS="${CCARGS} -fsigned-char"
@@ -274,9 +296,8 @@ CCARGS="${CCARGS} -fsigned-char"
   AUXLIBS_LMDB="-llmdb"
 %endif
 %if %{with pcre}
-  # -I option required for pcre 3.4 (and later?)
-  CCARGS="${CCARGS} -DHAS_PCRE -I%{_includedir}/pcre"
-  AUXLIBS_PCRE="-lpcre"
+  CCARGS="${CCARGS} -DHAS_PCRE=2 `pcre2-config --cflags`"
+  AUXLIBS_PCRE=`pcre2-config --libs8`
 %endif
 %if %{with mysql}
   CCARGS="${CCARGS} -DHAS_MYSQL -I%{_includedir}/mysql"
@@ -762,6 +783,15 @@ exit 0
 %endif
 
 %changelog
+* Fri Jun 07 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.9.0-2
+- Remove dependency on 'libdb'. Using Fedora 40 (license: MIT) spec for guidance.
+
+* Mon Apr 15 2024 Betty Lakes <bettylakes@microsoft.com> - 3.9.0-1
+- Update to version 3.9.0
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 3.7.0-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Mon Feb 07 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.7.0-1
 - Updating to version 3.7.0.
 - License verified.

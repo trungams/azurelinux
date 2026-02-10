@@ -5,6 +5,7 @@ package schedulerutils
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,13 +13,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/file"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/logger"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/pkggraph"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/pkgjson"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/retry"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/sliceutils"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/scheduler/buildagents"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/file"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/logger"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/pkggraph"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/pkgjson"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/retry"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/rpm"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/sliceutils"
+	"github.com/microsoft/azurelinux/toolkit/tools/scheduler/buildagents"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/traverse"
 )
@@ -37,7 +39,6 @@ type BuildRequest struct {
 	Node           *pkggraph.PkgNode   // The main node being analyzed for the build.
 	PkgGraph       *pkggraph.PkgGraph  // The graph of all packages.
 	AncillaryNodes []*pkggraph.PkgNode // For SRPM builds: other nodes stemming from the same SRPM. Empty otherwise.
-	ExpectedFiles  []string            // List of RPMs built by this node.
 	UseCache       bool                // Can we use a cached copy of this package instead of building it.
 	IsDelta        bool                // Is this a pre-downloaded RPM (not traditional cache) that we may be able to skip rebuilding.
 	Freshness      uint                // The freshness of the node (used to determine if we can skip building future nodes).
@@ -45,15 +46,18 @@ type BuildRequest struct {
 
 // BuildResult represents the results of a build agent trying to build a given node.
 type BuildResult struct {
-	AncillaryNodes []*pkggraph.PkgNode // For SRPM builds: other nodes stemming from the same SRPM. Empty otherwise.
-	BuiltFiles     []string            // List of RPMs built by this node.
-	Err            error               // Error encountered during the build.
-	LogFile        string              // Path to the log file from the build.
-	Node           *pkggraph.PkgNode   // The main node being analyzed for the build.
-	Ignored        bool                // Indicator if the build was ignored by user request.
-	UsedCache      bool                // Indicator if we used the cached artifacts (external or earlier local build) instead of building the node.
-	WasDelta       bool                // Indicator if we used a pre-built component from an external repository instead of building the node.
-	Freshness      uint                // The freshness of the node (used to determine if we can skip building future nodes).
+	AncillaryNodes     []*pkggraph.PkgNode // For SRPM builds: other nodes stemming from the same SRPM. Empty otherwise.
+	BuiltFiles         []string            // List of RPMs built by this node.
+	Err                error               // Error encountered during the build.
+	LogFile            string              // Path to the log file from the build.
+	Node               *pkggraph.PkgNode   // The main node being analyzed for the build.
+	CheckFailed        bool                // Indicator if the package test failed but the build itself was correct.
+	Ignored            bool                // Indicator if the build was ignored by user request.
+	UsedCache          bool                // Indicator if we used the cached artifacts (external or earlier local build) instead of building the node.
+	WasDelta           bool                // Indicator if we used a pre-built component from an external repository instead of building the node.
+	Freshness          uint                // The freshness of the node (used to determine if we can skip building future nodes).
+	HasLicenseWarnings bool                // Package has at least one license check warning
+	HasLicenseErrors   bool                // Package has at least one license check error
 }
 
 // selectNextBuildRequest selects a job based on priority:
@@ -119,7 +123,7 @@ func BuildNodeWorker(channels *BuildChannels, agent buildagents.BuildAgent, grap
 			}
 
 		case pkggraph.TypeTest:
-			res.Ignored, res.LogFile, res.Err = testNode(req, graphMutex, agent, checkAttempts, ignoredTests)
+			res.CheckFailed, res.Ignored, res.LogFile, res.Err = testNode(req, graphMutex, agent, checkAttempts, ignoredTests)
 			if res.Err == nil {
 				setAncillaryBuildNodesStatus(req, graphMutex, pkggraph.StateUpToDate)
 			} else {
@@ -133,7 +137,7 @@ func BuildNodeWorker(channels *BuildChannels, agent buildagents.BuildAgent, grap
 			fallthrough
 
 		default:
-			res.Err = fmt.Errorf("invalid node type %v on node %v", req.Node.Type, req.Node)
+			res.Err = fmt.Errorf("invalid node type (%v) on node (%v)", req.Node.Type, req.Node)
 		}
 
 		channels.Results <- res
@@ -146,6 +150,13 @@ func BuildNodeWorker(channels *BuildChannels, agent buildagents.BuildAgent, grap
 func buildNode(request *BuildRequest, graphMutex *sync.RWMutex, agent buildagents.BuildAgent, buildAttempts int, ignoredPackages []*pkgjson.PackageVer) (ignored bool, builtFiles []string, logFile string, err error) {
 	node := request.Node
 	baseSrpmName := node.SRPMFileName()
+
+	basePackageName, err := rpm.GetBasePackageNameFromSpecFile(node.SpecPath)
+	if err != nil {
+		// This can only happen if the spec file does not have a name (only an extension).
+		logger.Log.Warnf("An error occured while getting the base package name from (%s). This may result in further errors.", node.SpecPath)
+	}
+
 	ignored = sliceutils.Contains(ignoredPackages, node.VersionedPkg, sliceutils.PackageVerMatch)
 
 	if ignored {
@@ -155,21 +166,28 @@ func buildNode(request *BuildRequest, graphMutex *sync.RWMutex, agent buildagent
 
 	if request.UseCache {
 		logger.Log.Debugf("%s is prebuilt, skipping", baseSrpmName)
-		builtFiles = request.ExpectedFiles
+		builtFiles, _ = pkggraph.FindRPMFiles(node.SrpmPath, request.PkgGraph, graphMutex)
 		return
 	}
 
 	dependencies := getBuildDependencies(node, request.PkgGraph, graphMutex)
 
 	logger.Log.Infof("Building: %s", baseSrpmName)
-	builtFiles, logFile, err = buildSRPMFile(agent, buildAttempts, node.SrpmPath, node.Architecture, dependencies)
+	builtFiles, logFile, err = buildSRPMFile(agent, buildAttempts, basePackageName, node.SrpmPath, node.Architecture, dependencies)
 	return
 }
 
 // testNode tests a TypeTest node.
-func testNode(request *BuildRequest, graphMutex *sync.RWMutex, agent buildagents.BuildAgent, checkAttempts int, ignoredTests []*pkgjson.PackageVer) (ignored bool, logFile string, err error) {
+func testNode(request *BuildRequest, graphMutex *sync.RWMutex, agent buildagents.BuildAgent, checkAttempts int, ignoredTests []*pkgjson.PackageVer) (checkFailed, ignored bool, logFile string, err error) {
 	node := request.Node
 	baseSrpmName := node.SRPMFileName()
+
+	basePackageName, err := rpm.GetBasePackageNameFromSpecFile(node.SpecPath)
+	if err != nil {
+		// This can only happen if the spec file does not have a name (only an extension).
+		logger.Log.Warnf("An error occured while getting the base package name from (%s). This may result in further errors.", node.SpecPath)
+	}
+
 	ignored = sliceutils.Contains(ignoredTests, node.VersionedPkg, sliceutils.PackageVerMatch)
 
 	if ignored {
@@ -185,7 +203,7 @@ func testNode(request *BuildRequest, graphMutex *sync.RWMutex, agent buildagents
 	dependencies := getBuildDependencies(node, request.PkgGraph, graphMutex)
 
 	logger.Log.Infof("Testing: %s", baseSrpmName)
-	logFile, err = testSRPMFile(agent, checkAttempts, node.SrpmPath, node.Architecture, dependencies)
+	logFile, checkFailed, err = testSRPMFile(agent, checkAttempts, basePackageName, node.SrpmPath, node.Architecture, dependencies)
 	return
 }
 
@@ -224,11 +242,11 @@ func getBuildDependencies(node *pkggraph.PkgNode, pkgGraph *pkggraph.PkgGraph, g
 }
 
 // parseCheckSection reads the package build log file to determine if the %check section passed or not
-func parseCheckSection(logFile string) (err error) {
+func parseCheckSection(logFile string) (checkFailed bool, err error) {
 	logFileObject, err := os.Open(logFile)
 	// If we can't open the log file, that's a build error.
 	if err != nil {
-		logger.Log.Errorf("Failed to open log file '%s' while checking package test results. Error: %v", logFile, err)
+		err = fmt.Errorf("failed to open log file (%s) while checking package test results:\n%w", logFile, err)
 		return
 	}
 	defer logFileObject.Close()
@@ -243,10 +261,10 @@ func parseCheckSection(logFile string) (err error) {
 			failedLogFile = fmt.Sprintf("%s-FAILED_TEST-%d.log", failedLogFile, time.Now().UnixMilli())
 			err = file.Copy(logFile, failedLogFile)
 			if err != nil {
-				logger.Log.Errorf("Log file copy failed. Error: %v", err)
+				err = fmt.Errorf("failed to copy log file:\n%w", err)
 				return
 			}
-			err = fmt.Errorf("package test failed. Test status line: %s", currLine)
+			checkFailed = true
 			return
 		}
 	}
@@ -254,47 +272,84 @@ func parseCheckSection(logFile string) (err error) {
 }
 
 // buildSRPMFile sends an SRPM to a build agent to build.
-func buildSRPMFile(agent buildagents.BuildAgent, buildAttempts int, srpmFile, outArch string, dependencies []string) (builtFiles []string, logFile string, err error) {
+func buildSRPMFile(agent buildagents.BuildAgent, buildAttempts int, basePackageName, srpmFile, outArch string, dependencies []string) (builtFiles []string, logFile string, err error) {
 	const (
 		retryDuration = time.Second
 		runCheck      = false
 	)
 
 	logBaseName := filepath.Base(srpmFile) + ".log"
-	err = retry.Run(func() (buildErr error) {
-		builtFiles, logFile, buildErr = agent.BuildPackage(srpmFile, logBaseName, outArch, runCheck, dependencies)
+
+	// Track the time the build may take, and ensure we don't exceed the maximum limit.
+	attemptNumber := 0
+	totalExecutionTimeout := agent.Config().Timeout
+	deadline := time.Now().Add(totalExecutionTimeout)
+	ctx, cancelFunc := context.WithDeadline(context.Background(), deadline)
+	defer cancelFunc()
+
+	wasCancelled, err := retry.RunWithLinearBackoff(ctx, func() (buildErr error) {
+		if attemptNumber > 0 {
+			logger.Log.Warnf("Build for '%s' failed %d times, retrying up to %d times.", srpmFile, attemptNumber, buildAttempts)
+		}
+		attemptNumber++
+
+		builtFiles, logFile, buildErr = agent.BuildPackage(basePackageName, srpmFile, logBaseName, outArch, runCheck, dependencies, time.Until(deadline))
 		return
 	}, buildAttempts, retryDuration)
+	if wasCancelled {
+		err = fmt.Errorf("after %d/%d attempts, the build exceeded the maximum time of %s", attemptNumber, buildAttempts, totalExecutionTimeout)
+		return
+	}
 
 	return
 }
 
 // testSRPMFile sends an SRPM to a build agent to test.
-func testSRPMFile(agent buildagents.BuildAgent, checkAttempts int, srpmFile string, outArch string, dependencies []string) (logFile string, err error) {
+// The 'checkFailed' flag says if the package test failed as opposed
+// to the build failing for another reason, which is reflected by a non-nil 'err'.
+func testSRPMFile(agent buildagents.BuildAgent, checkAttempts int, basePackageName string, srpmFile string, outArch string, dependencies []string) (logFile string, checkFailed bool, err error) {
 	const (
 		retryDuration = time.Second
 		runCheck      = true
 	)
 
-	// checkFailed is a flag to see if a non-null buildErr is from the %check section
-	checkFailed := false
 	logBaseName := filepath.Base(srpmFile) + ".test.log"
-	err = retry.Run(func() (buildErr error) {
+
+	// Track the time the build may take, and ensure we don't exceed the maximum limit.
+	attemptNumber := 0
+	totalExecutionTimeout := agent.Config().Timeout
+	deadline := time.Now().Add(totalExecutionTimeout)
+	ctx, cancelFunc := context.WithDeadline(context.Background(), deadline)
+	defer cancelFunc()
+
+	wasCancelled, err := retry.RunWithLinearBackoff(ctx, func() (buildErr error) {
+		if attemptNumber > 0 {
+			logger.Log.Warnf("Test for '%s' failed %d times, retrying up to %d times.", srpmFile, attemptNumber, checkAttempts)
+		}
+		attemptNumber++
+
 		checkFailed = false
 
-		_, logFile, buildErr = agent.BuildPackage(srpmFile, logBaseName, outArch, runCheck, dependencies)
+		_, logFile, buildErr = agent.BuildPackage(basePackageName, srpmFile, logBaseName, outArch, runCheck, dependencies, time.Until(deadline))
 		if buildErr != nil {
-			logger.Log.Warnf("Test build for '%s' failed on a non-test build issue. Error: %s", srpmFile, err)
+			logger.Log.Warnf("Test build for '%s' failed on a non-test build issue. Error: %s", srpmFile, buildErr)
 			return
 		}
 
-		buildErr = parseCheckSection(logFile)
-		checkFailed = (buildErr != nil)
+		checkFailed, buildErr = parseCheckSection(logFile)
+		// If the build succeeded but tests failed, we still want to retry.
+		if buildErr == nil && checkFailed {
+			buildErr = fmt.Errorf("package test for (%s) failed", basePackageName)
+		}
 		return
 	}, checkAttempts, retryDuration)
+	if wasCancelled {
+		err = fmt.Errorf("after %d/%d attempts, the check exceeded the maximum time of %s", attemptNumber, checkAttempts, totalExecutionTimeout)
+		return
+	}
 
-	if err != nil && checkFailed {
-		logger.Log.Warnf("Tests failed for '%s'. Error: %s", srpmFile, err)
+	if checkFailed {
+		logger.Log.Debugf("Tests failed for '%s' after %d attempt(s).", basePackageName, checkAttempts)
 		err = nil
 	}
 	return

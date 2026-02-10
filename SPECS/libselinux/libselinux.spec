@@ -1,17 +1,22 @@
 Summary:        SELinux library and simple utilities
 Name:           libselinux
-Version:        3.2
-Release:        1%{?dist}
+Version:        3.6
+Release:        4%{?dist}
 License:        Public Domain
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Libraries
 URL:            https://github.com/SELinuxProject/selinux/wiki
 Source0:        https://github.com/SELinuxProject/selinux/releases/download/%{version}/%{name}-%{version}.tar.gz
+Patch1:         libselinux-usr-etc-selinux-path.patch
 BuildRequires:  libsepol-devel
-BuildRequires:  pcre-devel
+BuildRequires:  pcre2-devel
 BuildRequires:  swig
-Requires:       pcre-libs
+BuildRequires:  python3-devel
+BuildRequires:  python3-pip
+BuildRequires:  python3-setuptools
+BuildRequires:  python3-wheel
+Requires:       pcre2
 Requires:       libsepol
 
 %description
@@ -41,7 +46,7 @@ The libselinux-utils package contains the utilities
 Summary:        Header files and libraries used to build SELinux
 Group:          Development/Libraries
 Requires:       %{name} = %{version}-%{release}
-Requires:       pcre-devel
+Requires:       pcre2-devel
 Requires:       libsepol-devel >= %{version}
 
 %description    devel
@@ -60,9 +65,10 @@ The libselinux-python package contains the python3 bindings for developing
 SELinux applications.
 
 %prep
-%autosetup
+%autosetup -p2
 
 %build
+export USE_PCRE2="y"
 sed '/unistd.h/a#include <sys/uio.h>' -i src/setrans_client.c
 %make_build clean
 %make_build swigify CFLAGS="%{build_cflags} -Wno-error=strict-overflow -fno-semantic-interposition"
@@ -73,7 +79,7 @@ make DESTDIR="%{buildroot}" LIBDIR="%{_libdir}" SHLIBDIR="%{_libdir}" BINDIR="%{
 
 mkdir -p %{buildroot}%{_libdir}/tmpfiles.d
 mkdir -p %{buildroot}%{_localstatedir}/run/setrans
-echo "d %{_localstatedir}/run/setrans 0755 root root" > %{buildroot}/%{_libdir}/tmpfiles.d/libselinux.conf
+echo "d /run/setrans 0755 root root" > %{buildroot}/%{_libdir}/tmpfiles.d/libselinux.conf
 
 %ldconfig_scriptlets
 
@@ -89,8 +95,6 @@ echo "d %{_localstatedir}/run/setrans 0755 root root" > %{buildroot}/%{_libdir}/
 %{_sbindir}/*
 %{_mandir}/man5/*
 %{_mandir}/man8/*
-%{_mandir}/ru/man5/*
-%{_mandir}/ru/man8/*
 
 %files devel
 %defattr(-,root,root,-)
@@ -106,9 +110,28 @@ echo "d %{_localstatedir}/run/setrans 0755 root root" > %{buildroot}/%{_libdir}/
 %{python3_sitelib}/*
 
 %changelog
+* Tue Sep 30 2025 Chris PeBenito <chpebeni@microsoft.com> - 3.6-4
+- Support SELinux policy tree at /usr/etc/selinux.  This supports a
+  dm-verity protected policy in a read-only /usr.
+
+* Wed Apr 03 2024 Betty Lakes <bettylakes@microsoft.com> - 3.6-3
+- Move to pcre2
+
+* Wed Mar 20 2024 Dan Streetman <ddstreet@microsoft.com> - 3.6-2
+- fix tmpfiles.d conf to avoid "Line references path below legacy directory
+  /var/run/" warnings
+
+* Tue Feb 06 2024 Cameron Baird <cameronbaird@microsoft.com> - 3.6-1
+- Upgrade to version 3.6
+- Build against pcre2
+- Include python dependencies
+
+* Tue Nov 21 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.5-1
+- Auto-upgrade to 3.5 - Azure Linux 3.0 - package upgrades
+
 * Fri Aug 13 2021 Thomas Crain <thcrain@microsoft.com> - 3.2-1
 - Upgrade to latest upstream version
-- Add -fno-semantic-interposition to CFLAGS as recommended by upstream 
+- Add -fno-semantic-interposition to CFLAGS as recommended by upstream
 - License verified
 - Remove manual pkgconfig provides
 - Update source URL to new format

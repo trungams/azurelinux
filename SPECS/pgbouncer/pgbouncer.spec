@@ -1,6 +1,6 @@
 Summary:	Connection pooler for PostgreSQL.
 Name:		pgbouncer
-Version:	1.16.1
+Version:	1.25.1
 Release:	1%{?dist}
 License:	ISC License
 URL:		https://www.pgbouncer.org/
@@ -8,7 +8,7 @@ Source0:	https://%{name}.github.io/downloads/files/%{version}/%{name}-%{version}
 Source1:        pgbouncer.service
 Group:		Application/Databases.
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 BuildRequires:  libevent-devel
 BuildRequires:  openssl-devel
 BuildRequires:  systemd
@@ -22,6 +22,9 @@ Pgbouncer is a light-weight, robust connection pooler for PostgreSQL.
 
 %prep
 %setup
+#Prevent the installation of manpages since it depends on the pandoc package
+sed -i 's|dist_man_MANS = doc/pgbouncer.1 doc/pgbouncer.5|dist_man_MANS =|' Makefile
+
 
 %build
 %configure --datadir=%{_datadir}
@@ -75,11 +78,18 @@ fi
 %{_bindir}/*
 /etc/systemd/system/%{name}.service
 %config(noreplace) %{_sysconfdir}/%{name}.ini
-%{_mandir}/man1/%{name}.*
-%{_mandir}/man5/%{name}.*
 /usr/share/doc/pgbouncer/*
 
 %changelog
+* Thu Dec 04 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.25.1-1
+- Auto-upgrade to 1.25.1 - for CVE-2025-12819
+
+* Tue Apr 22 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.24.1-1
+- Auto-upgrade to 1.24.1 - bump version to fix CVE-2025-2291
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.20.1-1
+- Auto-upgrade to 1.20.1 - Azure Linux 3.0 - package upgrades
+
 * Sun Nov 28 2021 Muhammad Falak <mwani@microsoft.com> - 1.16.1-1
 - Bump version to fix CVE-2021-3935
 

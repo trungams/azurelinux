@@ -1,5 +1,6 @@
 {
- "Signatures": {
-  "Python-3.9.14.tar.xz": "651304d216c8203fe0adf1a80af472d8e92c3b0e0a7892222ae4d9f3ae4debcf"
- }
+  "Signatures": {
+    "pathfix.py": "7a2ff222346d3c95b08814e3372975823e099c17dddaa73a459a3d840e6e9c1b",
+    "Python-3.12.9.tar.xz": "7220835d9f90b37c006e9842a8dff4580aaca4318674f947302b8d28f3f81112"
+  }
 }

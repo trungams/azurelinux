@@ -1,13 +1,13 @@
-%define modprobe_version 495.44
+%define modprobe_version 550.54.14
 %define _major 1
 %define mod_probe_dir deps/src/nvidia-modprobe-%{modprobe_version}
 Summary:        NVIDIA container runtime library
 Name:           libnvidia-container
-Version:        1.11.0
-Release:        11%{?dist}
+Version:        1.17.8
+Release:        1%{?dist}
 License:        BSD AND ASL2.0 AND GPLv3+ AND LGPLv3+ AND MIT AND GPLv2
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://github.com/NVIDIA/libnvidia-container
 #Source0:       https://github.com/NVIDIA/%%{name}/archive/v%%{version}.tar.gz
 Source0:        %{name}-%{version}.tar.gz
@@ -21,7 +21,7 @@ BuildRequires:  libtirpc-devel
 BuildRequires:  make
 BuildRequires:  rpcsvc-proto
 BuildRequires:  which
-BuildRequires:  golang
+BuildRequires:  golang < 1.24.0
 
 %description
 The nvidia-container library provides an interface to configure GNU/Linux
@@ -30,15 +30,18 @@ kernel subsystems and is designed to be agnostic of the container runtime.
 
 %prep
 %setup -q
-%patch0 -p1
-%patch1 -p1
+%patch 0 -p1
+%patch 1 -p1
 
 mkdir -p %{mod_probe_dir}
 tar -C %{mod_probe_dir} --strip-components=1 -xzf %{SOURCE1}
-%patch2 -p1 -d %{mod_probe_dir}
+%patch 2 -p1 -d %{mod_probe_dir}
 touch %{mod_probe_dir}/.download_stamp
 
 %build
+sed -i 's/^MAJOR[[:space:]]*:=.*$/MAJOR := 1/' versions.mk
+sed -i 's/^MINOR[[:space:]]*:=.*$/MINOR := 16/' versions.mk
+sed -i 's/^PATCH[[:space:]]*:=.*$/PATCH := 2/' versions.mk
 %make_build WITH_LIBELF=yes
 
 %install
@@ -132,6 +135,43 @@ This package contains command-line tools that facilitate using the library.
 %{_bindir}/*
 
 %changelog
+* Thu Jul 24 2025 Sam Meluch <sammeluch@microsoft.com> - 1.17.8-1
+- Upgrade to version 1.17.8 in sync with nvidia-container-toolkit
+
+* Mon Mar 10 2025 Jon Slobodzian <joslobo@microsoft.com> - 1.17.4-2
+- The Golang 1.24 breaks this build.  Changed BuildRequires to specify a lower version.
+
+* Fri Feb 14 2025 Mitch Zhu <mitchzhu@microsoft.com> - 1.17.4-1
+- Upgrade to version 1.17.4 to stay in sync with nvidia-container-toolkit.
+
+* Thu Dec 05 2024 Henry Li <lihl@microsoft.com> - 1.17.3-1
+- Upgrade to v1.17.3
+
+* Mon Nov 11 2024 Henry Li <lihl@microsoft.com> - 1.17.1-1
+- Upgrade to v1.17.1
+
+* Mon Oct 07 2024 Mandeep Plaha <mandeepplaha@microsoft.com> - 1.16.2-1
+- Upgrade to version 1.16.2 to stay in sync with nvidia-container-toolkit.
+
+* Fri Jun 07 2024 Henry Li <lihl@microsoft.com> - 1.15.0-1
+- Upgrade to version 1.15.0
+
+* Fri Apr 16 2024 Henry Li <lihl@microsoft.com> - 1.14.4-1
+- Upgrade to version 1.14.4
+- Add external specification of package versioning to build
+
+* Mon Oct 16 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.13.5-4
+- Bump release to rebuild with go 1.20.10
+
+* Tue Oct 10 2023 Dan Streetman <ddstreet@ieee.org> - 1.13.5-3
+- Bump release to rebuild with updated version of Go.
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 1.13.5-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
+* Thu Aug 24 2023 Henry Li <lihl@microsoft.com> - 1.13.5-1
+- Upgrade to version 1.13.5
+
 * Mon Aug 07 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.11.0-11
 - Bump release to rebuild with go 1.19.12
 

@@ -1,11 +1,11 @@
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 %bcond_without systemd
 %global rundir /run/
 
 Name:     lldpd
-Version:  1.0.14
-Release:  1%{?dist}
+Version:  1.0.17
+Release:  2%{?dist}
 Summary:  ISC-licensed implementation of LLDP
 
 License:  ISC
@@ -51,7 +51,7 @@ Summary: %{summary}
 %{name} development libraries and headers
 
 %prep
-%autosetup
+%autosetup -p1
 
 
 %build
@@ -162,6 +162,18 @@ fi
 
 
 %changelog
+* Tue Jan 06 2026 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.0.17-2
+- Bumping release to rebuild with new 'net-snmp' libs.
+
+* Mon Nov 06 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.0.17-1
+- Auto-upgrade to 1.0.17 - Azure Linux 3.0 - package upgrades
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 1.0.14-3
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
+* Tue Sep 12 2023 Suresh Thelkar <sthelkar@microsoft.com> - 1.0.14-2
+- Backport patch to address CVE-2023-41910
+
 * Tue Aug 16 2022 Muhammad Falak <mwani@microsoft.com> - 1.0.14-1
 - Bump version to address CVE-2020-27827
 

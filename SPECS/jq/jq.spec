@@ -1,19 +1,22 @@
 Summary:        jq is a lightweight and flexible command-line JSON processor.
 Name:           jq
-Version:        1.6
-Release:        1%{?dist}
+Version:        1.7.1
+Release:        4%{?dist}
 Group:          Applications/System
 Vendor:         Microsoft Corporation
 License:        MIT
-URL:            https://github.com/stedolan/jq
-Source0:        https://github.com/stedolan/jq/releases/download/%{name}-%{version}/%{name}-%{version}.tar.gz
-Distribution:   Mariner
+URL:            https://jqlang.github.io/jq/
+Source0:        https://github.com/jqlang/jq/releases/download/%{name}-%{version}/%{name}-%{version}.tar.gz
+Patch0:         CVE-2024-53427.patch
+Patch1:         CVE-2024-23337.patch
+Patch2:         CVE-2025-48060.patch
+Distribution:   Azure Linux
 BuildRequires:  bison
 BuildRequires:  chrpath
 BuildRequires:  flex
 BuildRequires:  gcc
 BuildRequires:  oniguruma-devel
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  which
 %endif
 
@@ -29,7 +32,7 @@ Requires:   %{name} = %{version}-%{release}
 Development files for jq
 
 %prep
-%setup -q
+%autosetup -p1
 
 %build
 %configure \
@@ -51,17 +54,35 @@ make check
 %license COPYING
 %{_bindir}/*
 %{_datadir}/*
+%exclude %{_datadir}/doc/jq/COPYING
 %{_libdir}/libjq.so.*
+%{_libdir}/pkgconfig/libjq.pc
 
 %files devel
 %{_libdir}/libjq.so
 %{_includedir}/*
 
 %changelog
+* Wed Jul 23 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 1.7.1-4
+- Patch for CVE-2025-48060
+- Updated files section to fix duplicated license files
+
+* Mon May 26 2025 Akhila Guruju <v-guakhila@microsoft.com> - 1.7.1-3
+- Patch CVE-2024-23337
+
+* Wed Mar 05 2025 Kanishk Bansal <kanbansal@microsoft.com> - 1.7.1-2
+- Patch CVE-2024-53427
+
+* Fri Feb 02 2024 Thien Trung Vuong <tvuong@microsoft.com> - 1.7.1-1
+- Upgrade to version 1.7.1
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 1.6-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Thu Feb 24 2022 Cameron Baird <cameronbaird@microsoft.com> - 1.6-1
 - Update source to v1.6
 - Remove CVE-2015-8863.patch, CVE-2016-4074.patch (changes found in this release)
-- Move oniguruma BuildRequires outside of check block 
+- Move oniguruma BuildRequires outside of check block
 
 * Thu Dec 16 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.5-7
 - Removing the explicit %%clean stage.

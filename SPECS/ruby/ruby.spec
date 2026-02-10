@@ -2,94 +2,98 @@
 # RubyGems should be share by all Ruby implementations.
 %global rubygems_dir  %{_datadir}/rubygems
 %global gem_dir %{_datadir}/ruby/gems
-%global rubygems_version        3.3.26
+
+# Default package version defined separately, because the %%version macro gets overwritten by 'Version' tags of the subpackages.
+%global ruby_version            3.3.5
+%define ruby_version_majmin     %(echo %{ruby_version} | cut -d. -f1-2)
+
+%global rubygems_version        3.5.22
 # Add version for default gems from https://stdgems.org/
-# A helpful one-liner script to check the current default versions is available via RUBY_VER=3.1 ./get_gem_versions.sh
-%global abbrev_version          0.1.0
-%global base64_version          0.1.1
-%global benchmark_version       0.2.0
-# bigdecimal is available via rubygem-bigdecimal.spec with higher version 3.1.2 (default is 3.1.1)
-%global bundler_version         2.3.26
-%global cgi_version             0.3.5
-%global csv_version             3.2.5
-%global date_version            3.2.2
-%global delegate_version        0.2.0
-%global did_you_mean_version    1.6.1
-%global digest_version          3.1.0
-%global drb_version             2.1.0
-%global english_version         0.7.1
-%global erb_version             2.2.3
-%global error_highlight_version 0.3.0
-%global etc_version             1.3.0
-%global fcntl_version           1.0.1
-%global fiddle_version          1.1.0
-%global fileutils_version       1.6.0
-%global find_version            0.1.1
-%global forwardable_version     1.3.2
-%global getoptlong_version      0.1.1
-%global io_console_version      0.5.11
-%global io_nonblock_version     0.1.0
-%global io_wait_version         0.2.1
-%global ipaddr_version          1.2.4
-%global irb_version             1.4.1
-%global json_version            2.6.1
-%global logger_version          1.5.0
-%global mutex_m_version         0.1.1
-%global net_http_version        0.3.0
-%global net_protocol_version    0.1.2
-%global nkf_version             0.1.1
-%global observer_version        0.1.1
-%global open3_version           0.1.1
-%global openssl_version         3.0.1
-%global open_uri_version        0.2.0
-%global optparse_version        0.2.0
-%global ostruct_version         0.5.2
-%global pathname_version        0.2.0
-%global pp_version              0.3.0
-%global prettyprint_version     0.1.1
-%global pstore_version          0.1.1
-%global psych_version           4.0.4
-%global racc_version            1.6.0
-%global rdoc_version            6.4.0
-%global readline_version        0.0.3
-%global readline_ext_version    0.1.4
-%global reline_version          0.3.1
-%global resolv_version          0.2.1
-%global resolv_replace_version  0.1.0
-%global rinda_version           0.1.1
+# A helpful one-liner script to check the current default versions is available via RUBY_VER=%%{ruby_version_majmin} ./get_gem_versions.sh
+%global abbrev_version          0.1.2
+%global base64_version          0.2.0
+%global benchmark_version       0.3.0
+%global bigdecimal_version      3.1.5
+%global bundler_version         2.5.22
+%global cgi_version             0.4.1
+%global csv_version             3.2.8
+%global date_version            3.3.4
+%global delegate_version        0.3.1
+%global did_you_mean_version    1.6.3
+%global digest_version          3.1.1
+%global drb_version             2.2.0
+%global english_version         0.8.0
+%global erb_version             4.0.3
+%global error_highlight_version 0.6.0
+%global etc_version             1.4.3
+%global fcntl_version           1.1.0
+%global fiddle_version          1.1.2
+%global fileutils_version       1.7.2
+%global find_version            0.2.0
+%global forwardable_version     1.3.3
+%global getoptlong_version      0.2.1
+%global io_console_version      0.7.2
+%global io_nonblock_version     0.3.0
+%global io_wait_version         0.3.1
+%global ipaddr_version          1.2.6
+%global irb_version             1.13.1
+%global logger_version          1.6.0
+%global mutex_m_version         0.2.0
+%global net_http_version        0.4.1
+%global net_protocol_version    0.2.2
+%global nkf_version             0.1.3
+%global observer_version        0.1.2
+%global open3_version           0.2.1
+%global openssl_version         3.2.0
+%global open_uri_version        0.4.1
+%global optparse_version        0.4.0
+%global ostruct_version         0.6.0
+%global pathname_version        0.3.0
+%global prism_version           0.19.0
+%global pp_version              0.5.0
+%global prettyprint_version     0.2.0
+%global pstore_version          0.1.3
+%global psych_version           5.1.2
+%global rdoc_version            6.6.3.1
+%global readline_version        0.0.4
+%global reline_version          0.5.10
+%global resolv_version          0.3.0
+%global resolv_replace_version  0.1.1
+%global rinda_version           0.2.0
 %global ruby2_keywords_version  0.0.5
-%global securerandom_version    0.2.0
-%global set_version             1.0.2
-%global shellwords_version      0.1.0
-%global singleton_version       0.1.1
-%global stringio_version        3.0.1
-%global strscan_version         3.0.1
-%global syslog_version          0.1.0
-%global tempfile_version        0.1.2
-%global time_version            0.2.2
-%global timeout_version         0.2.0
-%global tmpdir_version          0.1.2
-%global tsort_version           0.1.0
-%global un_version              0.2.0
-%global uri_version             0.12.2
-%global weakref_version         0.1.1
-%global win32ole_version        1.8.8
-%global yaml_version            0.2.0
-%global zlib_version            2.1.1
+%global securerandom_version    0.3.1
+%global set_version             1.1.0
+%global shellwords_version      0.2.0
+%global singleton_version       0.2.0
+%global stringio_version        3.1.1
+%global strscan_version         3.0.9
+%global syslog_version          0.1.2
+%global syntax_suggest_version  2.0.1
+%global tempfile_version        0.2.1
+%global time_version            0.3.0
+%global timeout_version         0.4.1
+%global tmpdir_version          0.2.0
+%global tsort_version           0.2.0
+%global un_version              0.3.0
+%global uri_version             0.13.1
+%global weakref_version         0.1.3
+%global win32ole_version        1.8.10
+%global yaml_version            0.3.0
+%global zlib_version            3.1.1
 
 Summary:        Ruby
 Name:           ruby
 # TODO: When changing ruby version, these gemified stdlib
 # provides should be versioned according to the ruby version.
 # More info: https://stdgems.org/
-Version:        3.1.4
-Release:        2%{?dist}
+Version:        %{ruby_version}
+Release:        7%{?dist}
 License:        (Ruby OR BSD) AND Public Domain AND MIT AND CC0 AND zlib AND UCD
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Security
 URL:            https://www.ruby-lang.org/en/
-Source0:        https://cache.ruby-lang.org/pub/ruby/3.1/%{name}-%{version}.tar.xz
+Source0:        https://cache.ruby-lang.org/pub/ruby/%{ruby_version_majmin}/%{name}-%{ruby_version}.tar.gz
 Source1:        macros.ruby
 Source2:        operating_system.rb
 Source3:        rubygems.attr
@@ -97,13 +101,25 @@ Source4:        rubygems.con
 Source5:        rubygems.prov
 Source6:        rubygems.req
 Source7:        macros.rubygems
-# Updates default ruby-uri to 0.12.2 and vendored one to 0.10.3. Remove once ruby gets updated to a version that comes with both lib/uri/version.rb and lib/bundler/vendor/uri/lib/uri/version.rb versions >= 0.12.2 or == 0.10.3
-Patch0:         CVE-2023-36617.patch
+Patch0:         CVE-2024-49761.patch
+# patches below taken from https://src.fedoraproject.org/rpms/ruby/c/b7e197fb887200e4faaf8fae663a9df00bdc09d3?branch=rawhide 
+# to remove the lock file for binstubs and avoid race condition
+Patch1:         Avoid-another-race-condition-of-open-mode.patch
+Patch2:         Remove-the-lock-file-for-binstubs.patch
+Patch3:         CVE-2025-25186.patch
+Patch4:         CVE-2025-27219.patch
+Patch5:         CVE-2025-27220.patch
+Patch6:         CVE-2025-27221.patch
+Patch7:         CVE-2025-6442.patch
+Patch8:         CVE-2025-24294.patch
+Patch9:         CVE-2025-61594.patch
 BuildRequires:  openssl-devel
+# Pkgconfig(yaml-0.1) is needed to build the 'psych' gem.
+BuildRequires:  pkgconfig(yaml-0.1)
 BuildRequires:  readline
 BuildRequires:  readline-devel
 BuildRequires:  tzdata
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  shadow-utils
 BuildRequires:  sudo
 %endif
@@ -111,9 +127,9 @@ BuildRequires:  sudo
 Requires:       gmp
 Requires:       openssl
 Provides:       %{_prefix}/local/bin/ruby
-Provides:       %{name}-devel = %{version}-%{release}
-Provides:       %{name}(release) = %{version}-%{release}
-Provides:       %{name}-libs = %{version}-%{release}
+Provides:       %{name}-devel = %{ruby_version}-%{release}
+Provides:       %{name}(release) = %{ruby_version}-%{release}
+Provides:       %{name}-libs = %{ruby_version}-%{release}
 # TODO: When changing ruby version, these gemified stdlib
 # provides should be versioned according to the ruby version.
 # More info: https://stdgems.org/
@@ -123,6 +139,8 @@ Provides:       rubygem-base64 = %{base64_version}-%{release}
 Provides:       rubygem(base64) = %{base64_version}-%{release}
 Provides:       rubygem-benchmark = %{benchmark_version}-%{release}
 Provides:       rubygem(benchmark) = %{benchmark_version}-%{release}
+Provides:       rubygem-bigdecimal = %{bigdecimal_version}-%{release}
+Provides:       rubygem(bigdecimal) = %{bigdecimal_version}-%{release}
 Provides:       rubygem-bundler = %{bundler_version}-%{release}
 Provides:       rubygem(bundler) = %{bundler_version}-%{release}
 # we have transitioned away from a seperate spec/package for bundler, obsolete that package
@@ -201,18 +219,16 @@ Provides:       rubygem-pp = %{pp_version}-%{release}
 Provides:       rubygem(pp) = %{pp_version}-%{release}
 Provides:       rubygem-prettyprint = %{prettyprint_version}-%{release}
 Provides:       rubygem(prettyprint) = %{prettyprint_version}-%{release}
+Provides:       rubygem-prism = %{prism_version}-%{release}
+Provides:       rubygem(prism) = %{prism_version}-%{release}
 Provides:       rubygem-pstore = %{pstore_version}-%{release}
 Provides:       rubygem(pstore) = %{pstore_version}-%{release}
 Provides:       rubygem-psych = %{psych_version}-%{release}
 Provides:       rubygem(psych) = %{psych_version}-%{release}
-Provides:       rubygem-racc = %{racc_version}-%{release}
-Provides:       rubygem(racc) = %{racc_version}-%{release}
 Provides:       rubygem-rdoc = %{rdoc_version}-%{release}
 Provides:       rubygem(rdoc) = %{rdoc_version}-%{release}
 Provides:       rubygem-readline = %{readline_version}-%{release}
 Provides:       rubygem(readline) = %{readline_version}-%{release}
-Provides:       rubygem-readline-ext = %{readline_ext_version}-%{release}
-Provides:       rubygem(readline-ext) = %{readline_ext_version}-%{release}
 Provides:       rubygem-reline = %{reline_version}-%{release}
 Provides:       rubygem(reline) = %{reline_version}-%{release}
 Provides:       rubygem-resolv = %{resolv_version}-%{release}
@@ -237,6 +253,8 @@ Provides:       rubygem-stringio = %{stringio_version}-%{release}
 Provides:       rubygem(stringio) = %{stringio_version}-%{release}
 Provides:       rubygem-strscan = %{strscan_version}-%{release}
 Provides:       rubygem(strscan) = %{strscan_version}-%{release}
+Provides:       rubygem-syntax_suggest = %{syntax_suggest_version}-%{release}
+Provides:       rubygem(syntax_suggest) = %{syntax_suggest_version}-%{release}
 Provides:       rubygem-syslog = %{syslog_version}-%{release}
 Provides:       rubygem(syslog) = %{syslog_version}-%{release}
 Provides:       rubygem-tempfile = %{tempfile_version}-%{release}
@@ -301,8 +319,6 @@ pushd gems
 find -not -name 'bundled_gems' -delete
 sed -i '2,$d' bundled_gems
 popd
-# Remove bigdecimal. Add them back when version provided by ruby >= current version
-rm -rf ext/bigdecimal
 
 %build
 # Remove GCC specs and build environment linker scripts
@@ -329,7 +345,7 @@ autoconf
         --with-rubygemsdir=%{rubygems_dir} \
         --enable-shared \
         --with-compress-debug-sections=no \
-        --docdir=%{_docdir}/%{name}-%{version}
+        --docdir=%{_docdir}/%{name}-%{ruby_version}
 %make_build COPY="cp -p"
 
 %install
@@ -372,12 +388,12 @@ sudo -u test make test TESTS="-v"
 %{_bindir}/*
 %{_includedir}/*
 %{_libdir}/*.so
-%{_libdir}/*.so.3.1
-%{_libdir}/*.so.3.1.4
+%{_libdir}/*.so.%{ruby_version}
+%{_libdir}/*.so.%{ruby_version_majmin}
 %{_libdir}/pkgconfig/*.pc
 %{_libdir}/ruby/*
 %{_datadir}/ri/*
-%{_docdir}/%{name}-%{version}
+%{_docdir}/%{name}-%{ruby_version}
 %{_mandir}/man1/*
 %{_rpmconfigdir}/macros.d/macros.ruby
 %{_rpmconfigdir}/macros.d/macros.rubygems
@@ -401,6 +417,52 @@ sudo -u test make test TESTS="-v"
 %{_rpmconfigdir}/rubygems.con
 
 %changelog
+* Mon Jan 05 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 3.3.5-7
+- Patch for CVE-2025-61594
+
+* Fri Oct 17 2025 BinduSri Adabala <v-badabala@microsoft.com> - 3.3.5-6
+- Bump release to build with new rubygem-rexml to fix CVE-2025-58767
+
+* Tue Jul 15 2025 BinduSri Adabala <v-badabala@microsoft.com> - 3.3.5-5
+- Patch CVE-2025-24294
+
+* Thu Jun 26 2025 Kevin Lockwood <v-klockwood@microsoft.com> - 3.3.5-4
+- Patch CVE-2025-6442
+
+* Sat Mar 15 2025 Kanishk Bansal <kanbansal@microsoft.com> - 3.3.5-3
+- Patch CVE-2025-27219, CVE-2025-27220, CVE-2025-27221
+
+* Mon Feb 17 2025 Sreeniavsulu Malavathula <v-smalavathu@microsoft.com> - 3.3.5-2
+- Patch to fix CVE-2025-25186
+
+* Fri Nov 08 2024 Saul Paredes <saulparedes@microsoft.com> - 3.3.5-1
+- Upgrade ruby to 3.3.5 to resolve CVE-2024-39908
+- Remove CVE-2024-41946.patch as it no longer applies as ruby 3.3.5 containers rubygem-rexml 3.3.6, where CVE-2024-41946 is already fixed
+- Patch CVE-2024-49761
+
+* Wed Sep 18 2024 Harshit Gupta <guptaharshit@microsoft.com> - 3.3.3-2
+- Revert ruby back to 3.3.3 to avoid build failure of rubygems-* packages
+- Add patch for CVE-2024-41946 for bundled gem rexml
+
+* Wed Aug 07 2024 Alejandro Martinez Torres <alejandroma@microsoft.com> - 3.3.3-1
+- Upgrade ruby to 3.3.3 to resolve CVE-2024-41946
+
+* Wed May 22 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 3.3.0-4
+- Bump release to build with new rubygem-rexml to fix CVE-2024-35176
+
+* Mon Apr 01 2024 Riken Maharjan <rmaharjan@microsoft.com> - 3.3.0-3
+- Change the 'gemspec_clear_signing' macro to delete gem.signature also.
+
+* Mon Jan 29 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.3.0-2
+- Added the 'gemspec_clear_signing' macro.
+
+* Mon Jan 22 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.3.0-1
+- Upgrading to 3.3.0.
+- Re-added the bigdecimal gem.
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 3.1.4-3
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Mon Aug 14 2023 Saul Paredes <saulparedes@microsoft.com> - 3.1.4-2
 - Patch CVE-2023-36617
 

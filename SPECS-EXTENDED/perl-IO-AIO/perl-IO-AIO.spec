@@ -1,14 +1,14 @@
 # work around upstream versioning being decimal rather than v-string
-%global upstream_version 4.76
+%global upstream_version 4.81
 %global extraversion %{nil}
 
 Summary:        Asynchronous Input/Output
 Name:           perl-IO-AIO
 Version:        %{upstream_version}%{extraversion}
-Release:        2%{?dist}
+Release:        1%{?dist}
 License:        GPL+ OR Artistic
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://metacpan.org/release/IO-AIO
 Source0:        https://cpan.metacpan.org/modules/by-module/IO/IO-AIO-%{upstream_version}.tar.gz
 Patch0:         IO-AIO-4.4-shellbang.patch
@@ -34,7 +34,7 @@ BuildRequires:  perl(XSLoader)
 BuildRequires:  perl(base)
 BuildRequires:  perl(common::sense)
 
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  perl(Fcntl)
 BuildRequires:  perl(File::Temp)
 BuildRequires:  perl(FindBin)
@@ -74,7 +74,7 @@ If no paths are given, treescan will use the current directory.
 %setup -q -n IO-AIO-%{upstream_version}
 
 # Fix shellbang in treescan
-%patch0
+%patch 0
 
 %build
 PERL_CANARY_STABILITY_NOPROMPT=1 perl Makefile.PL \
@@ -102,6 +102,10 @@ make test
 %{_mandir}/man1/treescan.1*
 
 %changelog
+* Mon Dec 23 2024 Kevin Lockwood <v-klockwood@microsoft.com> - 4.81-1
+- Update to version 4.81
+- License verified.
+
 * Thu Jan 27 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 4.76-2
 - Initial CBL-Mariner import from Fedora 36 (license: MIT).
 - License verified.

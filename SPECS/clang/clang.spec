@@ -1,51 +1,19 @@
-%global maj_ver 12
-%global min_ver 0
-%global patch_ver 1
+%global maj_ver 18
 
-%global clang_binaries \
-    %{_bindir}/clang \
-    %{_bindir}/clang++ \
-    %{_bindir}/clang-%{maj_ver} \
-    %{_bindir}/clang++-%{maj_ver} \
-    %{_bindir}/clang-cl \
-    %{_bindir}/clang-cpp \
-
-%global clang_tools_binaries \
-    %{_bindir}/clang-apply-replacements \
-    %{_bindir}/clang-change-namespace \
-    %{_bindir}/clang-check \
-    %{_bindir}/clang-doc \
-    %{_bindir}/clang-extdef-mapping \
-    %{_bindir}/clang-format \
-    %{_bindir}/clang-include-fixer \
-    %{_bindir}/clang-move \
-    %{_bindir}/clang-offload-bundler \
-    %{_bindir}/clang-offload-wrapper \
-    %{_bindir}/clang-query \
-    %{_bindir}/clang-refactor \
-    %{_bindir}/clang-rename \
-    %{_bindir}/clang-reorder-fields \
-    %{_bindir}/clang-scan-deps \
-    %{_bindir}/clang-tidy \
-    %{_bindir}/clangd \
-    %{_bindir}/diagtool \
-    %{_bindir}/hmaptool \
-    %{_bindir}/pp-trace
-
-%global clang_srcdir %{name}-%{version}.src
-%global clang_tools_srcdir %{name}-tools-extra-%{version}.src
+%global clang_srcdir llvm-project-llvmorg-%{version}
 
 Summary:        C, C++, Objective C and Objective C++ front-end for the LLVM compiler.
 Name:           clang
-Version:        %{maj_ver}.%{min_ver}.%{patch_ver}
-Release:        4%{?dist}
+Version:        18.1.8
+Release:        1%{?dist}
 License:        NCSA
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Tools
 URL:            https://clang.llvm.org
-Source0:        https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}/%{clang_srcdir}.tar.xz
-Source1:        https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}/%{clang_tools_srcdir}.tar.xz
+Source0:        https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-%{version}.tar.gz
+Patch1:         CVE-2024-7883.patch
+Patch2:         clang-format-fix.patch
 BuildRequires:  cmake
 BuildRequires:  libxml2-devel
 BuildRequires:  llvm-devel = %{version}
@@ -59,7 +27,6 @@ Requires:       llvm
 Requires:       ncurses
 Requires:       python3
 Requires:       zlib
-Provides:       %{name}-analyzer = %{version}-%{release}
 
 %description
 The goal of the Clang project is to create a new C based language front-end: C, C++, Objective C/C++, OpenCL C and others for the LLVM compiler. You can get and build the source today.
@@ -68,7 +35,6 @@ The goal of the Clang project is to create a new C based language front-end: C, 
 Summary:        A source code analysis framework
 License:        NCSA AND MIT
 Requires:       %{name} = %{version}-%{release}
-BuildArch:      noarch
 
 %description analyzer
 The Clang Static Analyzer consists of both a source code analysis
@@ -117,12 +83,29 @@ Requires:       %{name}-libs%{?_isa} = %{version}-%{release}
 %description tools-extra
 A set of extra tools built using Clang's tooling API.
 
+%package tools-extra-devel
+Summary: Development header files for clang tools
+Requires: %{name}-tools-extra = %{version}-%{release}
+
+%description tools-extra-devel
+Development header files for clang tools.
+
 %prep
-%setup -q -T -b 1 -n %{clang_tools_srcdir}
+%autosetup -p1 -n %{clang_srcdir}
 
-%setup -q -n %{clang_srcdir}
+%py3_shebang_fix \
+    clang-tools-extra/clang-tidy/tool/ \
+    clang-tools-extra/clang-include-fixer/find-all-symbols/tool/run-find-all-symbols.py
 
-mv ../%{clang_tools_srcdir} tools/extra
+%py3_shebang_fix \
+    clang/tools/clang-format/ \
+    clang/tools/clang-format/git-clang-format \
+    clang/utils/hmaptool/hmaptool \
+    clang/tools/scan-view/bin/scan-view \
+    clang/tools/scan-view/share/Reporter.py \
+    clang/tools/scan-view/share/startfile.py \
+    clang/tools/scan-build-py/bin/* \
+    clang/tools/scan-build-py/libexec/*
 
 %build
 # Disable symbol generation
@@ -131,13 +114,20 @@ export CXXFLAGS="`echo " %{build_cxxflags} " | sed 's/ -g//'`"
 
 mkdir -p build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=%{_prefix}   \
-      -DCLANG_ENABLE_STATIC_ANALYZER:BOOL=ON \
-      -DCMAKE_BUILD_TYPE=Release    \
-      -DLLVM_ENABLE_EH=ON \
-      -DLLVM_ENABLE_RTTI=ON \
-      -DCLANG_LINK_CLANG_DYLIB=ON \
-      -Wno-dev ..
+cmake  \
+       -DCMAKE_INSTALL_PREFIX=%{_prefix}       \
+       -DLLVM_DIR=%{_libdir}/cmake/llvm        \
+       -DLLVM_PARALLEL_LINK_JOBS=1             \
+       -DCLANG_ENABLE_STATIC_ANALYZER:BOOL=ON  \
+       -DCMAKE_BUILD_TYPE=Release              \
+       -DLLVM_ENABLE_EH=ON                     \
+       -DLLVM_ENABLE_RTTI=ON                   \
+       -DLLVM_LINK_LLVM_DYLIB:BOOL=ON          \
+       -DCLANG_LINK_CLANG_DYLIB=ON             \
+       -DLLVM_INCLUDE_TESTS=OFF                \
+       -DLLVM_EXTERNAL_CLANG_TOOLS_EXTRA_SOURCE_DIR=../clang-tools-extra \
+       -DCLANG_RESOURCE_DIR=../lib/clang/%{maj_ver} \
+       -Wno-dev ../clang
 
 %make_build
 
@@ -173,16 +163,30 @@ make clang-check
 %files
 %defattr(-,root,root)
 %license LICENSE.TXT
-%{clang_binaries}
+%{_bindir}/clang
+%{_bindir}/clang++
+%{_bindir}/clang-%{maj_ver}
+%{_bindir}/clang++-%{maj_ver}
+%{_bindir}/clang-cl
+%{_bindir}/clang-cpp
 
 %files analyzer
 %{_bindir}/scan-view
 %{_bindir}/scan-build
+%{_bindir}/analyze-build
+%{_bindir}/intercept-build
+%{_bindir}/scan-build-py
 %{_libexecdir}/ccc-analyzer
 %{_libexecdir}/c++-analyzer
+%{_libexecdir}/analyze-c++
+%{_libexecdir}/analyze-cc
+%{_libexecdir}/intercept-c++
+%{_libexecdir}/intercept-cc
 %{_datadir}/scan-view/
 %{_datadir}/scan-build/
 %{_mandir}/man1/scan-build.1.*
+%{_libdir}/libear/*
+%{_libdir}/libscanbuild/*
 
 %files libs
 %{_libdir}/clang/
@@ -196,26 +200,77 @@ make clang-check
 %{_libdir}/cmake/*
 %{_includedir}/clang/
 %{_includedir}/clang-c/
-%{_includedir}/clang-tidy/
 
 %files -n git-clang-format
 %{_bindir}/git-clang-format
 
 %files tools-extra
-%{clang_tools_binaries}
+%{_bindir}/amdgpu-arch
+%{_bindir}/clang-apply-replacements
+%{_bindir}/clang-change-namespace
+%{_bindir}/clang-check
+%{_bindir}/clang-doc
+%{_bindir}/clang-extdef-mapping
+%{_bindir}/clang-format
+%{_bindir}/clang-include-cleaner
+%{_bindir}/clang-include-fixer
+%{_bindir}/clang-move
+%{_bindir}/clang-offload-bundler
+%{_bindir}/clang-offload-packager
+%{_bindir}/clang-linker-wrapper
+%{_bindir}/clang-pseudo
+%{_bindir}/clang-query
+%{_bindir}/clang-refactor
+%{_bindir}/clang-rename
+%{_bindir}/clang-reorder-fields
+%{_bindir}/clang-repl
+%{_bindir}/clang-scan-deps
+%{_bindir}/clang-tidy
+%{_bindir}/clangd
+%{_bindir}/diagtool
+%{_bindir}/hmaptool
+%{_bindir}/nvptx-arch
+%{_bindir}/pp-trace
 %{_bindir}/c-index-test
 %{_bindir}/find-all-symbols
 %{_bindir}/modularize
+%{_bindir}/run-clang-tidy
 %{_datadir}/clang/clang-format.py*
 %{_datadir}/clang/clang-format-diff.py*
 %{_datadir}/clang/clang-include-fixer.py*
 %{_datadir}/clang/clang-tidy-diff.py*
-%{_datadir}/clang/run-clang-tidy.py*
 %{_datadir}/clang/run-find-all-symbols.py*
 %{_datadir}/clang/clang-rename.py*
 
+%files tools-extra-devel
+%{_includedir}/clang-tidy/
+
 %changelog
-* Fri 07 Oct 2022 Andy Caldwell <andycaldwell@microsoft.com> - 12.0.1-4
+* Tue Jun 03 2025 Pawel Winogrodzki <pawelwi@microsoft.com> - 18.1.8-1
+- Updated to version 18.1.8.
+
+* Thu Apr 10 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 18.1.2-4
+- Fix CVE-2024-7883
+
+* Tue Sep 03 2024 Andrew Phelps <anphel@microsoft.com> - 18.1.2-3
+- Define LLVM_DIR
+
+* Wed May 29 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 18.1.2-2
+- Bump release to build with new llvm to fix CVE-2024-31852
+
+* Wed Apr 03 2024 Andrew Phelps <anphel@microsoft.com> - 18.1.2-1
+- Upgrade to version 18.1.2
+
+* Mon Jan 29 2024 Nicolas Guibourge <nicolasg@microsoft.com> - 17.0.6-2
+- Fix missing binaries and tests
+
+* Fri Jan 12 2024 Nicolas Guibourge <nicolasg@microsoft.com> - 17.0.6-1
+- Upgrade to 17.0.6
+
+* Wed Apr 05 2023 Andrew Phelps <anphel@microsoft.com> - 16.0.0-1
+- Add spec for clang16
+
+* Fri Oct 07 2022 Andy Caldwell <andycaldwell@microsoft.com> - 12.0.1-4
 - Enable `-pie` executables by default
 
 * Wed Feb 09 2022 Chris Co <chrco@microsoft.com> - 12.0.1-3

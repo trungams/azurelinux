@@ -16,37 +16,46 @@
 #
 
 # commonver - version from containers/common
-%define commonver 0.44.0
-# podman - version from containers/podman
-%define podmanver 3.3.1
-# storagever - version from containers/storage
-%define storagever 1.36.0
+%define commonver 0.57.4
 # imagever - version from containers/image
-%define imagever 5.16.0
+%define imagever 5.29.2
+# podman - version from containers/podman
+%define podmanver 4.9.3
+# storagever - version from containers/storage
+%define storagever 1.52.0
 Summary:        Configuration files common to github.com/containers
 Name:           libcontainers-common
-Version:        20210626
-Release:        1%{?dist}
+Version:        20240213
+Release:        3%{?dist}
 License:        ASL 2.0 AND GPLv3
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System/Management
 URL:            https://github.com/containers
-#Source0:       https://github.com/containers/image/archive/refs/tags/v5.16.0.tar.gz
-Source0:        %{name}-image-%{imagever}.tar.gz
-#Source1:       https://github.com/containers/storage/archive/refs/tags/v1.36.0.tar.gz
-Source1:        %{name}-storage-%{storagever}.tar.gz
+Source0:        https://github.com/containers/image/archive/refs/tags/v%{imagever}.tar.gz#/%{name}-image-%{imagever}.tar.gz
+Source1:        https://github.com/containers/storage/archive/refs/tags/v%{storagever}.tar.gz#/%{name}-storage-%{storagever}.tar.gz
 Source2:        LICENSE
 Source3:        policy.json
 Source4:        storage.conf
 Source5:        mounts.conf
 Source6:        registries.conf
-#Source7:       https://github.com/containers/podman/archive/refs/tags/v3.3.1.tar.gz
-Source7:        %{name}-podman-%{podmanver}.tar.gz
+Source7:        https://github.com/containers/podman/archive/refs/tags/v%{podmanver}.tar.gz#/%{name}-podman-%{podmanver}.tar.gz
 Source8:        default.yaml
-#Source9:       https://github.com/containers/common/archive/refs/tags/v0.44.0.tar.gz
-Source9:        %{name}-common-%{commonver}.tar.gz
+Source9:        https://github.com/containers/common/archive/refs/tags/v%{commonver}.tar.gz#/%{name}-common-%{commonver}.tar.gz
 Source10:       containers.conf
+#Note (mfrw): The patch for CVE-2022-2879 is to be applied twice as it applies to two vendored projects (podman & common).
+Patch0:         CVE-2022-2879.patch
+#Note (mfrw): The patch for CVE-2023-45288 is to be applied twice as it applies to two vendored projects (podman & common).
+Patch1:         CVE-2023-45288.patch
+#Note (mfrw): The patch for CVE-2024-1753 only applies to podman.
+Patch2:         CVE-2024-1753.patch
+#Note (mfrw): The patch for CVE-2024-3727 is to be applied thrice as it applies to three vendored projects (podman, image & common).
+Patch3:         CVE-2024-3727.patch
+#Note (mfrw): The patch for CVE-2024-37298 only applies to podman.
+Patch4:         CVE-2024-37298.patch
+Patch5:         CVE-2024-6104.patch
+Patch6:         CVE-2024-24786.patch
+
 BuildRequires:  go-go-md2man
 Requires(post): grep
 Requires(post): util-linux
@@ -60,9 +69,27 @@ github.com/containers libraries, such as Buildah, CRI-O, Podman and Skopeo.
 
 %prep
 %setup -q -T -D -b 0 -n image-%{imagever}
+# NOTE: Patch3 has to be applied as -p6
+%patch 3 -p6
+
 %setup -q -T -D -b 1 -n storage-%{storagever}
+%patch 6 -p1
+
 %setup -q -T -D -b 7 -n podman-%{podmanver}
+%patch 0 -p1
+%patch 1 -p1
+%patch 2 -p1
+%patch 3 -p1
+%patch 4 -p1
+%patch 5 -p1
+%patch 6 -p1
+
 %setup -q -T -D -b 9 -n common-%{commonver}
+%patch 0 -p1
+%patch 1 -p1
+%patch 3 -p1
+%patch 6 -p1
+
 # copy the LICENSE file in the build root
 cd ..
 cp %{SOURCE2} .
@@ -90,7 +117,7 @@ rename '.md' '.1' docs/*
 cd ..
 # compile subset of containers/podman manpages
 cd podman-%{podmanver}
-go-md2man -in pkg/hooks/docs/oci-hooks.5.md -out pkg/hooks/docs/oci-hooks.5
+go-md2man -in docs/source/markdown/podman.1.md -out docs/source/markdown/podman.1
 cd ..
 
 cd common-%{commonver}
@@ -158,6 +185,23 @@ fi
 %license LICENSE
 
 %changelog
+* Mon Nov 25 2024 Bala <balakumaran.kannan@microsoft.com> - 20240213-3
+- Fix CVE-2024-24786
+
+* Tue Jul 09 2024 Muhammad Falak <mwani@microsoft.com> - 20240213-2
+- Address CVE-2022-2879 by patching vendored github.com/vbatts/tar-split
+- Address CVE-2023-45288 by patching vendored golang.org/x/net/http2
+- Address CVE-2024-1753 by patching vendored github.com/containers/buildah
+- Address CVE-2024-3727 by patching vendored github.com/containers/image
+- Address CVE-2024-37298 by patching vendored github.com/gorilla/schema
+
+* Wed Feb 14 2024 Amrita Kohli <amritakohli@microsoft.com> - 20240213-1
+- Upgrade versions of all containers.
+- Rearrange variables to be in alphabetical order, similar to signatures file.
+
+* Thu Oct 19 2023 Dan Streetman <ddstreet@ieee.org> - 20210626-2
+- Bump release to rebuild with updated version of Go.
+
 * Fri Jul 22 2022 Suresh Babu Chalamalasetty <schalam@microsoft.com> - 20210626-1
 - Upgrade version to 20210626 and License information.
 - Remove oci-hook man5 tar conflicting with podman package.

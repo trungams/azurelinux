@@ -1,20 +1,21 @@
 %define debug_package %{nil}
 Summary:        Text editor
 Name:           vim
-Version:        9.0.1562
-Release:        2%{?dist}
+Version:        9.1.1616
+Release:        1%{?dist}
 License:        Vim
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/Editors
 URL:            https://www.vim.org
 Source0:        https://github.com/%{name}/%{name}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source1:        macros.vim
+
 BuildRequires:  ncurses-devel
 BuildRequires:  python3-devel
 Requires(post): sed
 Provides:       vi = %{version}-%{release}
 Provides:       %{name}-minimal = %{version}-%{release}
-Patch0:         CVE-2023-3896.patch
 
 %description
 The Vim package contains a powerful text editor.
@@ -29,6 +30,13 @@ Conflicts:      toybox
 %description extra
 The vim extra package contains a extra files for powerful text editor.
 
+%package        rpm-macros
+Summary:        RPM macros for Vim text editor
+BuildArch:      noarch
+
+%description    rpm-macros
+The vim-rpm-macros package contains macros.vim needed to define RPM macros
+
 %prep
 %autosetup -p1
 echo '#define SYS_VIMRC_FILE "%{_sysconfdir}/vimrc"' >> src/feature.h
@@ -42,13 +50,20 @@ echo '#define SYS_VIMRC_FILE "%{_sysconfdir}/vimrc"' >> src/feature.h
 %make_install
 ln -sv vim %{buildroot}%{_bindir}/vi
 install -vdm 755 %{buildroot}%{_sysconfdir}
+	
+mkdir -p %{buildroot}%{_rpmconfigdir}/macros.d/
+install -p -m644 %{SOURCE1} %{buildroot}%{_rpmconfigdir}/macros.d/
+
 cat > %{buildroot}%{_sysconfdir}/vimrc << "EOF"
 " Begin %{_sysconfdir}/vimrc
 
 set shell=/bin/bash
 set nocompatible
+set ai
 set backspace=2
 set ruler
+set hlsearch
+set belloff=all
 syntax on
 set tags=./tags;/
 color desert
@@ -59,7 +74,6 @@ endif
 nmap <F2> :w<CR>
 imap <F2> <Esc>:w<CR>
 nmap <F10> :q!<CR>
-nmap <Esc><Esc> :q<CR>
 " Use 4 space characters instead of tab for python files
 au BufEnter,BufNew *.py set tabstop=4 shiftwidth=4 expandtab
 " Move the swap file location to protect against CVE-2017-1000382
@@ -68,6 +82,9 @@ if ! isdirectory("~/.vim/swap/")
         call system('install -d -m 700 ~/.vim/swap')
 endif
 set directory=~/.vim/swap/
+
+command! W execute 'w !sudo tee % > /dev/null' <bar> edit!
+
 " End %{_sysconfdir}/vimrc
 EOF
 
@@ -128,9 +145,9 @@ fi
 %{_datarootdir}/vim/vim*/scripts.vim
 %{_datarootdir}/vim/vim*/spell/*
 %{_datarootdir}/vim/vim*/syntax/*
-%exclude %{_datarootdir}/vim/vim90/syntax/nosyntax.vim
-%exclude %{_datarootdir}/vim/vim90/syntax/syntax.vim
-%exclude %{_datarootdir}/vim/vim90/autoload/dist/ft.vim
+%exclude %{_datarootdir}/vim/vim*/syntax/nosyntax.vim
+%exclude %{_datarootdir}/vim/vim*/syntax/syntax.vim
+%exclude %{_datarootdir}/vim/vim*/autoload/dist/ft.vim
 %{_datarootdir}/vim/vim*/tools/*
 %{_datarootdir}/vim/vim*/tutor/*
 %{_datarootdir}/vim/vim*/lang/*.vim
@@ -145,6 +162,8 @@ fi
 %lang(fi) %{_datarootdir}/vim/vim*/lang/fi/LC_MESSAGES/vim.mo
 %lang(fr) %{_datarootdir}/vim/vim*/lang/fr/LC_MESSAGES/vim.mo
 %lang(ga) %{_datarootdir}/vim/vim*/lang/ga/LC_MESSAGES/vim.mo
+%lang(hu) %{_datarootdir}/vim/vim*/lang/hu/LC_MESSAGES/vim.mo
+%lang(hy) %{_datarootdir}/vim/vim*/lang/hy/LC_MESSAGES/vim.mo
 %lang(it) %{_datarootdir}/vim/vim*/lang/it/LC_MESSAGES/vim.mo
 %lang(ja) %{_datarootdir}/vim/vim*/lang/ja/LC_MESSAGES/vim.mo
 %lang(ko.UTF-8) %{_datarootdir}/vim/vim*/lang/ko.UTF-8/LC_MESSAGES/vim.mo
@@ -186,9 +205,8 @@ fi
 %{_datarootdir}/vim/vim*/colors/lists/default.vim
 %{_datarootdir}/vim/vim*/defaults.vim
 %{_datarootdir}/vim/vim*/filetype.vim
-%{_datarootdir}/vim/vim90/syntax/nosyntax.vim
-%{_datarootdir}/vim/vim90/syntax/syntax.vim
-%{_datarootdir}/vim/vim90/autoload/dist/ft.vim
+%{_datarootdir}/vim/vim*/syntax/nosyntax.vim
+%{_datarootdir}/vim/vim*/autoload/dist/ft.vim
 %{_bindir}/ex
 %{_bindir}/vi
 %{_bindir}/view
@@ -196,8 +214,76 @@ fi
 %{_bindir}/rview
 %{_bindir}/vim
 %{_bindir}/vimdiff
+%{_datarootdir}/vim/vim91/LICENSE
+%{_datarootdir}/vim/vim91/README.txt
+
+%files rpm-macros
+%{_rpmconfigdir}/macros.d/macros.vim
 
 %changelog
+* Tue Aug 26 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 9.1.1616-1
+- Auto-upgrade to 9.1.1616 - for CVE-2025-9390
+
+* Wed Jul 16 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 9.1.1552-1
+- Upgrade to 9.1.1552 - for CVE-2025-53905 and CVE-2025-53906
+
+* Mon Mar 17 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 9.1.1198-1
+- Auto-upgrade to 9.1.1198 - for CVE-2025-29768
+
+* Wed Mar 05 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 9.1.1164-1
+- Auto-upgrade to 9.1.1164 - for CVE-2025-27423
+- Remove previously applied patches
+
+* Sun Feb 23 2025 Kanishk Bansal <kanbansal@microsoft.com> - 9.1.0791-4
+- Patch CVE-2025-26603 & CVE-2025-1215
+
+* Thu Jan 23 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 9.1.0791-3
+- Patch to fix CVE-2025-24014.
+
+* Wed Jan 15 2025 Bhagyashri Pathak <bhapathak@microsoft.com> - 9.1.0791-2
+- Add patch to fix CVE-2025-22134
+
+* Tue Oct 29 2024 Nick Samson <nisamson@microsoft.com> - 9.1.0791-1
+- Upgrade to 9.1.0791 to fix CVE-2024-47814, CVE-2024-43802
+- Added language configurations for Amharic
+
+* Tue Oct 08 2024 Sam Meluch <sammeluch@microsoft.com> - 9.0.2190-6
+- Add patch to resolve CVE-2024-43802
+
+* Tue Aug 20 2024 Brian Fjeldstad <bfjelds@microsoft.com> - 9.0.2190-5
+- Add patch to resolve CVE-2024-43374
+
+* Fri Aug 09 2024 Sumedh Sharma <sumsharma@microsoft.com> - 9.0.2190-4
+- Add patch to resolve CVE-2024-41957 & CVE-2024-41965
+
+* Tue May 21 2024 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 9.0.2190-3
+- Added vim-rpm-macros subpackage
+- Add macros.vim to the new subpackage
+
+* Thu Mar 21 2024 Andy Zaugg <azaugg@linkedin.com> - 9.0.2190-2
+- Tweek vimrc, remove double escape quit, remove vim bell, add ai and hlsearch and add :W for sudo write
+
+* Tue Jan 02 2024 Muhammad Falak <mwani@microsoft.com> - 9.0.2190-1
+- Upgrade version to 9.0.2190
+
+* Tue Oct 17 2023 Neha Agarwal <nehaagarwal@microsoft.com> - 9.0.2010-1
+- Update version to 9.0.2010 to fix CVE-2023-5535.
+- Remove patches that no longer apply in the new version.
+- Remove file listed twice.
+
+* Wed Oct 11 2023 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 9.0.1897-3
+- Patch CVE-2023-5441
+
+* Mon Oct 09 2023 Mitch Zhu <mitchzhu@microsoft.com> - 9.0.1897-2
+- Patch CVE-2023-5344
+
+* Tue Sep 12 2023 Henry Li <lihl@microsoft.com> - 9.0.1897-1
+- Upgrade version to resolve CVE-2023-4738, CVE-2023-4750, CVE-2023-4781,
+  CVE-2023-4752 and CVE-2023-4733
+
+* Thu Sep 07 2023 Brian Fjeldstad <bfjelds@microsoft.com> - 9.0.1847-1
+- Bump version to address CVE-2023-4734 CVE-2023-4735 CVE-2023-4736
+
 * Wed Aug 16 2023 Bala <balakumaran.kannan@microsoft.com> - 9.0.1562-2
 - Patch CVE-2023-3896
 

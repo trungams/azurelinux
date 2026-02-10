@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/logger"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/pkggraph"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/pkgjson"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/rpm"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/logger"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/pkggraph"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/pkgjson"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/rpm"
 )
 
 // InjectMissingImplicitProvides will inject implicit provide nodes into the graph from a build result if they satisfy any unresolved nodes.
@@ -24,9 +24,9 @@ func InjectMissingImplicitProvides(res *BuildResult, pkgGraph *pkggraph.PkgGraph
 		provides, err = rpm.QueryRPMProvides(rpmFile)
 		if err != nil {
 			if res.Ignored {
-				err = fmt.Errorf("failed to query (%s) for provides. NOTE: source spec '%s' was marked to be ignored - please check if the queried RPM is present. Error: %s", rpmFile, res.Node.SpecName(), err)
+				err = fmt.Errorf("failed to query (%s) for provides. NOTE: source spec (%s) was marked to be ignored - please check if the queried RPM is present:\n%w", rpmFile, res.Node.SpecName(), err)
 			} else {
-				err = fmt.Errorf("failed to query (%s) for provides. Error: %s", rpmFile, err)
+				err = fmt.Errorf("failed to query (%s) for provides:\n%w", rpmFile, err)
 			}
 			return
 		}
@@ -38,7 +38,7 @@ func InjectMissingImplicitProvides(res *BuildResult, pkgGraph *pkggraph.PkgGraph
 		}
 
 		for provide, nodes := range provideToNodes {
-			err = replaceNodesWithProvides(res, pkgGraph, provide, nodes, rpmFile)
+			err = replaceNodesWithProvides(pkgGraph, provide, nodes, rpmFile)
 			if err != nil {
 				return
 			}
@@ -47,19 +47,22 @@ func InjectMissingImplicitProvides(res *BuildResult, pkgGraph *pkggraph.PkgGraph
 		}
 	}
 
-	// Make sure the graph is still a directed acyclic graph (DAG) after manipulating it.
-	err = pkgGraph.MakeDAG()
+	if didInjectAny {
+		// Make sure the graph is still a directed acyclic graph (DAG) after manipulating it.
+		err = pkgGraph.MakeDAG()
+	}
+
 	return
 }
 
 // replaceNodesWithProvides will replace a slice of nodes with a new node with the given provides in the graph.
-func replaceNodesWithProvides(res *BuildResult, pkgGraph *pkggraph.PkgGraph, provides *pkgjson.PackageVer, nodes []*pkggraph.PkgNode, rpmFileProviding string) (err error) {
+func replaceNodesWithProvides(pkgGraph *pkggraph.PkgGraph, provides *pkgjson.PackageVer, nodes []*pkggraph.PkgNode, rpmFileProviding string) (err error) {
 	var parentNode *pkggraph.PkgNode
 
 	// Find a local run node that is backed by the same rpm as the one providing the implicit provide.
 	// Make this node the parent node for the new implicit provide node.
 	// - By making a run node the parent node, it will inherit the identical runtime dependencies of the already setup node.
-	for _, node := range pkgGraph.AllRunNodes() {
+	for _, node := range pkgGraph.AllPreferredRunNodes() {
 		// We need to filter out any non-local run nodes since cached remote nodes are not acceptable parent nodes for collapsed nodes.
 		if node.Type == pkggraph.TypeLocalRun && rpmFileProviding == node.RpmPath {
 			logger.Log.Debugf("Linked implicit provide (%s) to run node (%s) using file (%s)", provides, node.FriendlyName(), rpmFileProviding)
@@ -70,7 +73,7 @@ func replaceNodesWithProvides(res *BuildResult, pkgGraph *pkggraph.PkgGraph, pro
 
 	// If there is no clear parent node for the implicit provide error out.
 	if parentNode == nil {
-		return fmt.Errorf("unable to find suitable parent node for implicit provides (%s) with file (%s)", provides, rpmFileProviding)
+		return fmt.Errorf("failed to find suitable parent node for implicit provides (%s) with file (%s)", provides, rpmFileProviding)
 	}
 
 	// Collapse the unresolved nodes into a single node backed by the new implicit provide.
@@ -79,8 +82,9 @@ func replaceNodesWithProvides(res *BuildResult, pkgGraph *pkggraph.PkgGraph, pro
 	return
 }
 
-// implicitPackagesToUnresolvedNodesInGraph returns a map of package names to unresolved implicit nodes.
-func implicitPackagesToUnresolvedNodesInGraph(pkgGraph *pkggraph.PkgGraph, useCachedImplicit bool) (nameToNodes map[string][]*pkggraph.PkgNode) {
+// implicitPackageNamesToNodesInGraph returns a map of package names to implicit nodes. These nodes will either be unresolved,
+// or in the cache.
+func implicitPackageNamesToNodesInGraph(pkgGraph *pkggraph.PkgGraph, useCachedImplicit bool) (nameToNodes map[string][]*pkggraph.PkgNode) {
 	nameToNodes = make(map[string][]*pkggraph.PkgNode)
 
 	// Depending on the node order that the graph was created, there may be multiple unresolved nodes for a single package.
@@ -101,17 +105,19 @@ func implicitPackagesToUnresolvedNodesInGraph(pkgGraph *pkggraph.PkgGraph, useCa
 	// --> foo >= 3.0 -- create unresolved node
 	// Unresolved nodes for foo: 3
 
-	for _, n := range pkgGraph.AllRunNodes() {
+	for _, n := range pkgGraph.AllPreferredRunNodes() {
 		if !n.Implicit {
 			continue
 		}
 
 		// When graphpkgfetcher runs, it will attempt to resolve all unresolved nodes.
-		// Some of these may be implicit and it may find an upstream package that satisfies it.
-		// Only consider these as resolved if useCachedImplicit is set.
+		// Some of these may be implicit and it may find an upstream package that satisfies it. The scheduler will have
+		// done its best to avoid using these nodes, but may eventually have to use them if there are no other options.
+		// We will allow these nodes to be switched even after the scheduler starts to use them since some packages may
+		// end up needing to install multiple versions of the same package if we don't unify them.
 		if n.State == pkggraph.StateCached {
 			if useCachedImplicit {
-				continue
+				logger.Log.Warnf("Implicit node (%s) was already cached and may have been used to satisfy another node (useCachedImplicit=true). Updating implicit path regardless!", n.FriendlyName())
 			}
 		} else if n.State != pkggraph.StateUnresolved {
 			continue
@@ -126,7 +132,7 @@ func implicitPackagesToUnresolvedNodesInGraph(pkgGraph *pkggraph.PkgGraph, useCa
 // matchProvidesToUnresolvedNodes matches a list of provides to unresolved nodes that they satisfy in the graph.
 func matchProvidesToUnresolvedNodes(provides []*pkgjson.PackageVer, pkgGraph *pkggraph.PkgGraph, useCachedImplicit bool) (matches map[*pkgjson.PackageVer][]*pkggraph.PkgNode, err error) {
 	matches = make(map[*pkgjson.PackageVer][]*pkggraph.PkgNode)
-	implicitPackagesToUnresolvedNodes := implicitPackagesToUnresolvedNodesInGraph(pkgGraph, useCachedImplicit)
+	implicitPackagesToUnresolvedNodes := implicitPackageNamesToNodesInGraph(pkgGraph, useCachedImplicit)
 
 	// An unresolved node can only be satisfied by a single provide, prevent duplicate matching
 	nodeToSatisfier := make(map[*pkggraph.PkgNode]*pkgjson.PackageVer)

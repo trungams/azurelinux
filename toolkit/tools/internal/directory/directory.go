@@ -5,13 +5,12 @@ package directory
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/file"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/shell"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/file"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/shell"
 )
 
 // LastModifiedFile returns the timestamp and path to the file last modified inside a directory.
@@ -53,7 +52,7 @@ func CopyContents(srcDir, dstDir string) (err error) {
 		return
 	}
 
-	fds, err := ioutil.ReadDir(srcDir)
+	fds, err := os.ReadDir(srcDir)
 	if err != nil {
 		return
 	}
@@ -72,7 +71,53 @@ func CopyContents(srcDir, dstDir string) (err error) {
 			return
 		}
 	}
-
 	return
+}
 
+func EnsureDirExists(dirName string) (err error) {
+	_, err = os.Stat(dirName)
+	if err == nil {
+		return nil
+	}
+
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(dirName, 0755)
+		if err != nil {
+			return err
+		}
+	} else {
+		return err
+	}
+
+	return nil
+}
+
+func GetChildDirs(parentFolder string) ([]string, error) {
+	childFolders := []string{}
+
+	dir, err := os.Open(parentFolder)
+	if err != nil {
+		return nil, err
+	}
+	defer dir.Close()
+
+	children, err := dir.Readdirnames(-1)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, child := range children {
+		childPath := filepath.Join(parentFolder, child)
+
+		info, err := os.Stat(childPath)
+		if err != nil {
+			continue
+		}
+
+		if info.IsDir() {
+			childFolders = append(childFolders, child)
+		}
+	}
+
+	return childFolders, nil
 }

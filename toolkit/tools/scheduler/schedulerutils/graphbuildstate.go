@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/logger"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/pkggraph"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/sliceutils"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/logger"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/pkggraph"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/sliceutils"
 )
 
 // nodeState represents the build state of a single node
@@ -29,13 +29,15 @@ const (
 
 // GraphBuildState represents the build state of a graph.
 type GraphBuildState struct {
-	activeBuilds     map[int64]*BuildRequest
-	nodeToState      map[*pkggraph.PkgNode]*nodeState
-	maxFreshness     uint
-	failures         []*BuildResult
-	reservedFiles    map[string]bool
-	conflictingRPMs  map[string]bool
-	conflictingSRPMs map[string]bool
+	activeBuilds        map[int64]*BuildRequest
+	nodeToState         map[*pkggraph.PkgNode]*nodeState
+	maxFreshness        uint
+	failures            []*BuildResult
+	reservedFiles       map[string]bool
+	conflictingRPMs     map[string]bool
+	conflictingSRPMs    map[string]bool
+	licenseWarningSRPMs map[string]bool
+	licenseErrorSRPMs   map[string]bool
 }
 
 // NewGraphBuildState returns a new GraphBuildState.
@@ -44,18 +46,17 @@ type GraphBuildState struct {
 //     '0' where the subsequent nodes will no longer be rebuilt. 'maxFreshness < 0' will cause unbounded cascading rebuilds,
 //     while 'maxFreshness = 0' will cause no cascading rebuilds.
 func NewGraphBuildState(reservedFiles []string, maxFreshness uint) (g *GraphBuildState) {
-	filesMap := make(map[string]bool)
-	for _, file := range reservedFiles {
-		filesMap[file] = true
-	}
+	filesMap := sliceutils.SliceToSet[string](reservedFiles)
 
 	return &GraphBuildState{
-		activeBuilds:     make(map[int64]*BuildRequest),
-		nodeToState:      make(map[*pkggraph.PkgNode]*nodeState),
-		reservedFiles:    filesMap,
-		conflictingRPMs:  make(map[string]bool),
-		conflictingSRPMs: make(map[string]bool),
-		maxFreshness:     maxFreshness,
+		activeBuilds:        make(map[int64]*BuildRequest),
+		nodeToState:         make(map[*pkggraph.PkgNode]*nodeState),
+		maxFreshness:        maxFreshness,
+		reservedFiles:       filesMap,
+		conflictingRPMs:     make(map[string]bool),
+		conflictingSRPMs:    make(map[string]bool),
+		licenseWarningSRPMs: make(map[string]bool),
+		licenseErrorSRPMs:   make(map[string]bool),
 	}
 }
 
@@ -63,6 +64,24 @@ func NewGraphBuildState(reservedFiles []string, maxFreshness uint) (g *GraphBuil
 func (g *GraphBuildState) DidNodeFail(node *pkggraph.PkgNode) bool {
 	state := g.nodeToState[node]
 	return state != nil && !state.available
+}
+
+// DidNodeHaveLicenseWarning returns true if the node had at least one license warning.
+func (g *GraphBuildState) DidNodeHaveLicenseWarning(node *pkggraph.PkgNode) bool {
+	return g.licenseWarningSRPMs[filepath.Base(node.SrpmPath)]
+}
+
+// DidNodeHaveLicenseError returns true if the node had at least one license error.
+func (g *GraphBuildState) DidNodeHaveLicenseError(node *pkggraph.PkgNode) bool {
+	return g.licenseErrorSRPMs[filepath.Base(node.SrpmPath)]
+}
+
+// LicenseFailureSRPMs will return a list of *.src.rpm files which have fatal license errors.
+func (g *GraphBuildState) LicenseFailureSRPMs() (srpms []string) {
+	srpms = sliceutils.SetToSlice(g.licenseErrorSRPMs)
+	sort.Strings(srpms)
+
+	return srpms
 }
 
 // IsNodeProcessed returns true if the requested node is has been processed already.
@@ -127,6 +146,11 @@ func (g *GraphBuildState) ActiveBuildFromSRPM(srpmFileName string) *BuildRequest
 	return nil
 }
 
+// IsSRPMBuildActive returns true if a given SRPM is currently queued for building.
+func (g *GraphBuildState) IsSRPMBuildActive(srpmFileName string) bool {
+	return g.ActiveBuildFromSRPM(srpmFileName) != nil
+}
+
 // ActiveSRPMs returns a list of all SRPMs, which are currently being built.
 func (g *GraphBuildState) ActiveSRPMs() (builtSRPMs []string) {
 	for _, buildRequest := range g.activeBuilds {
@@ -147,6 +171,23 @@ func (g *GraphBuildState) ActiveTests() (testedSRPMs []string) {
 	}
 
 	return
+}
+
+// ActiveTestFromSRPM returns a test request for the queried SRPM file
+// or nil if the SRPM is not among the active builds.
+func (g *GraphBuildState) ActiveTestFromSRPM(srpmFileName string) *BuildRequest {
+	for _, buildRequest := range g.activeBuilds {
+		if buildRequest.Node.Type == pkggraph.TypeTest && buildRequest.Node.SRPMFileName() == srpmFileName {
+			return buildRequest
+		}
+	}
+
+	return nil
+}
+
+// IsSRPMTestActive returns true if a given SRPM is currently queued for testing.
+func (g *GraphBuildState) IsSRPMTestActive(srpmFileName string) bool {
+	return g.ActiveTestFromSRPM(srpmFileName) != nil
 }
 
 // BuildFailures returns a slice of all failed builds.
@@ -197,7 +238,8 @@ func (g *GraphBuildState) RecordBuildResult(res *BuildResult, allowToolchainRebu
 
 	delete(g.activeBuilds, res.Node.ID())
 
-	if res.Err != nil {
+	available := res.Err == nil
+	if !available || res.CheckFailed {
 		g.failures = append(g.failures, res)
 	}
 
@@ -206,12 +248,12 @@ func (g *GraphBuildState) RecordBuildResult(res *BuildResult, allowToolchainRebu
 	// max, so that subsequent dependant nodes will be rebuilt. Also ensure that the freshness is not greater than the max.
 	freshness := res.Freshness
 	if freshness > g.GetMaxFreshness() {
-		err = fmt.Errorf("unexpected freshness value of %d for node '%s'. Should be: (<freshness> <= %d)", freshness, res.Node.FriendlyName(), g.GetMaxFreshness())
+		err = fmt.Errorf("unexpected freshness value of (%d) for node (%s). Should be: (<freshness> <= (%d))", freshness, res.Node.FriendlyName(), g.GetMaxFreshness())
 		return
 	}
 
 	state := &nodeState{
-		available: res.Err == nil,
+		available: available,
 		cached:    res.UsedCache,
 		usedDelta: res.WasDelta,
 		freshness: freshness,
@@ -230,6 +272,13 @@ func (g *GraphBuildState) RecordBuildResult(res *BuildResult, allowToolchainRebu
 		}
 	} else {
 		logger.Log.Tracef("Skipping checking toolchain conflicts since this is either not a built node (%v) or the ALLOW_TOOLCHAIN_REBUILDS flag was set to 'y'.", res.Node)
+	}
+
+	if res.HasLicenseErrors {
+		g.licenseErrorSRPMs[filepath.Base(res.Node.SrpmPath)] = true
+	}
+	if res.HasLicenseWarnings {
+		g.licenseWarningSRPMs[filepath.Base(res.Node.SrpmPath)] = true
 	}
 	return
 }

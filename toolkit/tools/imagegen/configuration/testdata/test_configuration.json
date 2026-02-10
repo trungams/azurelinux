@@ -139,7 +139,7 @@
                 "local/path/file5": [ { "Path": "/final/system/path/file5" }],
                 "local/path/file6": [ { "Path": "/final/system/path/file6" }, "/final/system/path/file6_copy" ]
             },
-            "Hostname": "Mariner-Test",
+            "Hostname": "Azure-Linux-Test",
             "BootType": "efi",
             "Groups": [
                 {
@@ -236,10 +236,7 @@
                 "Password": "EncryptPassphrase123"
             },
             "RemoveRpmDb": false,
-            "ReadOnlyVerityRoot": {
-                "Enable": false
-            },
-            "HidepidDisabled": true
+            "EnableHidepid": true
         },
         {
             "Name": "BiggerDiskA",
@@ -267,7 +264,7 @@
             "KernelOptions": {
                 "default": "kernel"
             },
-            "Hostname": "Mariner-TestA",
+            "Hostname": "Azure-Linux-TestA",
             "Users": [
                 {
                     "Name": "basicuser",
@@ -299,7 +296,7 @@
             "KernelOptions": {
                 "default": "kernel"
             },
-            "Hostname": "Mariner-TestB",
+            "Hostname": "Azure-Linux-TestB",
             "Users": [
                 {
                     "Name": "basicuser",

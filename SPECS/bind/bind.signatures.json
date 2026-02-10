@@ -1,5 +1,6 @@
 {
   "Signatures": {
+    "dlz-modules-main.tar.gz": "884bef3535317a7757ad0e3556a27e2ed1a80f5b1040bce4074780c8719667d0",
     "generate-rndc-key.sh": "da0964516a9abe4074e262a1d0b7f63e63b2150c4cc2dddaaca029010383c422",
     "named-chroot.files": "5dbc7bd2a21836fb86cb740a2d4d72eb9f2b4f341996cd0c8ae9c39e95c0d76c",
     "named.conf.sample": "1807f11df688de4eb8cdcc97bd1a8863d81b03b1f24af96f3639de40bc8e538a",
@@ -13,7 +14,6 @@
     "named.rwtab": "6a4c84b6709211d09f2d71491d4c66d1d4c0115a9db247a5ed2a9db10e575735",
     "named.sysconfig": "8f8eff846667b7811358e289e9fe594de17d0e47f2b8cebf7840ad8db7f34816",
     "setup-named-chroot.sh": "786fbc88c7929fadf217cf2286f2eb03b6fba14843e5da40ad43c0022dd71c3a",
-    "setup-named-softhsm.sh": "3b243d9e48577acb95a08ae5dd7288c5eec4830bc02bd29b1f1724c497d12864",
-    "bind-9.16.33.tar.xz": "ec4fbea4b2e368d1824971509e33fa159224ad14b436034c6bcd46104c328d91"
+    "bind-9.20.18.tar.xz": "dfc546c990ac4515529cd45c4dd995862b18ae8a2d0cb29208e8896a5d325331"
   }
 }

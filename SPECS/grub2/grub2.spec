@@ -1,4 +1,5 @@
 %define debug_package %{nil}
+%define efidir BOOT
 %define __os_install_post %{nil}
 # Gnulib does not produce source tarball releases, and grub's bootstrap.conf
 # bakes in a specific commit id to pull (GNULIB_REVISION).
@@ -6,10 +7,10 @@
 Summary:        GRand Unified Bootloader
 Name:           grub2
 Version:        2.06
-Release:        10%{?dist}
+Release:        26%{?dist}
 License:        GPLv3+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/System
 URL:            https://www.gnu.org/software/grub
 Source0:        https://git.savannah.gnu.org/cgit/grub.git/snapshot/grub-%{version}.tar.gz
@@ -47,18 +48,107 @@ Patch0157:      0157-linuxefi-fail-kernel-validation-without-shim-protoco.patch
 # Fix to prevent user from overwriting signed grub binary using grub2-install
 Patch0166:      0166-grub-install-disable-support-for-EFI-platforms.patch
 # CVE-2021-3981
-Patch0167:      0167-restore-umask-for-grub-config.patch 
+Patch0167:      0167-restore-umask-for-grub-config.patch
 # Fix to reset the global errno to success upon success.
 Patch0170:      0170-fix-memory-alloc-errno-reset.patch
 Patch0171:      CVE-2022-2601.patch
 Patch0172:      CVE-2022-3775.patch
+# CVE-2021-3695 CVE-2021-3696 CVE-2021-3697 CVE-2022-28733 CVE-2022-28734
+# CVE-2022-28735 CVE-2022-28736
+Patch0173:      0173-loader-efi-chainloader-Simplify-the-loader-state.patch
+Patch0174:      0174-commands-boot-Add-API-to-pass-context-to-loader.patch
+Patch0175:      0175-loader-efi-chainloader-Use-grub_loader_set_ex.patch
+Patch0176:      0176-kern-efi-sb-Reject-non-kernel-files-in-the-shim_lock.patch
+Patch0177:      0177-kern-file-Do-not-leak-device_name-on-error-in-grub_f.patch
+Patch0178:      0178-video-readers-png-Abort-sooner-if-a-read-operation-f.patch
+Patch0179:      0179-video-readers-png-Refuse-to-handle-multiple-image-he.patch
+Patch0180:      0180-video-readers-png-Drop-greyscale-support-to-fix-heap.patch
+Patch0181:      0181-video-readers-png-Avoid-heap-OOB-R-W-inserting-huff-.patch
+Patch0182:      0182-video-readers-png-Sanity-check-some-huffman-codes.patch
+Patch0183:      0183-video-readers-jpeg-Abort-sooner-if-a-read-operation-.patch
+Patch0184:      0184-video-readers-jpeg-Do-not-reallocate-a-given-huff-ta.patch
+Patch0185:      0185-video-readers-jpeg-Refuse-to-handle-multiple-start-o.patch
+Patch0186:      0186-video-readers-jpeg-Block-int-underflow-wild-pointer-.patch
+Patch0187:      0187-normal-charset-Fix-array-out-of-bounds-formatting-un.patch
+Patch0188:      0188-net-ip-Do-IP-fragment-maths-safely.patch
+Patch0189:      0189-net-netbuff-Block-overly-large-netbuff-allocs.patch
+Patch0190:      0190-net-dns-Fix-double-free-addresses-on-corrupt-DNS-res.patch
+Patch0191:      0191-net-dns-Don-t-read-past-the-end-of-the-string-we-re-.patch
+Patch0192:      0192-net-tftp-Prevent-a-UAF-and-double-free-from-a-failed.patch
+Patch0193:      0193-net-tftp-Avoid-a-trivial-UAF.patch
+Patch0194:      0194-net-http-Do-not-tear-down-socket-if-it-s-already-bee.patch
+Patch0195:      0195-net-http-Fix-OOB-write-for-split-http-headers.patch
+Patch0196:      0196-net-http-Error-out-on-headers-with-LF-without-CR.patch
+Patch0197:      0197-fs-f2fs-Do-not-read-past-the-end-of-nat-journal-entr.patch
+Patch0198:      0198-fs-f2fs-Do-not-read-past-the-end-of-nat-bitmap.patch
+Patch0199:      0199-fs-f2fs-Do-not-copy-file-names-that-are-too-long.patch
+Patch0200:      0200-fs-btrfs-Fix-several-fuzz-issues-with-invalid-dir-it.patch
+Patch0201:      0201-fs-btrfs-Fix-more-ASAN-and-SEGV-issues-found-with-fu.patch
+Patch0202:      0202-fs-btrfs-Fix-more-fuzz-issues-related-to-chunks.patch
+Patch0203:      0203-replace-fgrep-with-grep.patch
+# Required to reach SBAT 3
+Patch:          sbat-3-0001-font-Reject-glyphs-exceeds-font-max_glyph_width-or-f.patch
+Patch:          sbat-3-0004-font-Remove-grub_font_dup_glyph.patch
+Patch:          sbat-3-0005-font-Fix-integer-overflow-in-ensure_comb_space.patch
+Patch:          sbat-3-0006-font-Fix-integer-overflow-in-BMP-index.patch
+Patch:          sbat-3-0007-font-Fix-integer-underflow-in-binary-search-of-char-.patch
+Patch:          sbat-3-0008-kern-efi-sb-Enforce-verification-of-font-files.patch
+Patch:          sbat-3-0009-fbutil-Fix-integer-overflow.patch
+Patch:          sbat-3-0011-font-Harden-grub_font_blit_glyph-and-grub_font_blit_.patch
+Patch:          sbat-3-0012-font-Assign-null_font-to-glyphs-in-ascii_font_glyph.patch
+Patch:          sbat-3-0013-normal-charset-Fix-an-integer-overflow-in-grub_unico.patch
+# Required to reach SBAT 4
+Patch:          sbat-4-0001-fs-ntfs-Fix-an-OOB-write-when-parsing-the-ATTRIBUTE_.patch
+Patch:          sbat-4-0002-fs-ntfs-Fix-an-OOB-read-when-reading-data-from-the-r.patch
+Patch:          sbat-4-0003-fs-ntfs-Fix-an-OOB-read-when-parsing-directory-entri.patch
+Patch:          sbat-4-0004-fs-ntfs-Fix-an-OOB-read-when-parsing-bitmaps-for-ind.patch
+Patch:          sbat-4-0005-fs-ntfs-Fix-an-OOB-read-when-parsing-a-volume-label.patch
+Patch:          sbat-4-0006-fs-ntfs-Make-code-more-readable.patch
+# The Azure Linux team created this patch since the gcc version in use at the
+# time optimizes the code incorrectly, leading to network traffic getting
+# dropped in scenarios like PXE booting.
+Patch:          disable-checksum-code-optimization.patch
+Patch:          CVE-2025-0624.patch
+
+# Additional bulk CVEs
+Patch:          CVE-2014-3591.patch
+Patch:          CVE-2019-13627.patch
+Patch:          CVE-2017-7526.patch
+Patch:          CVE-2024-56737.patch
+Patch:          CVE-2024-45774.patch
+Patch:          CVE-2024-45781.patch
+Patch:          CVE-2024-45775.patch
+Patch:          CVE-2025-1118.patch
+Patch:          CVE-2025-0677.patch
+Patch:          CVE-2024-45777.patch
+Patch:          CVE-2024-45776.patch
+Patch:          CVE-2024-45783.patch
+Patch:          CVE-2025-0690.patch
+Patch:          CVE-2024-45778.patch
+Patch:          CVE-2025-0678.patch
+Patch:          CVE-2024-45780.patch
+Patch:          CVE-2025-61661.patch
+Patch:          CVE-2025-61662.patch
+Patch:          CVE-2025-61663.patch
+# Following are included as part of above CVEs and kept here as nopatch
+# and commented out, because from patch command perspective, these files
+# have garbage content.
+#Patch:          CVE-2024-45782.nopatch
+#Patch:          CVE-2025-0684.nopatch
+#Patch:          CVE-2025-0685.nopatch
+#Patch:          CVE-2025-0686.nopatch
+#Patch:          CVE-2025-0689.nopatch
+#Patch:          CVE-2024-45779.nopatch
+#Patch:          CVE-2025-1125.nopatch
+
 BuildRequires:  autoconf
 BuildRequires:  device-mapper-devel
 BuildRequires:  python3
-BuildRequires:  systemd-devel
 BuildRequires:  xz-devel
 Requires:       device-mapper
+Requires:       systemd-udev
 Requires:       xz
+Requires:       %{name}-tools-minimal = %{version}-%{release}
 
 # Some distros split 'grub2' into more subpackages. For now we're bundling it all together
 # inside the default package and adding these 'Provides' to make installation more user-friendly
@@ -67,7 +157,6 @@ Provides:       %{name}-common = %{version}-%{release}
 Provides:       %{name}-tools = %{version}-%{release}
 Provides:       %{name}-tools-efi = %{version}-%{release}
 Provides:       %{name}-tools-extra = %{version}-%{release}
-Provides:       %{name}-tools-minimal = %{version}-%{release}
 
 %description
 The GRUB package contains the GRand Unified Bootloader.
@@ -118,6 +207,9 @@ Unsigned GRUB UEFI image
 %package efi-binary
 Summary:        GRUB UEFI image
 Group:          System Environment/Base
+Requires:       %{name}-tools-minimal = %{version}-%{release}
+Recommends:     shim >= 15.8-3
+Conflicts:      shim < 15.8-3
 
 # Some distros split 'grub2' into more subpackages. For now we're bundling it all together
 # inside the default package and adding these 'Provides' to make installation more user-friendly
@@ -132,9 +224,28 @@ GRUB UEFI bootloader binaries
 %package efi-binary-noprefix
 Summary:        GRUB UEFI image with no prefix directory set
 Group:          System Environment/Base
+Requires:       %{name}-tools-minimal = %{version}-%{release}
+Recommends:     shim >= 15.8-3
+Conflicts:      shim < 15.8-3
 
 %description efi-binary-noprefix
 GRUB UEFI bootloader binaries with no prefix directory set
+
+%package configuration
+Summary:        Location for local grub configurations
+Group:          System Environment/Base
+
+%description configuration
+Directory for package-specific boot configurations
+to be persistently stored on AzureLinux
+
+%package tools-minimal
+Summary:        Minimal set of utilities to configure a grub-based system
+Group:          System Environment/Base
+Requires:       %{name}-configuration = %{version}-%{release}
+
+%description tools-minimal
+Minimal set of utilities to configure a grub-based system
 
 %prep
 # Remove module_info.ld script due to error "grub2-install: error: Decompressor is too big"
@@ -224,6 +335,7 @@ cp -a install-for-pc/. %{buildroot}/.
 %endif
 mkdir %{buildroot}%{_sysconfdir}/default
 touch %{buildroot}%{_sysconfdir}/default/grub
+mkdir %{buildroot}%{_sysconfdir}/default/grub.d
 mkdir %{buildroot}%{_sysconfdir}/sysconfig
 ln -sf %{_sysconfdir}/default/grub %{buildroot}%{_sysconfdir}/sysconfig/grub
 install -vdm 700 %{buildroot}/boot/%{name}
@@ -247,7 +359,7 @@ install -d %{buildroot}%{_datadir}/grub2-efi
 %endif
 
 # Install to efi directory
-EFI_BOOT_DIR=%{buildroot}/boot/efi/EFI/BOOT
+EFI_BOOT_DIR=%{buildroot}/boot/efi/EFI/%{efidir}
 GRUB_MODULE_NAME=
 GRUB_MODULE_SOURCE=
 
@@ -276,23 +388,37 @@ cp $GRUB_PXE_MODULE_SOURCE $EFI_BOOT_DIR/$GRUB_PXE_MODULE_NAME
 %files
 %defattr(-,root,root)
 %license COPYING
-%dir %{_sysconfdir}/grub.d
 %dir /boot/%{name}
 %config() %{_sysconfdir}/bash_completion.d/grub
-%config() %{_sysconfdir}/grub.d/00_header
-%config() %{_sysconfdir}/grub.d/10_linux
-%config() %{_sysconfdir}/grub.d/20_linux_xen
-%config() %{_sysconfdir}/grub.d/30_os-prober
-%config() %{_sysconfdir}/grub.d/30_uefi-firmware
-%config(noreplace) %{_sysconfdir}/grub.d/40_custom
-%config(noreplace) %{_sysconfdir}/grub.d/41_custom
-%{_sysconfdir}/grub.d/README
-/sbin/*
-%{_bindir}/*
-%{_datarootdir}/grub/*
 %{_sysconfdir}/sysconfig/grub
-%{_sysconfdir}/default/grub
-%ghost %config(noreplace) /boot/%{name}/grub.cfg
+/sbin/grub2-bios-setup
+/sbin/grub2-install
+/sbin/grub2-macbless
+/sbin/grub2-ofpathname
+/sbin/grub2-reboot
+/sbin/grub2-set-default
+/sbin/grub2-sparc64-setup
+%{_bindir}/grub2-fstest
+%{_bindir}/grub2-glue-efi
+%{_bindir}/grub2-kbdcomp
+%{_bindir}/grub2-menulst2cfg
+%{_bindir}/grub2-mkimage
+%{_bindir}/grub2-mklayout
+%{_bindir}/grub2-mknetdir
+%{_bindir}/grub2-mkpasswd-pbkdf2
+%{_bindir}/grub2-mkrescue
+%{_bindir}/grub2-mkstandalone
+%{_bindir}/grub2-render-label
+%{_bindir}/grub2-syslinux2cfg
+
+%files tools-minimal
+%{_datarootdir}/grub/grub-mkconfig_lib
+/sbin/grub2-probe
+/sbin/grub2-mkconfig
+%{_bindir}/grub2-editenv
+%{_bindir}/grub2-script-check
+%{_bindir}/grub2-file
+%{_bindir}/grub2-mkrelpath
 
 %ifarch x86_64
 %files pc
@@ -307,18 +433,18 @@ cp $GRUB_PXE_MODULE_SOURCE $EFI_BOOT_DIR/$GRUB_PXE_MODULE_NAME
 
 %files efi-binary
 %ifarch x86_64
-/boot/efi/EFI/BOOT/grubx64.efi
+/boot/efi/EFI/%{efidir}/grubx64.efi
 %endif
 %ifarch aarch64
-/boot/efi/EFI/BOOT/grubaa64.efi
+/boot/efi/EFI/%{efidir}/grubaa64.efi
 %endif
 
 %files efi-binary-noprefix
 %ifarch x86_64
-/boot/efi/EFI/BOOT/grubx64-noprefix.efi
+/boot/efi/EFI/%{efidir}/grubx64-noprefix.efi
 %endif
 %ifarch aarch64
-/boot/efi/EFI/BOOT/grubaa64-noprefix.efi
+/boot/efi/EFI/%{efidir}/grubaa64-noprefix.efi
 %endif
 
 %ifarch aarch64
@@ -326,7 +452,100 @@ cp $GRUB_PXE_MODULE_SOURCE $EFI_BOOT_DIR/$GRUB_PXE_MODULE_NAME
 %{_libdir}/grub/*
 %endif
 
+%files configuration
+%dir %{_sysconfdir}/grub.d
+%dir %{_sysconfdir}/default/grub.d
+%{_sysconfdir}/grub.d/README
+%attr(0644,root,root) %ghost %config(noreplace) %{_sysconfdir}/default/grub
+%ghost %config(noreplace) /boot/%{name}/grub.cfg
+%config() %{_sysconfdir}/grub.d/00_header
+%config() %{_sysconfdir}/grub.d/10_linux
+%config() %{_sysconfdir}/grub.d/20_linux_xen
+%config() %{_sysconfdir}/grub.d/30_os-prober
+%config() %{_sysconfdir}/grub.d/30_uefi-firmware
+%config(noreplace) %{_sysconfdir}/grub.d/40_custom
+%config(noreplace) %{_sysconfdir}/grub.d/41_custom
+
 %changelog
+* Mon Nov 24 2025 Akhila Guruju <v-guakhila@microsoft.com> - 2.06-26
+- Patch CVE-2025-61661, CVE-2025-61662 & CVE-2025-61663
+
+* Tue Jun 17 2025 Kshitiz Godara <kgodara@microsoft.com> - 2.06-25
+- Addressed following grub2 CVEs
+- CVE-2025-0684
+- CVE-2024-45782
+- CVE-2024-45778
+- CVE-2025-0686
+- CVE-2025-0678
+- CVE-2025-0685
+- CVE-2024-45779
+- CVE-2025-0689
+- CVE-2024-45780
+- CVE-2025-1125
+- CVE-2025-0690
+- CVE-2024-45783
+- CVE-2024-45776
+- CVE-2024-45777
+- CVE-2025-0677
+- CVE-2025-1118
+- CVE-2024-45775
+- CVE-2024-45781
+- CVE-2024-45774
+- CVE-2024-56737
+- CVE-2017-7526
+- CVE-2019-13627
+- CVE-2014-3591
+
+
+* Mon Jun 02 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 2.06-24
+- Patch CVE-2025-0624
+
+* Wed Apr 16 2025 Kavya Sree Kaitepalli <kkaitepalli@microsoft.com> - 2.06-23
+- Add patch to replace fgrep with grep -F
+
+* Sun Nov 10 2024 Chris Co <chrco@microsoft.com> - 2.06-22
+- Set efidir location to BOOT for eventual use in changing to "azurelinux"
+- Bump release to also force signing with the new Azure Linux secure boot key
+
+* Mon Oct 28 2024 Chris Co <chrco@microsoft.com> - 2.06-21
+- Add Fedora SBAT entries
+
+* Tue Aug 13 2024 Daniel McIlvaney <damcilva@microsoft.com> - 2.06-20
+- Move grub2-rpm-macros to the azurelinux-rpm-macros package
+
+* Wed Jun 12 2024 George Mileka <gmileka@microsoft.com> - 2.06-19
+- disable code optimization for ip checksum calculation
+
+* Mon Apr 15 2024 Dan Streetman <ddstreet@microsoft.com> - 2.06-18
+- update grub to sbat 4
+
+* Tue Mar 19 2024 Cameron Baird <cameronbaird@microsoft.com> - 2.06-17
+- Introduce grub2-tools-minimal subpackage
+
+* Wed Mar 06 2024 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 2.06-16
+- Updated sbat.csv.in to reflect new distro name.
+
+* Tue Mar 05 2024 Cameron Baird <cameronbaird@microsoft.com> - 2.06-15
+- Explicitly depend on systemd-udev for image install
+
+* Thu Jan 25 10:49:55 EST 2024 Dan Streetman <ddstreet@ieee.org> - 2.06-14
+- remove systemd-devel build dep
+
+* Mon Nov 27 2023 Cameron Baird <cameronbaird@microsoft.com> - 2.06-13
+- Move /etc/grub.d to the configuration subpackage
+
+* Wed Oct 18 2023 Gary Swalling <gaswal@microsoft.com> - 2.06-12
+- CVE-2021-3695 CVE-2021-3696 CVE-2021-3697 CVE-2022-28733 CVE-2022-28734
+  CVE-2022-28735 CVE-2022-28736 and increment SBAT level to 2
+
+* Fri Aug 11 2023 Cameron Baird <cameronbaird@microsoft.com> - 2.06-11
+- Enable support for grub2-mkconfig grub.cfg generation
+- Introduce rpm-macros, configuration subpackage
+- The Mariner /etc/default/grub now sources files from /etc/default/grub.d
+    before the remainder of grub2-mkconfig runs. This allows RPM to
+    install package-specific configurations that the users can safely
+    override.
+
 * Thu Jun 08 2023 Daniel McIlvaney <damcilva@microsoft.com> - 2.06-10
 - CVE-2022-3775
 

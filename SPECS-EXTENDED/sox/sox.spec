@@ -1,12 +1,12 @@
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Summary: A general purpose sound file conversion tool
 Name: sox
 # A mistake in naming, 14.4.2rc2 breaks upgrade path.
 # This workaround will go away with rebase to 14.4.3
 # it affects Source, %%prep and Version
 Version: 14.4.2.0
-Release: 33%{?dist}
+Release: 34%{?dist}
 License: GPLv2+ and LGPLv2+ and MIT
 # Modified source tarball with libgsm license, without unlicensed liblpc10:
 # _Source: http://downloads.sourceforge.net/%%{name}/%%{name}-%%{version}.tar.gz
@@ -75,7 +75,7 @@ BuildRequires: libvorbis-devel
 BuildRequires: alsa-lib-devel, libtool-ltdl-devel, libsamplerate-devel
 BuildRequires: gsm-devel, wavpack-devel, ladspa-devel, libpng-devel
 BuildRequires: flac-devel, libao-devel, libsndfile-devel, libid3tag-devel
-BuildRequires: pulseaudio-libs-devel, opusfile-devel
+BuildRequires: pulseaudio-libs-devel
 BuildRequires: libtool, libmad-devel, lame-devel, twolame-devel
 
 %description
@@ -94,24 +94,25 @@ which will use the SoX sound file format converter.
 
 %prep
 %setup -q -n %{name}-downstream-%{name}-%{version}.modified
-%patch0 -p1
-%patch1 -p1 -b .lpc
-%patch2 -p1
-%patch1000 -p1
-%patch1001 -p1
-%patch1002 -p1
-%patch1003 -p1
-%patch1004 -p1
-%patch1005 -p1
-%patch1006 -p1
-%patch1007 -p1
-%patch9000 -p1
+%patch 0 -p1
+%patch 1 -p1 -b .lpc
+%patch 2 -p1
+%patch 1000 -p1
+%patch 1001 -p1
+%patch 1002 -p1
+%patch 1003 -p1
+%patch 1004 -p1
+%patch 1005 -p1
+%patch 1006 -p1
+%patch 1007 -p1
+%patch 9000 -p1
 #regenerate scripts from older autoconf to support aarch64
 autoreconf -vfi
 
 %build
 CFLAGS="$RPM_OPT_FLAGS -D_FILE_OFFSET_BITS=64"
 %configure --without-lpc10 \
+           --without-opus \
            --with-gsm \
            --includedir=%{_includedir}/sox \
            --disable-static \
@@ -150,6 +151,9 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/sox/*.a
 
 
 %changelog
+* Wed Jan 22 2025 Andrew Phelps <anphel@microsoft.com> - 14.4.2.0-34
+- Remove dependency on opusfile
+
 * Mon Mar 06 2023 Muhammad Falak R Wani <mwani@microsoft.com> - 14.4.2.0-33
 - Initial CBL-Mariner import from Fedora 36 (license: MIT).
 - License Verified

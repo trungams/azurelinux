@@ -1,28 +1,34 @@
-Vendor:         Microsoft Corporation
-Distribution:   Mariner
-Summary: High-performance and highly configurable free RADIUS server
-Name: freeradius
-Version: 3.0.21
-Release: 9%{?dist}
-License: GPLv2+ and LGPLv2+
-URL: http://www.freeradius.org/
-
+%global _default_patch_fuzz 2
 # Is elliptic curve cryptography supported?
 %global HAVE_EC_CRYPTO 1
+%global debug_package %{nil}
+
+Summary:       High-performance and highly configurable free RADIUS server
+Name:          freeradius
+Version:       3.2.5
+Release:       4%{?dist}
+Vendor:        Microsoft Corporation
+Distribution:  Azure Linux
+License:       GPL-2.0-or-later AND LGPL-2.0-or-later
+URL:           https://www.freeradius.org/
 
 %global dist_base freeradius-server-%{version}
 
-Source0: ftp://ftp.freeradius.org/pub/radius/%{dist_base}.tar.bz2
+Source0:   https://github.com/FreeRADIUS/freeradius-server/releases/download/release_3_2_5/%{dist_base}.tar.bz2
 Source100: radiusd.service
 Source102: freeradius-logrotate
 Source103: freeradius-pam-conf
 Source104: freeradius-tmpfiles.conf
+Source105: freeradius.sysusers
 
 Patch1: freeradius-Adjust-configuration-to-fit-Red-Hat-specifics.patch
 Patch2: freeradius-Use-system-crypto-policy-by-default.patch
 Patch3: freeradius-bootstrap-create-only.patch
 Patch4: freeradius-no-buildtime-cert-gen.patch
 Patch5: freeradius-bootstrap-make-permissions.patch
+Patch6: freeradius-ldap-infinite-timeout-on-starttls.patch
+Patch7: freeradius-ease-openssl-version-check.patch
+Patch8: freeradius-configure-c99.patch
 
 %global docdir %{?_pkgdocdir}%{!?_pkgdocdir:%{_docdir}/%{name}-%{version}}
 
@@ -32,6 +38,7 @@ BuildRequires: gcc
 BuildRequires: gdbm-devel
 BuildRequires: openssl
 BuildRequires: openssl-devel
+# https://fedoraproject.org/wiki/Changes/OpensslDeprecateEngine
 BuildRequires: pam-devel
 BuildRequires: zlib-devel
 BuildRequires: net-snmp-devel
@@ -40,12 +47,8 @@ BuildRequires: readline-devel
 BuildRequires: libpcap-devel
 BuildRequires: systemd-units
 BuildRequires: libtalloc-devel
-BuildRequires: pcre-devel
-
-%if ! 0%{?rhel}
-BuildRequires: libyubikey-devel
-BuildRequires: ykclient-devel
-%endif
+BuildRequires: chrpath
+BuildRequires: systemd-rpm-macros
 
 # Require OpenSSL version we built with, or newer, to avoid startup failures
 # due to runtime OpenSSL version checks.
@@ -53,8 +56,9 @@ Requires: openssl >= %(rpm -q --queryformat '%%{VERSION}' openssl)
 Requires(pre): shadow-utils glibc-common
 Requires(post): systemd-sysv
 Requires(post): systemd-units
-# Needed for certificate generation
-Requires(post): make
+# Needed for certificate generation as upstream bootstrap script isn't
+# compatible with Makefile equivalent.
+Requires: make
 Requires(preun): systemd-units
 Requires(postun): systemd-units
 
@@ -120,7 +124,6 @@ This plugin provides the Kerberos 5 support for the FreeRADIUS server project.
 %package perl
 Summary: Perl support for freeradius
 Requires: %{name} = %{version}-%{release}
-Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 %{?fedora:BuildRequires: perl-devel}
 BuildRequires: perl-devel
 BuildRequires: perl-generators
@@ -180,31 +183,15 @@ BuildRequires: json-c-devel
 This plugin provides the REST support for the FreeRADIUS server project.
 
 %prep
-%setup -q -n %{dist_base}
-# Note: We explicitly do not make patch backup files because 'make install'
-# mistakenly includes the backup files, especially problematic for raddb config files.
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
-%patch5 -p1
+%autosetup -p1 -n %{dist_base}
 
 %build
 # Force compile/link options, extra security for network facing daemon
 %global _hardened_build 1
 
-# Hack: rlm_python3 as stable; prevents building other unstable modules.
-sed 's/rlm_python/rlm_python3/g' src/modules/stable -i
-
-# python3-config is broken:
-# https://bugzilla.redhat.com/show_bug.cgi?id=1772988
-export PY3_LIB_DIR=%{_libdir}/"$(python3-config --configdir | sed 's#/usr/lib/##g')"
+%global build_ldflags %{build_ldflags} $(python3-config --embed --libs)
+export PY3_LIB_DIR="$(python3-config --configdir)"
 export PY3_INC_DIR="$(python3 -c 'import sysconfig; print(sysconfig.get_config_var("INCLUDEPY"))')"
-
-# In order for the above hack to stick, do a fake configure so
-# we can run reconfig before cleaning up after ourselves and running
-# configure for real.
-./configure && make reconfig && (make clean distclean || true)
 
 %configure \
         --libdir=%{_libdir}/freeradius \
@@ -224,6 +211,7 @@ export PY3_INC_DIR="$(python3 -c 'import sysconfig; print(sysconfig.get_config_v
         --with-rlm_python3 \
         --with-rlm-python3-lib-dir=$PY3_LIB_DIR \
         --with-rlm-python3-include-dir=$PY3_INC_DIR \
+        --without-rlm_python \
         --without-rlm_eap_ikev2 \
         --without-rlm_eap_tnc \
         --without-rlm_sql_iodbc \
@@ -235,7 +223,8 @@ export PY3_INC_DIR="$(python3 -c 'import sysconfig; print(sysconfig.get_config_v
         --without-rlm_rediswho \
         --without-rlm_cache_memcached
 
-make
+# Build fast, but get better errors if we fail
+make %{?_smp_mflags} || make -j1
 
 %install
 mkdir -p $RPM_BUILD_ROOT/%{_localstatedir}/lib/radiusd
@@ -254,10 +243,20 @@ mkdir -p %{buildroot}%{_localstatedir}/run/
 install -d -m 0710 %{buildroot}%{_localstatedir}/run/radiusd/
 install -d -m 0700 %{buildroot}%{_localstatedir}/run/radiusd/tmp
 install -m 0644 %{SOURCE104} %{buildroot}%{_tmpfilesdir}/radiusd.conf
+install -p -D -m 0644 %{SOURCE105} %{buildroot}%{_sysusersdir}/freeradius.conf
 
 # install SNMP MIB files
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/snmp/mibs/
 install -m 644 mibs/*RADIUS*.mib $RPM_BUILD_ROOT%{_datadir}/snmp/mibs/
+
+# remove rpath where needed
+chrpath --delete $RPM_BUILD_ROOT%{_libdir}/freeradius/*.so
+for f in $RPM_BUILD_ROOT/usr/sbin/*; do chrpath --delete $f || true; done
+for f in $RPM_BUILD_ROOT/usr/bin/*; do chrpath --delete $f || true; done
+
+# update ld with freeradius libs
+mkdir -p %{buildroot}/%{_sysconfdir}/ld.so.conf.d
+echo "%{_libdir}/freeradius" > %{buildroot}/%{_sysconfdir}/ld.so.conf.d/%{name}-%{_arch}.conf
 
 # remove unneeded stuff
 rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/raddb/certs/*.crt
@@ -304,12 +303,13 @@ rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/raddb/mods-config/sql/ippool/mongo/queries.
 rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/raddb/mods-config/sql/main/mongo/queries.conf
 
 # install doc files omitted by standard install
-for f in COPYRIGHT CREDITS INSTALL.rst README.rst VERSION; do
+for f in CREDITS INSTALL.rst README.rst VERSION; do
     cp $f $RPM_BUILD_ROOT/%{docdir}
 done
-cp LICENSE $RPM_BUILD_ROOT/%{docdir}/LICENSE.gpl
-cp src/lib/LICENSE $RPM_BUILD_ROOT/%{docdir}/LICENSE.lgpl
-cp src/LICENSE.openssl $RPM_BUILD_ROOT/%{docdir}/LICENSE.openssl
+# license files
+cp LICENSE LICENSE.gpl
+cp src/lib/LICENSE LICENSE.lgpl
+cp src/LICENSE.openssl LICENSE.openssl
 
 # add Red Hat specific documentation
 cat >> $RPM_BUILD_ROOT/%{docdir}/REDHAT << EOF
@@ -328,37 +328,33 @@ EOF
 
 # Make sure our user/group is present prior to any package or subpackage installation
 %pre
-getent group  radiusd >/dev/null || /usr/sbin/groupadd -r -g 95 radiusd > /dev/null 2>&1
-getent passwd radiusd >/dev/null || /usr/sbin/useradd  -r -g radiusd -u 95 -c "radiusd user" -d %{_localstatedir}/lib/radiusd -s /usr/sbin/nologin radiusd > /dev/null 2>&1
-exit 0
+%sysusers_create_compat %{SOURCE105}
 
 %preun
 %systemd_preun radiusd.service
 
 %postun
 %systemd_postun_with_restart radiusd.service
-if [ $1 -eq 0 ]; then           # uninstall
-  getent passwd radiusd >/dev/null && /usr/sbin/userdel  radiusd > /dev/null 2>&1
-  getent group  radiusd >/dev/null && /usr/sbin/groupdel radiusd > /dev/null 2>&1
-fi
-exit 0
 
 /bin/systemctl try-restart radiusd.service >/dev/null 2>&1 || :
 
 
 %files
-
+# license
+%license COPYRIGHT
+%license LICENSE.gpl
+%license LICENSE.lgpl
+%license LICENSE.openssl
 # doc
-%license %{docdir}/LICENSE.gpl
-%license %{docdir}/LICENSE.lgpl
-%license %{docdir}/LICENSE.openssl
 %doc %{docdir}/REDHAT
 
 # system
 %config(noreplace) %{_sysconfdir}/pam.d/radiusd
 %config(noreplace) %{_sysconfdir}/logrotate.d/radiusd
+%config(noreplace) %{_sysconfdir}/ld.so.conf.d/%{name}-%{_arch}.conf
 %{_unitdir}/radiusd.service
 %{_tmpfilesdir}/radiusd.conf
+%{_sysusersdir}/freeradius.conf
 %dir %attr(710,radiusd,radiusd) %{_localstatedir}/run/radiusd
 %dir %attr(700,radiusd,radiusd) %{_localstatedir}/run/radiusd/tmp
 %dir %attr(755,radiusd,radiusd) %{_localstatedir}/lib/radiusd
@@ -391,7 +387,8 @@ exit 0
 %dir %attr(770,root,radiusd) /etc/raddb/certs
 %config(noreplace) /etc/raddb/certs/Makefile
 %config(noreplace) /etc/raddb/certs/passwords.mk
-/etc/raddb/certs/README
+/etc/raddb/certs/README.md
+/etc/raddb/certs/realms/README.md
 %config(noreplace) /etc/raddb/certs/xpextensions
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/certs/*.cnf
 %attr(750,root,radiusd) /etc/raddb/certs/bootstrap
@@ -405,6 +402,7 @@ exit 0
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/files/*
 %dir %attr(750,root,radiusd) /etc/raddb/mods-config/preprocess
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/preprocess/*
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/realm/freeradius-naptr-to-home-server.sh
 
 %dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql
 %dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/counter
@@ -416,6 +414,8 @@ exit 0
 # sites-available
 %dir %attr(750,root,radiusd) /etc/raddb/sites-available
 /etc/raddb/sites-available/README
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/sites-available/aws-nlb
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/sites-available/resource-check
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/sites-available/control-socket
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/sites-available/decoupled-accounting
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/sites-available/robust-proxy-accounting
@@ -437,8 +437,11 @@ exit 0
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/sites-available/copy-acct-to-home-server
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/sites-available/buffered-sql
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/sites-available/tls
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/sites-available/totp
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/sites-available/channel_bindings
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/sites-available/challenge
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/sites-available/google-ldap-auth
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/sites-available/tls-cache
 
 # sites-enabled
 # symlink: /etc/raddb/sites-enabled/xxx -> ../sites-available/xxx
@@ -452,7 +455,7 @@ exit 0
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/always
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/attr_filter
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/cache
-%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/cache_eap
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/cache_auth
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/chap
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/counter
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/cui
@@ -461,6 +464,9 @@ exit 0
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/detail.example.com
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/detail.log
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/dhcp
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/dhcp_files
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/dhcp_passwd
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/dhcp_sql
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/dhcp_sqlippool
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/digest
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/dynamic_clients
@@ -474,6 +480,8 @@ exit 0
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/idn
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/inner-eap
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/ippool
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/json
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/ldap_google
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/linelog
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/logintime
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/mac2ip
@@ -481,7 +489,6 @@ exit 0
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/mschap
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/ntlm_auth
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/opendirectory
-%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/otp
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/pam
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/pap
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/passwd
@@ -498,21 +505,23 @@ exit 0
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/soh
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/sometimes
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/sql
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/sql_map
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/sqlcounter
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/sqlippool
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/sradutmp
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/totp
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/unix
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/unpack
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/utf8
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/wimax
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/yubikey
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/dpsk
 
 # mods-enabled
 # symlink: /etc/raddb/mods-enabled/xxx -> ../mods-available/xxx
 %dir %attr(750,root,radiusd) /etc/raddb/mods-enabled
 %config(missingok) /etc/raddb/mods-enabled/always
 %config(missingok) /etc/raddb/mods-enabled/attr_filter
-%config(missingok) /etc/raddb/mods-enabled/cache_eap
 %config(missingok) /etc/raddb/mods-enabled/chap
 %config(missingok) /etc/raddb/mods-enabled/date
 %config(missingok) /etc/raddb/mods-enabled/detail
@@ -537,6 +546,7 @@ exit 0
 %config(missingok) /etc/raddb/mods-enabled/replicate
 %config(missingok) /etc/raddb/mods-enabled/soh
 %config(missingok) /etc/raddb/mods-enabled/sradutmp
+%config(missingok) /etc/raddb/mods-enabled/totp
 %config(missingok) /etc/raddb/mods-enabled/unix
 %config(missingok) /etc/raddb/mods-enabled/unpack
 %config(missingok) /etc/raddb/mods-enabled/utf8
@@ -585,7 +595,6 @@ exit 0
 %{_libdir}/freeradius/rlm_cache_rbtree.so
 %{_libdir}/freeradius/rlm_chap.so
 %{_libdir}/freeradius/rlm_counter.so
-%{_libdir}/freeradius/rlm_cram.so
 %{_libdir}/freeradius/rlm_date.so
 %{_libdir}/freeradius/rlm_detail.so
 %{_libdir}/freeradius/rlm_dhcp.so
@@ -594,7 +603,6 @@ exit 0
 %{_libdir}/freeradius/rlm_eap.so
 %{_libdir}/freeradius/rlm_eap_fast.so
 %{_libdir}/freeradius/rlm_eap_gtc.so
-%{_libdir}/freeradius/rlm_eap_leap.so
 %{_libdir}/freeradius/rlm_eap_md5.so
 %{_libdir}/freeradius/rlm_eap_mschapv2.so
 %{_libdir}/freeradius/rlm_eap_peap.so
@@ -609,10 +617,10 @@ exit 0
 %{_libdir}/freeradius/rlm_expr.so
 %{_libdir}/freeradius/rlm_files.so
 %{_libdir}/freeradius/rlm_ippool.so
+%{_libdir}/freeradius/rlm_json.so
 %{_libdir}/freeradius/rlm_linelog.so
 %{_libdir}/freeradius/rlm_logintime.so
 %{_libdir}/freeradius/rlm_mschap.so
-%{_libdir}/freeradius/rlm_otp.so
 %{_libdir}/freeradius/rlm_pam.so
 %{_libdir}/freeradius/rlm_pap.so
 %{_libdir}/freeradius/rlm_passwd.so
@@ -625,12 +633,16 @@ exit 0
 %{_libdir}/freeradius/rlm_sql.so
 %{_libdir}/freeradius/rlm_sqlcounter.so
 %{_libdir}/freeradius/rlm_sqlippool.so
+%{_libdir}/freeradius/rlm_sql_map.so
 %{_libdir}/freeradius/rlm_sql_null.so
+%{_libdir}/freeradius/rlm_totp.so
 %{_libdir}/freeradius/rlm_unix.so
 %{_libdir}/freeradius/rlm_unpack.so
 %{_libdir}/freeradius/rlm_utf8.so
 %{_libdir}/freeradius/rlm_wimax.so
 %{_libdir}/freeradius/rlm_yubikey.so
+%{_libdir}/freeradius/rlm_dpsk.so
+%{_libdir}/freeradius/rlm_eap_teap.so
 
 # main man pages
 %doc %{_mandir}/man5/clients.conf.5.gz
@@ -651,6 +663,7 @@ exit 0
 %doc %{_mandir}/man5/rlm_passwd.5.gz
 %doc %{_mandir}/man5/rlm_realm.5.gz
 %doc %{_mandir}/man5/rlm_sql.5.gz
+%doc %{_mandir}/man5/rlm_unbound.5.gz
 %doc %{_mandir}/man5/rlm_unix.5.gz
 %doc %{_mandir}/man5/unlang.5.gz
 %doc %{_mandir}/man5/users.5.gz
@@ -658,6 +671,7 @@ exit 0
 %doc %{_mandir}/man8/radiusd.8.gz
 %doc %{_mandir}/man8/radmin.8.gz
 %doc %{_mandir}/man8/radrelay.8.gz
+%doc %{_mandir}/man8/rlm_sqlippool_tool.8.gz
 
 # MIB files
 %{_datadir}/snmp/mibs/*RADIUS*.mib
@@ -669,6 +683,10 @@ exit 0
 
 %files utils
 /usr/bin/*
+# These files require additional dependencies, two perl modules, Base32 and Net module
+# which are currently unavailable. Skip them for now.
+%exclude /usr/bin/radsecret
+%exclude /usr/bin/rlm_sqlippool_tool
 
 # utils man pages
 %doc %{_mandir}/man1/radclient.1.gz
@@ -711,6 +729,7 @@ exit 0
 %dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/counter/mysql
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/mysql/dailycounter.conf
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/mysql/expire_on_login.conf
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/mysql/weeklycounter.conf
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/mysql/monthlycounter.conf
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/mysql/noresetcounter.conf
 
@@ -718,14 +737,49 @@ exit 0
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/cui/mysql/queries.conf
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/cui/mysql/schema.sql
 
+%dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/dhcp/mssql
+%attr(640,root,radiusd) /etc/raddb/mods-config/sql/dhcp/mssql/queries.conf
+%attr(640,root,radiusd) /etc/raddb/mods-config/sql/dhcp/mssql/schema.sql
+
+%dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/dhcp/mysql
+%attr(640,root,radiusd) /etc/raddb/mods-config/sql/dhcp/mysql/queries.conf
+%attr(640,root,radiusd) /etc/raddb/mods-config/sql/dhcp/mysql/schema.sql
+%attr(640,root,radiusd) /etc/raddb/mods-config/sql/dhcp/mysql/setup.sql
+
+%dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/dhcp/oracle
+%attr(640,root,radiusd) /etc/raddb/mods-config/sql/dhcp/oracle/queries.conf
+%attr(640,root,radiusd) /etc/raddb/mods-config/sql/dhcp/oracle/schema.sql
+
+%dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/dhcp/postgresql
+%attr(640,root,radiusd) /etc/raddb/mods-config/sql/dhcp/postgresql/queries.conf
+%attr(640,root,radiusd) /etc/raddb/mods-config/sql/dhcp/postgresql/schema.sql
+%attr(640,root,radiusd) /etc/raddb/mods-config/sql/dhcp/postgresql/setup.sql
+
+%dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/dhcp/sqlite
+%attr(640,root,radiusd) /etc/raddb/mods-config/sql/dhcp/sqlite/queries.conf
+%attr(640,root,radiusd) /etc/raddb/mods-config/sql/dhcp/sqlite/schema.sql
+
 %dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/ippool/mysql
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool/mysql/queries.conf
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool/mysql/schema.sql
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool/mysql/procedure.sql
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool/mysql/procedure-no-skip-locked.sql
 
 %dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/ippool-dhcp/mysql
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool-dhcp/mysql/queries.conf
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool-dhcp/mysql/schema.sql
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool-dhcp/mysql/procedure.sql
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool-dhcp/mysql/procedure-no-skip-locked.sql
+
+%dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/ippool-dhcp/mssql
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool-dhcp/mssql/procedure.sql
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool-dhcp/mssql/queries.conf
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool-dhcp/mssql/schema.sql
+
+%dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/ippool-dhcp/postgresql
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool-dhcp/postgresql/procedure.sql
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool-dhcp/postgresql/queries.conf
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/ippool-dhcp/postgresql/schema.sql
 
 %dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/main/mysql
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/main/mysql/setup.sql
@@ -749,6 +803,7 @@ exit 0
 %dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/counter/postgresql
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/postgresql/dailycounter.conf
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/postgresql/expire_on_login.conf
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/postgresql/weeklycounter.conf
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/postgresql/monthlycounter.conf
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/postgresql/noresetcounter.conf
 
@@ -777,6 +832,7 @@ exit 0
 %dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/counter/sqlite
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/sqlite/dailycounter.conf
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/sqlite/expire_on_login.conf
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/sqlite/weeklycounter.conf
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/sqlite/monthlycounter.conf
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/counter/sqlite/noresetcounter.conf
 
@@ -795,8 +851,9 @@ exit 0
 %dir %attr(750,root,radiusd) /etc/raddb/mods-config/sql/main/sqlite
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/main/sqlite/queries.conf
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/main/sqlite/schema.sql
-%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/main/sqlite/process-radacct-refresh.sh
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/main/sqlite/process-radacct-schema.sql
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/main/sqlite/process-radacct-close-after-reload.pl
+%attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-config/sql/main/sqlite/process-radacct-new-data-usage-period.sh
 
 %{_libdir}/freeradius/rlm_sql_sqlite.so
 
@@ -812,21 +869,188 @@ exit 0
 %attr(640,root,radiusd) %config(noreplace) /etc/raddb/mods-available/rest
 
 %changelog
-* Fri Apr 30 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.0.21-9
-- Making binaries paths compatible with CBL-Mariner's paths.
+* Tue Jan 06 2026 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.2.5-4
+- Bumping release to rebuild with new 'net-snmp' libs.
 
-* Fri Feb 05 2021 Henry Li <lihl@microsoft.com> - 3.0.21-8
-- Initial CBL-Mariner import from Fedora 32 (license: MIT).
-- Remove %%{EPOCH}
-- Remove python2-freeradius
+* Fri Jan 31 2025 Jyoti kanase <v-jykanase@microsoft.com> -  3.2.5-3
+- Initial Azure Linux import from Fedora 41 (license: MIT).
+- License verified.
 
-* Wed May 13 2020 Alexander Scheel <ascheel@redhat.com> - 3.0.21-7
+* Wed Jul 17 2024 Fedora Release Engineering <releng@fedoraproject.org> - 3.2.5-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_41_Mass_Rebuild
+
+* Tue Jul 09 2024 Antonio Torres <antorres@redhat.com> - 3.2.5-1
+- Update to upstream release 3.2.5
+
+* Wed Jun 12 2024 Jitka Plesnikova <jplesnik@redhat.com> - 3.2.4-3
+- Perl 5.40 rebuild
+
+* Fri Jun 07 2024 Python Maint <python-maint@redhat.com> - 3.2.4-2
+- Rebuilt for Python 3.13
+
+* Fri May 31 2024 Antonio Torres <antorres@redhat.com> - 3.2.4-1
+- Update to upstream release 3.2.4
+
+* Wed Jan 24 2024 Fedora Release Engineering <releng@fedoraproject.org> - 3.2.3-4
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_40_Mass_Rebuild
+
+* Fri Jan 19 2024 Fedora Release Engineering <releng@fedoraproject.org> - 3.2.3-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_40_Mass_Rebuild
+
+* Tue Dec 19 2023 Florian Weimer <fweimer@redhat.com> - 3.2.3-2
+- Fix C compatibility issue in configure script
+
+* Tue Oct 24 2023 Antonio Torres <antorres@redhat.com> - 3.2.3-1
+- Update to upstream release 3.2.3
+
+* Tue Sep 12 2023 Antonio Torres <antorres@redhat.com> - 3.2.2-5
+- Ease OpenSSL version check requirement
+  Resolves #2238511
+
+* Wed Jul 19 2023 Fedora Release Engineering <releng@fedoraproject.org> - 3.2.2-4
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_39_Mass_Rebuild
+
+* Tue Jul 11 2023 Jitka Plesnikova <jplesnik@redhat.com> - 3.2.2-3
+- Perl 5.38 rebuild
+
+* Tue Jun 13 2023 Python Maint <python-maint@redhat.com> - 3.2.2-2
+- Rebuilt for Python 3.12
+
+* Tue Mar 21 2023 Antonio Torres <antorres@redhat.com> - 3.2.2-1
+- Update to upstream release 3.2.2
+
+* Wed Mar 15 2023 Antonio Torres <antorres@redhat.com> - 3.2.1-4
+- Migrate to SPDX license
+
+* Thu Jan 19 2023 Fedora Release Engineering <releng@fedoraproject.org> - 3.2.1-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_38_Mass_Rebuild
+
+* Mon Oct 17 2022 Antonio Torres <antorres@redhat.com> - 3.2.1-2
+- Remove hack for Python3 support from specfile
+
+* Mon Oct 17 2022 Antonio Torres <antorres@redhat.com> - 3.2.1-1
+- Update to 3.2.1 upstream release
+  Resolves #2131850
+
+* Tue Sep 20 2022 Antonio Torres <antorres@redhat.com> - 3.2.0-4
+- Remove deprecated pcre-devel dependency
+  Resolves #2128292
+
+* Mon Sep 5 2022 Antonio Torres <antorres@redhat.com> - 3.2.0-3
+- configure: allow building with runstatedir option
+  Resolves: #2123374
+
+* Thu Jul 21 2022 Fedora Release Engineering <releng@fedoraproject.org> - 3.2.0-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_37_Mass_Rebuild
+
+* Tue Jul 19 2022 Antonio Torres <antorres@redhat.com> - 3.2.0-1
+- Rebase to 3.2.0 upstream release
+  Related: #2077687
+
+* Wed Jun 29 2022 Antonio Torres <antorres@redhat.com> - 3.0.25-8
+- Use GID / UID 95 as it's reserved for FreeRADIUS (https://pagure.io/setup/blob/07f8debf03dfb0e5ed36051c13c86c8cd00cd241/f/uidgid#_107)
+  Related: #2095741
+
+* Fri Jun 24 2022 Antonio Torres <antorres@redhat.com> - 3.0.25-7
+- Dynamically allocate users using sysusers.d format
+  Related: #2095741
+
+* Mon Jun 13 2022 Python Maint <python-maint@redhat.com> - 3.0.25-6
+- Rebuilt for Python 3.11
+
+* Tue May 31 2022 Jitka Plesnikova <jplesnik@redhat.com> - 3.0.25-5
+- Perl 5.36 rebuild
+
+* Fri Apr 22 2022 Antonio Torres <antorres@redhat.com> - 3.0.25-4
+- Use infinite timeout when using LDAP+start-TLS
+  Related: #1983063
+
+* Thu Jan 20 2022 Fedora Release Engineering <releng@fedoraproject.org> - 3.0.25-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_36_Mass_Rebuild
+
+* Thu Oct 14 2021 Antonio Torres <antorres@redhat.com> - 3.0.25-2
+- Fix file conflict in SQL files
+  Resolves: bz#2014014 
+
+* Fri Oct 08 2021 Antonio Torres <antorres@redhat.com> - 3.0.25-1
+- Update to 3.0.25.
+  Resolves: bz#2011984
+
+* Thu Sep 30 2021 Antonio Torres <antorres@redhat.com> - 3.0.24-1
+- Update to 3.0.24.
+  Resolves: bz#2009036
+
+* Tue Sep 14 2021 Sahana Prasad <sahana@redhat.com> - 3.0.23-7
+- Rebuilt with OpenSSL 3.0.0
+
+* Wed Jul 21 2021 Fedora Release Engineering <releng@fedoraproject.org> - 3.0.23-6
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_35_Mass_Rebuild
+
+* Thu Jul 15 2021 Antonio Torres <antorres@redhat.com> - 3.0.23-5
+- Fix coredump not being able to be enabled
+
+* Sat Jul 10 2021 Björn Esser <besser82@fedoraproject.org> - 3.0.23-4
+- Rebuild for versioned symbols in json-c
+
+* Tue Jun 29 2021 Antonio Torres <antorres@redhat.com> - 3.0.23-2
+- Fix rpath not being removed correctly
+
+* Tue Jun 29 2021 Antonio Torres <antorres@redhat.com> - 3.0.23-2
+- Remove RPATH usage from additional binaries
+
+* Tue Jun 29 2021 Antonio Torres <antorres@redhat.com> - 3.0.23-1
+- Rebase to 3.0.23
+  Fixes: bz#1970528
+
+* Tue Jun 29 2021 Antonio Torres <antorres@redhat.com> - 3.0.22-5
+- Fix binaries not being correctly linked after RPATH removal
+
+* Fri Jun 25 2021 Antonio Torres <antorres@redhat.com> - 3.0.22-4
+- Fix python3 not being correctly linked
+
+* Mon Jun 07 2021 Python Maint <python-maint@redhat.com> - 3.0.22-2
+- Rebuilt for Python 3.10
+
+* Fri Jun 4 2021 Antonio Torres <antorres@redhat.com> - 3.0.22-1
+- Rebased to 3.0.22
+  Resolves: bz#1961190
+
+* Fri May 21 2021 Jitka Plesnikova <jplesnik@redhat.com> - 3.0.21-12
+- Perl 5.34 rebuild
+
+* Wed Mar 10 2021 Robbie Harwood <rharwood@redhat.com> - 3.0.21-11
+- Disable automatic bootstrap
+
+* Tue Mar 02 2021 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 3.0.21-10
+- Rebuilt for updated systemd-rpm-macros
+  See https://pagure.io/fesco/issue/2583.
+
+* Mon Feb 08 2021 Pavel Raiskup <praiskup@redhat.com> - 3.0.21-9
+- rebuild for libpq ABI fix rhbz#1908268
+
+* Tue Jan 26 2021 Fedora Release Engineering <releng@fedoraproject.org> - 3.0.21-8
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_34_Mass_Rebuild
+
+* Tue Aug 04 2020 Alexander Scheel <ascheel@redhat.com> - 3.0.21-7
 - Fix certificate permissions after make-based generation
   Resolves: bz#1835249
 
-* Wed May 13 2020 Alexander Scheel <ascheel@redhat.com> - 3.0.21-2
+* Tue Aug 04 2020 Alexander Scheel <ascheel@redhat.com> - 3.0.21-6
+- Fix certificate permissions after make-based generation
+  Resolves: bz#1835249
+
+* Mon Jul 27 2020 Fedora Release Engineering <releng@fedoraproject.org> - 3.0.21-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_33_Mass_Rebuild
+
+* Tue Jun 23 2020 Jitka Plesnikova <jplesnik@redhat.com> - 3.0.21-4
+- Perl 5.32 rebuild
+
+* Wed May 13 2020 Alexander Scheel <ascheel@redhat.com> - 3.0.21-3
 - Fix certificate generation
   Resolves: bz#1835249
+
+* Tue Apr 21 2020 Björn Esser <besser82@fedoraproject.org> - 3.0.21-2
+- Rebuild (json-c)
 
 * Wed Apr 01 2020 Alexander Scheel <ascheel@redhat.com> - 3.0.21-1
 - Rebased to 3.0.21

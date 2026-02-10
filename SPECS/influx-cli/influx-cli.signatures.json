@@ -1,6 +1,6 @@
 {
-    "Signatures": {
-        "influx-cli-2.6.1.tar.gz": "515bdfa13780ef81587dc946f1c9c8ccd5dfa56577a749d19903c974c5cd754c",
-        "influx-cli-2.6.1-vendor.tar.gz": "1edacae12f94414b8fe9fb5b958ef048c8ee1a39be439981d74d9f08523feb9b"
-    }
+  "Signatures": {
+    "influx-cli-2.7.5.tar.gz": "2741105c0fa7bf0f728643807aa21e9a8e356b17a681e92f06c4ff680e6944ac",
+    "influx-cli-2.7.5-vendor.tar.gz": "236129aa82f73b371007b161a2b33745245a9ccda2107fa986a3c17eabeadb7e"
+  }
 }

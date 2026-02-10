@@ -11,12 +11,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/imagegen/configuration"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/imagegen/installutils"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/exe"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/logger"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/timestamp"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/pkg/profile"
+	"github.com/microsoft/azurelinux/toolkit/tools/imagegen/configuration"
+	"github.com/microsoft/azurelinux/toolkit/tools/imagegen/installutils"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/exe"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/logger"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/timestamp"
+	"github.com/microsoft/azurelinux/toolkit/tools/pkg/profile"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -24,8 +24,7 @@ import (
 var (
 	app = kingpin.New("imageconfigvalidator", "A tool for validating image configuration files")
 
-	logFile   = exe.LogFileFlag(app)
-	logLevel  = exe.LogLevelFlag(app)
+	logFlags  = exe.SetupLogFlags(app)
 	profFlags = exe.SetupProfileFlags(app)
 
 	input       = exe.InputStringFlag(app, "Path to the image config file.")
@@ -39,7 +38,7 @@ func main() {
 
 	app.Version(exe.ToolkitVersion)
 	kingpin.MustParse(app.Parse(os.Args[1:]))
-	logger.InitBestEffort(*logFile, *logLevel)
+	logger.InitBestEffort(logFlags)
 
 	prof, err := profile.StartProfiling(profFlags)
 	if err != nil {
@@ -114,12 +113,11 @@ func validatePackages(config configuration.Config) (err error) {
 	defer timestamp.StopEvent(nil)
 
 	const (
-		selinuxPkgName     = "selinux-policy"
-		validateError      = "failed to validate package lists in config"
-		verityPkgName      = "verity-read-only-root"
-		verityDebugPkgName = "verity-read-only-root-debug-tools"
-		dracutFipsPkgName  = "dracut-fips"
-		fipsKernelCmdLine  = "fips=1"
+		validateError     = "failed to validate package lists in config"
+		kernelPkgName     = "kernel"
+		dracutFipsPkgName = "dracut-fips"
+		fipsKernelCmdLine = "fips=1"
+		userAddPkgName    = "shadow-utils"
 	)
 
 	for _, systemConfig := range config.SystemConfigs {
@@ -128,36 +126,39 @@ func validatePackages(config configuration.Config) (err error) {
 			return fmt.Errorf("%s: %w", validateError, err)
 		}
 		foundSELinuxPackage := false
-		foundVerityInitramfsPackage := false
-		foundVerityInitramfsDebugPackage := false
 		foundDracutFipsPackage := false
+		foundUserAddPackage := false
 		kernelCmdLineString := systemConfig.KernelCommandLine.ExtraCommandLine
-		for _, pkg := range packageList {
-			if pkg == "kernel" {
-				return fmt.Errorf("%s: kernel should not be included in a package list, add via config file's [KernelOptions] entry", validateError)
-			}
-			if pkg == verityPkgName {
-				foundVerityInitramfsPackage = true
-			}
-			if pkg == verityDebugPkgName {
-				foundVerityInitramfsDebugPackage = true
-			}
-			if pkg == dracutFipsPkgName {
-				foundDracutFipsPackage = true
-			}
-			if pkg == selinuxPkgName {
-				foundSELinuxPackage = true
-			}
+		selinuxPkgName := systemConfig.KernelCommandLine.SELinuxPolicy
+		if selinuxPkgName == "" {
+			selinuxPkgName = configuration.SELinuxPolicyDefault
 		}
-		if systemConfig.ReadOnlyVerityRoot.Enable {
-			if !foundVerityInitramfsPackage {
-				return fmt.Errorf("%s: [ReadOnlyVerityRoot] selected, but '%s' package is not included in the package lists", validateError, verityPkgName)
-			}
-			if systemConfig.ReadOnlyVerityRoot.TmpfsOverlayDebugEnabled && !foundVerityInitramfsDebugPackage {
-				return fmt.Errorf("%s: [ReadOnlyVerityRoot] and [TmpfsOverlayDebugEnabled] selected, but '%s' package is not included in the package lists", validateError, verityDebugPkgName)
-			}
+
+		foundKernelPackage, err := installutils.PackagelistContainsPackage(packageList, kernelPkgName)
+		if err != nil {
+			return fmt.Errorf("%s: %w", validateError, err)
 		}
-		if strings.Contains(kernelCmdLineString, fipsKernelCmdLine) {
+
+		foundDracutFipsPackage, err = installutils.PackagelistContainsPackage(packageList, dracutFipsPkgName)
+		if err != nil {
+			return fmt.Errorf("%s: %w", validateError, err)
+		}
+
+		foundSELinuxPackage, err = installutils.PackagelistContainsPackage(packageList, selinuxPkgName)
+		if err != nil {
+			return fmt.Errorf("%s: %w", validateError, err)
+		}
+
+		foundUserAddPackage, err = installutils.PackagelistContainsPackage(packageList, userAddPkgName)
+		if err != nil {
+			return fmt.Errorf("%s: %w", validateError, err)
+		}
+
+		if foundKernelPackage {
+			return fmt.Errorf("%s: kernel should not be included in a package list, add via config file's [KernelOptions] entry", validateError)
+		}
+
+		if strings.Contains(kernelCmdLineString, fipsKernelCmdLine) || systemConfig.KernelCommandLine.EnableFIPS {
 			if !foundDracutFipsPackage {
 				return fmt.Errorf("%s: 'fips=1' provided on kernel cmdline, but '%s' package is not included in the package lists", validateError, dracutFipsPkgName)
 			}
@@ -165,6 +166,11 @@ func validatePackages(config configuration.Config) (err error) {
 		if systemConfig.KernelCommandLine.SELinux != configuration.SELinuxOff {
 			if !foundSELinuxPackage {
 				return fmt.Errorf("%s: [SELinux] selected, but '%s' package is not included in the package lists", validateError, selinuxPkgName)
+			}
+		}
+		if len(systemConfig.Users) > 0 || len(systemConfig.Groups) > 0 {
+			if !foundUserAddPackage {
+				return fmt.Errorf("%s: the '%s' package must be included in the package lists when the image is configured to add users or groups", validateError, userAddPkgName)
 			}
 		}
 	}

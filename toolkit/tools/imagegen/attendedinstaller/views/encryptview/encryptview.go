@@ -8,10 +8,10 @@ import (
 	"github.com/muesli/crunchy"
 	"github.com/rivo/tview"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/imagegen/attendedinstaller/primitives/navigationbar"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/imagegen/attendedinstaller/uitext"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/imagegen/attendedinstaller/uiutils"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/imagegen/configuration"
+	"github.com/microsoft/azurelinux/toolkit/tools/imagegen/attendedinstaller/primitives/navigationbar"
+	"github.com/microsoft/azurelinux/toolkit/tools/imagegen/attendedinstaller/uitext"
+	"github.com/microsoft/azurelinux/toolkit/tools/imagegen/attendedinstaller/uiutils"
+	"github.com/microsoft/azurelinux/toolkit/tools/imagegen/configuration"
 )
 
 // UI constants.
@@ -150,11 +150,6 @@ func (ev *EncryptView) onNextButton(nextPage func(), cfg *configuration.Config) 
 
 	if enteredPassword != ev.confirmPasswordField.GetText() {
 		ev.navBar.SetUserFeedback(uitext.PasswordMismatchFeedback, tview.Styles.TertiaryTextColor)
-		return
-	}
-
-	if ev.sysConfig.ReadOnlyVerityRoot.Enable {
-		ev.navBar.SetUserFeedback(uitext.EncryptionVerityIncompatible, tview.Styles.TertiaryTextColor)
 		return
 	}
 

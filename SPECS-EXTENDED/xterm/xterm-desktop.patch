@@ -1,18 +1,8 @@
-From 67509cf49144a602430d0ee0918770919616f461 Mon Sep 17 00:00:00 2001
-From: Muhammad Falak R Wani <falakreyaz@gmail.com>
-Date: Fri, 12 Aug 2022 07:29:12 +0530
-Subject: [PATCH 2/3] xterm desktop
-
-Signed-off-by: Muhammad Falak R Wani <falakreyaz@gmail.com>
----
- xterm.desktop | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
 diff --git a/xterm.desktop b/xterm.desktop
-index 61dcd2c..401b03a 100644
+index b6b27d0..e9a2c6c 100644
 --- a/xterm.desktop
 +++ b/xterm.desktop
-@@ -32,12 +32,12 @@
+@@ -32,13 +32,13 @@
  # -----------------------------------------------------------------------------
  [Desktop Entry]
  Name=XTerm
@@ -27,6 +17,4 @@ index 61dcd2c..401b03a 100644
 +Icon=xterm-color
  Categories=System;TerminalEmulator;
  Keywords=shell;prompt;command;commandline;cmd;
--- 
-2.37.1
-
+ StartupWMClass=XTerm

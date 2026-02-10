@@ -1,16 +1,16 @@
 Summary:        Cross-platform asynchronous I/O
 Name:           libuv
-Version:        1.43.0
+Version:        1.48.0
 Release:        1%{?dist}
 License:        MIT AND CC-BY
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/System
 URL:            https://libuv.org/
 Source0:        https://dist.libuv.org/dist/v%{version}/%{name}-v%{version}.tar.gz
 BuildRequires:  build-essential
 BuildRequires:  coreutils
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  shadow-utils
 BuildRequires:  sudo
 %endif
@@ -75,12 +75,18 @@ sudo -u test make -k check
 %{_libdir}/%{name}.a
 
 %changelog
+* Mon May 20 2024 Neha Agarwal <nehaagarwal@micrsoft.com> - 1.48.0-1
+- Upgrade to version 1.48.0 to fix CVE-2024-24806
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.46.0-1
+- Auto-upgrade to 1.46.0 - Azure Linux 3.0 - package upgrades
+
 * Tue Jan 25 2022 Henry Li <lihl@microsoft.com> - 1.43.0-1
 - Upgrade to version 1.43.0
 - License Verified
 
-*   Fri Dec 04 2020 Andrew Phelps <anphel@microsoft.com> - 1.38.0-2
--   Fix check tests.
+* Fri Dec 04 2020 Andrew Phelps <anphel@microsoft.com> - 1.38.0-2
+- Fix check tests.
 
-*   Wed May 27 2020 Daniel McIlvaney <damcilva@microsoft.com> - 1.38.0-1
--   Original version for CBL-Mariner
+* Wed May 27 2020 Daniel McIlvaney <damcilva@microsoft.com> - 1.38.0-1
+- Original version for CBL-Mariner

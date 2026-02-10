@@ -5,8 +5,8 @@ Release:        1%{?dist}
 License:        MIT
 URL:            https://test.com
 Group:          Test
-Vendor:         Microsoft
-Distribution:   Mariner
+Vendor:         Microsoft Corporation
+Distribution:   Azure Linux
 
 %description
 Test spec. Make sure:

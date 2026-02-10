@@ -9,8 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/logger"
-	"github.com/microsoft/CBL-Mariner/toolkit/tools/internal/shell"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/logger"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/packagerepo/repoutils"
+	"github.com/microsoft/azurelinux/toolkit/tools/internal/shell"
 )
 
 // CreateRepo will create an RPM repository at repoDir
@@ -36,8 +37,31 @@ func CreateRepo(repoDir string) (err error) {
 		return
 	}
 
+	createRepoCmd, err := repoutils.FindCreateRepoCommand()
+	if err != nil {
+		return fmt.Errorf("unable to create repo:\n%w", err)
+	}
+
 	// Create a new repodata
-	_, stderr, err := shell.Execute("createrepo", repoDir)
+	_, stderr, err := shell.Execute(createRepoCmd, "--compatibility", repoDir)
+	if err != nil {
+		logger.Log.Warn(stderr)
+	}
+
+	return
+}
+
+// CreateOrUpdateRepo will create an RPM repository at repoDir or update
+// it if the metadata files already exist.
+func CreateOrUpdateRepo(repoDir string) (err error) {
+	// Check if createrepo command is available
+	createRepoCmd, err := repoutils.FindCreateRepoCommand()
+	if err != nil {
+		return fmt.Errorf("unable to create repo:\n%w", err)
+	}
+
+	// Create or update repodata
+	_, stderr, err := shell.Execute(createRepoCmd, "--compatibility", "--update", repoDir)
 	if err != nil {
 		logger.Log.Warn(stderr)
 	}

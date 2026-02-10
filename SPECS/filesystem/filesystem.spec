@@ -1,12 +1,12 @@
 Summary:      Default file system
 Name:         filesystem
 Version:      1.1
-Release:      15%{?dist}
+Release:      21%{?dist}
 License:      GPLv3
 Group:        System Environment/Base
 Vendor:       Microsoft Corporation
 URL:          http://www.linuxfromscratch.org
-Distribution: Mariner
+Distribution:   Azure Linux
 
 %description
 The filesystem package is one of the basic packages that is installed
@@ -31,6 +31,8 @@ install -vdm 755 %{buildroot}/{dev,run/{media/{floppy,cdrom},lock}}
 install -vdm 755 %{buildroot}/{etc/{opt,sysconfig},home,mnt}
 install -vdm 700 %{buildroot}/boot
 install -vdm 755 %{buildroot}/{var}
+install -vdm 755 %{buildroot}/opt
+install -vdm 755 %{buildroot}/media
 install -dv -m 0750 %{buildroot}/root
 install -dv -m 1777 %{buildroot}/tmp %{buildroot}/var/tmp
 install -vdm 755 %{buildroot}/usr/{,local/}{bin,include,lib,sbin,src}
@@ -44,7 +46,6 @@ install -vdm 755 %{buildroot}/usr/lib/debug/{lib,bin,sbin,usr,.dwz}
 ln -svfn usr/lib %{buildroot}/lib
 ln -svfn usr/bin %{buildroot}/bin
 ln -svfn usr/sbin %{buildroot}/sbin
-ln -svfn run/media %{buildroot}/media
 
 ln -svfn ../bin %{buildroot}/usr/lib/debug/usr/bin
 ln -svfn ../sbin %{buildroot}/usr/lib/debug/usr/sbin
@@ -57,9 +58,8 @@ ln -svfn ../lib %{buildroot}/usr/lib/debug/usr/lib
         ln -svfn ../lib %{buildroot}/usr/lib/debug/usr/lib64
         ln -svfn ../.dwz %{buildroot}/usr/lib/debug/usr/.dwz
 
-install -vdm 755 %{buildroot}/var/{log,mail,spool,mnt,srv}
+install -vdm 755 %{buildroot}/var/{log,mail,spool,mnt}
 
-ln -svfn var/srv %{buildroot}/srv
 ln -svfn ../run %{buildroot}/var/run
 ln -svfn ../run/lock %{buildroot}/var/lock
 install -vdm 755 %{buildroot}/var/{opt,cache,lib/{color,misc,locate},local}
@@ -90,7 +90,7 @@ systemd-resolve:x:77:77:systemd Resolver:/:/bin/false
 systemd-timesync:x:78:78:systemd Time Synchronization:/:/bin/false
 systemd-coredump:x:79:79:systemd Core Dumper:/:/usr/bin/false
 systemd-oom:x:80:80:systemd Userspace OOM Killer:/:/usr/bin/false
-nobody:x:65534:65533:Unprivileged User:/dev/null:/bin/false
+nobody:x:65534:65534:Unprivileged User:/dev/null:/bin/false
 EOF
 cat > %{buildroot}/etc/group <<- "EOF"
 root:x:0:
@@ -128,6 +128,7 @@ systemd-timesync:x:78:
 systemd-coredump:x:79:
 systemd-oom:x:80:
 nogroup:x:65533:
+nobody:x:65534:
 users:x:100:
 sudo:x:27:
 wheel:x:28:
@@ -169,13 +170,12 @@ EOF
 #	7.3. Customizing the /etc/hosts File"
 #
 cat > %{buildroot}/etc/hosts <<- "EOF"
-# Begin /etc/hosts (network card version)
-
-::1         ipv6-localhost ipv6-loopback
-127.0.0.1   localhost.localdomain
-127.0.0.1   localhost
-
-# End /etc/hosts (network card version)
+127.0.0.1   localhost localhost.localdomain
+::1         localhost localhost.localdomain ipv6-localhost ipv6-loopback
+EOF
+# host.conf file
+cat > %{buildroot}/etc/host.conf <<- "EOF"
+multi on
 EOF
 #
 #	7.9. Configuring the setclock Script"
@@ -284,7 +284,6 @@ for script in /etc/profile.d/*.sh ; do
 done
 
 unset script RED GREEN NORMAL
-umask 027
 # End /etc/profile
 EOF
 #
@@ -568,6 +567,7 @@ return 0
 %dir /etc
 %dir /home
 /lib
+%dir /opt
 
 /media
 %dir /mnt
@@ -575,7 +575,6 @@ return 0
 %dir /root
 %dir /run
 /sbin
-/srv
 %ghost %attr(555,root,root) /sys
 %dir /tmp
 %dir /usr
@@ -584,6 +583,7 @@ return 0
 %dir /etc/opt
 %config(noreplace) /etc/fstab
 %config(noreplace) /etc/group
+%config(noreplace) /etc/host.conf
 %config(noreplace) /etc/hosts
 %config(noreplace) /etc/inputrc
 %config(noreplace) /etc/mtab
@@ -681,7 +681,6 @@ return 0
 %dir /var/log
 %dir /var/mail
 %dir /var/mnt
-%dir /var/srv
 %dir /var/opt
 %dir /var/spool
 %dir /var/tmp
@@ -709,6 +708,25 @@ return 0
 %config(noreplace) /etc/modprobe.d/tipc.conf
 
 %changelog
+* Wed Mar 20 2024 Dan Streetman <ddstreet@microsoft.com> - 1.1-21
+- remove /srv and /var/srv
+
+* Tue Mar 19 2024 Dan Streetman <ddstreet@microsoft.com> - 1.1-20
+- fix nobody uid:gid and nogroup/nobody groups
+
+* Wed Feb 28 2024 Dan Streetman <ddstreet@microsoft.com> - 1.1-19
+- fix /etc/hosts
+- add /etc/host.conf to enable multi
+
+* Thu Nov 30 2023 Dan Streetman <ddstreet@ieee.org> - 1.1-18
+- Remove umask 027
+
+* Thu Oct 12 2023 Chris PeBenito <chpebeni@microsoft.com> - 1.1-17
+- Restore the /opt directory.
+
+* Mon Oct 09 2023 Chris Co <chrco@microsoft.com> - 1.1-16
+- Make /media a proper directory
+
 * Thu Jun 29 2023 Tobias Brick <tobiasb@microsoft.com> - 1.1-15
 - Revert: Remove setting umask from /etc/profile and add it to a separate file in /etc/profile.d
 

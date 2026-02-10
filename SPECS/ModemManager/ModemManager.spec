@@ -1,17 +1,17 @@
 Summary:        Mobile broadband modem manager
 Name:           ModemManager
-Version:        1.18.6
-Release:        3%{?dist}
+Version:        1.18.12
+Release:        1%{?dist}
 License:        GPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/System
 URL:            https://www.freedesktop.org/wiki/Software/ModemManager/
 Source0:        https://www.freedesktop.org/software/%{name}/%{name}-%{version}.tar.xz
 BuildRequires:  gobject-introspection-devel
 BuildRequires:  libqmi-devel
 BuildRequires:  systemd-devel
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  dbus-glib
 BuildRequires:  python3-gobject
 BuildRequires:  python3-dbus
@@ -82,6 +82,9 @@ make  %{?_smp_mflags} check
 %{_libdir}/libmm-glib.la
 
 %changelog
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.18.12-1
+- Auto-upgrade to 1.18.12 - Azure Linux 3.0 - package upgrades
+
 * Tue Mar 22 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.18.6-3
 - Adding missing systemd service file to the default package.
 

@@ -1,18 +1,18 @@
 Summary:        Manages IPv4 and IPv6 addresses and subnets
 Name:           perl-NetAddr-IP
 Version:        4.079
-Release:        6%{?dist}
+Release:        7%{?dist}
 License:        GPLv2+ or Artistic
 Group:          Development/Libraries
 URL:            https://metacpan.org/release/NetAddr-IP
 Source0:        https://cpan.metacpan.org/authors/id/M/MI/MIKER/NetAddr-IP-%{version}.tar.gz
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 BuildRequires:  perl
 BuildRequires:  perl-generators
-BuildRequires:  perl(Autoloader)
+BuildRequires:  perl(AutoLoader)
 BuildRequires:  perl(ExtUtils::MakeMaker)
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  perl(Test::More)
 %endif
 
@@ -51,6 +51,9 @@ make test
 %{_mandir}/man3/*
 
 %changelog
+* Mon Aug 12 2024 Daniel McIlvaney <damcilva@microsoft.com> - 4.079-7
+- Fix capitilization of BuildRequires: perl(AutoLoader)
+
 * Tue Aug 23 2022 Muhammad Falak <mwani@microsoft.com> - 4.079-6
 - Add BR on `perl-{(Autoloader), (Test::More)}` to enable ptest
 

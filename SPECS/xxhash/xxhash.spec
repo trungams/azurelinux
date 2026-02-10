@@ -1,10 +1,10 @@
 Summary:        Extremely fast hash algorithm
 Name:           xxhash
-Version:        0.8.1
-Release:        3%{?dist}
+Version:        0.8.2
+Release:        2%{?dist}
 License:        BSD AND GPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            http://www.xxhash.com/
 Source0:        https://github.com/Cyan4973/xxHash/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 BuildRequires:  doxygen
@@ -59,8 +59,10 @@ Documentation files for the xxhash library
 %global dispatch 0
 %endif
 
-%make_build MOREFLAGS="%{__global_cflags} %{?__global_ldflags}" \
-        DISPATCH=%{dispatch}
+%make_build
+    MOREFLAGS="%{__global_cflags} %{?__global_ldflags}" \
+    DISPATCH=%{dispatch} \
+    XXH_X86DISPATCH_ALLOW_AVX=1
 doxygen
 
 %install
@@ -94,6 +96,12 @@ rm %{buildroot}/%{_libdir}/libxxhash.a
 %doc doxygen/html
 
 %changelog
+* Thu Apr 25 2024 Andrew Phelps <anphel@microsoft.com> - 0.8.2-2
+- Set XXH_X86DISPATCH_ALLOW_AVX to support compiling with x86-64-v3
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 0.8.2-1
+- Auto-upgrade to 0.8.2 - Azure Linux 3.0 - package upgrades
+
 * Wed Jul 06 2022 Sumedh Sharma <sumsharma@microsoft.com> - 0.8.1-3
 - Initial CBL-Mariner import from Fedora 36 (license: MIT)
 - Adding as run dependency for cassandra medusa package

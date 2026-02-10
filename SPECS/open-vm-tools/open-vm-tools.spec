@@ -19,16 +19,16 @@
 ################################################################################
 
 %global _hardened_build 1
-%global toolsbuild      18090558
+%global toolsbuild      22544099
 %global toolsdaemon     vmtoolsd
 %global vgauthdaemon    vgauthd
 Summary:        Open Virtual Machine Tools for virtual machines hosted on VMware
 Name:           open-vm-tools
-Version:        11.3.0
+Version:        12.3.5
 Release:        2%{?dist}
 License:        GPLv2
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://github.com/vmware/%{name}
 Source0:        https://github.com/vmware/%{name}/releases/download/stable-%{version}/%{name}-%{version}-%{toolsbuild}.tar.gz
 Source1:        %{toolsdaemon}.service
@@ -36,6 +36,7 @@ Source2:        %{vgauthdaemon}.service
 Source3:        vmblock.mount
 Source4:        open-vm-tools.conf
 Source5:        vmtoolsd.pam
+Patch0:         CVE-2025-22247.patch
 BuildRequires:  autoconf
 BuildRequires:  automake
 #BuildRequires:    doxygen
@@ -122,7 +123,7 @@ useful for verifying the functioning of %{name} in VMware virtual
 machines.
 
 %prep
-%autosetup -n %{name}-%{version}-%{toolsbuild}
+%autosetup -n %{name}-%{version}-%{toolsbuild} -p1
 
 %build
 # Required for regenerating configure script when
@@ -303,6 +304,7 @@ fi
 %{_libdir}/%{name}/plugins/vmsvc/libvmbackup.so
 %{_libdir}/%{name}/plugins/vmsvc/libgdp.so
 %{_libdir}/%{name}/plugins/vmsvc/libguestStore.so
+%{_libdir}/%{name}/plugins/vmsvc/libcomponentMgr.so
 #Usually in desktop package
 %{_bindir}/vmware-vmblock-fuse
 
@@ -332,6 +334,12 @@ fi
 %{_bindir}/vmware-vgauth-smoketest
 
 %changelog
+* Fri May 09 2025 Andrew Phelps <anphel@microsoft.com> - 12.3.5-2
+- Add CVE-2025-22247.patch
+
+* Wed Jan 31 2024 Bala <balakumaran.kannan@microsoft.com> - 12.3.5-1
+- Upgrade to version 12.3.5
+
 * Wed Mar 16 2022 Matthew Torr <matthewtorr@microsoft.com> - 11.3.0-2
 - Reinstate ConditionVirtualization service option so that the services only run on VMware.
 

@@ -1,16 +1,17 @@
-Vendor:         Microsoft Corporation
-Distribution:   Mariner
-Name:           libspiro
-Version:        20190731
-Release:        3%{?dist}
 Summary:        Library to simplify the drawing of beautiful curves
-
+Name:           libspiro
+Version:        20240903
+Release:        1%{?dist}
 # The files that are used to compile this library are all in GPLv3+
 # https://github.com/fontforge/libspiro/issues/8
-License:        GPLv3+
+License:        GPL-3.0-or-later
+Vendor:         Microsoft Corporation
+Distribution:   Azure Linux
 URL:            https://github.com/fontforge/libspiro/
-Source0:        https://github.com/fontforge/libspiro/releases/download/%{version}/libspiro-%{version}.tar.gz
-BuildRequires: automake autoconf libtool
+# Let's use libspiro-dist tarball from upstream as it does not require autoreconf
+Source0:        https://github.com/fontforge/libspiro/releases/download/%{version}/libspiro-dist-%{version}.tar.gz
+BuildRequires:  gcc
+BuildRequires: make
 
 %description
 This library will take an array of spiro control points and 
@@ -29,14 +30,15 @@ developing applications that use %{name}.
 %autosetup -n libspiro-%{version}
 
 %build
-autoreconf -i
-automake --foreign -Wall
 %configure --disable-static
-make %{?_smp_mflags}
+%{make_build}
 
 %install
-make install DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p"
+%{make_install}
 find $RPM_BUILD_ROOT -name '*.la' -exec rm -f {} ';'
+
+%check
+make check
 
 %files
 %doc README* ChangeLog AUTHORS
@@ -47,8 +49,17 @@ find $RPM_BUILD_ROOT -name '*.la' -exec rm -f {} ';'
 %{_includedir}/*
 %{_libdir}/*.so
 %{_libdir}/pkgconfig/libspiro.pc
+%{_mandir}/man3/libspiro.3.gz
 
 %changelog
+* Tue Nov 12 2024 Sumit Jena <v-sumitjena@microsoft.com> - 20240903-1
+- Update to version 20240903
+
+* Fri Oct 15 2021 Muhammad Falak <mwani@microsoft.com> - 20221101-1
+- Bump version to address CVE-2019-19847
+- Lint spec
+- License verified
+
 * Fri Oct 15 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 20190731-3
 - Initial CBL-Mariner import from Fedora 32 (license: MIT).
 

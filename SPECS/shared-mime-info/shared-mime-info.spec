@@ -3,11 +3,14 @@
 
 Summary:        Shared MIME information database
 Name:           shared-mime-info
-Version:        2.0
-Release:        5%{?dist}
+Version:        2.2
+Release:        3%{?dist}
 License:        GPLv2+
 URL:            https://freedesktop.org/Software/shared-mime-info
-Source0:        https://gitlab.freedesktop.org/xdg/shared-mime-info/uploads/0440063a2e6823a4b1a6fb2f2af8350f/shared-mime-info-2.0.tar.xz
+Vendor:         Microsoft Corporation
+Distribution:   Azure Linux
+Source0:        https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/%{version}/shared-mime-info-%{version}.tar.bz2
+
 Source1:        gnome-mimeapps.list
 # Generated with:
 # for i in `cat /home/hadess/Projects/jhbuild/totem/data/mime-type-list.txt | grep -v audio/flac | grep -v ^#` ; do if grep MimeType /home/hadess/Projects/jhbuild/rhythmbox/data/rhythmbox.desktop.in.in | grep -q "$i;" ; then echo "$i=org.gnome.Rhythmbox3.desktop;rhythmbox.desktop;org.gnome.Totem.desktop;" >> totem-defaults.list ; else echo "$i=org.gnome.Totem.desktop;" >> totem-defaults.list ; fi ; done ; for i in `cat /home/hadess/Projects/jhbuild/totem/data/uri-schemes-list.txt | grep -v ^#` ; do echo "x-scheme-handler/$i=org.gnome.Totem.desktop;" >> totem-defaults.list ; done
@@ -21,14 +24,12 @@ Source4:        eog-defaults.list
 # Generated with:
 # for i in `grep MimeType= /usr/share/applications/org.gnome.Evince.desktop | sed 's/MimeType=//' | sed 's/;/ /g'` ; do echo $i=org.gnome.Evince.desktop\; >> evince-defaults.list ; done
 Source5:        evince-defaults.list
-# Tarball for https://gitlab.freedesktop.org/xdg/xdgmime/-/tree/6663a2288d11b37bc07f5a01b4b85dcd377787e1
-Source6:        https://gitlab.freedesktop.org/xdg/xdgmime/-/archive/6663a2288d11b37bc07f5a01b4b85dcd377787e1/xdgmime-6663a2288d11b37bc07f5a01b4b85dcd377787e1.tar.bz2
+%global xdgmime_commit de283fc430460b9b3a7e61432a6d273cd64cb102
+# Tarball for https://gitlab.freedesktop.org/xdg/xdgmime/-/tree/%%{xdgmime_commit}
+Source6: https://gitlab.freedesktop.org/xdg/xdgmime/-/archive/%{xdgmime_commit}/xdgmime-%{xdgmime_commit}.tar.bz2
 # Work-around for https://bugs.freedesktop.org/show_bug.cgi?id=40354
 Patch0:         0001-Remove-sub-classing-from-OO.o-mime-types.patch
-# https://gitlab.freedesktop.org/xdg/shared-mime-info/-/merge_requests/80
-Patch1:         0001-data-Fix-pkg-config-installation-path.patch
-# https://cgit.freedesktop.org/xdg/shared-mime-info/commit/?id=5a406b06792e26a83c7346b3c2443c0bd8d4cdb2
-Patch2:         0001-Patch-fixing-Meson-builds.-See-https-cgit.freedeskto.patch
+BuildRequires:  azurelinux-rpm-macros
 BuildRequires:  docbook-dtd-xml
 BuildRequires:  docbook-style-xsl
 BuildRequires:  gcc
@@ -37,7 +38,6 @@ BuildRequires:  git
 BuildRequires:  glib-devel
 BuildRequires:  itstool
 BuildRequires:  libxml2-devel
-BuildRequires:  mariner-rpm-macros
 BuildRequires:  meson
 BuildRequires:  xmlto
 
@@ -53,7 +53,10 @@ and looking up the correct MIME type in a database.
 %autosetup -S git
 tar xjf %{SOURCE6}
 
-mv xdgmime-*/ xdgmime/
+if [ -d xdgmime ]; then
+  rm -rf xdgmime
+fi
+mv xdgmime-*/ xdgmime
 
 %build
 cd ./xdgmime/
@@ -114,6 +117,15 @@ update-mime-database -n %{_datadir}/mime &> /dev/null ||:
 %{_datadir}/gettext/its/shared-mime-info.loc
 
 %changelog
+* Tue Sep 03 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 2.2-3
+- Add missing Vendor and Distribution tags.
+
+* Thu Feb 22 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.2-2
+- Updating naming for 3.0 version of Azure Linux.
+
+* Tue Jan 16 2024 Bala <Balakumaran.kannan@microsoft.com> - 2.2-1
+- Update to 2.2
+
 * Tue Feb 01 2022 Hideyuki Nagase <hideyukn@microsoft.com> - 2.0-5
 - Apply patch to build with meson 0.60
 
@@ -356,11 +368,11 @@ update-mime-database -n %{_datadir}/mime &> /dev/null ||:
 * Sat Jul 21 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.0-5
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
 
-* Tue May 22 2012 Rex Dieter <rdieter@fedoraproject.org> 
+* Tue May 22 2012 Rex Dieter <rdieter@fedoraproject.org>
 - 1.0-4
 - defaults.list: s/mozilla-firefox/firefox/ (see #736558)
 - defaults.list: s/gpk-install-file/gpk-install-local-file/
-- defaults.list: application/x-catalog=gpk-install-catalog.desktop (#770019) 
+- defaults.list: application/x-catalog=gpk-install-catalog.desktop (#770019)
 
 * Fri May 11 2012 Bastien Nocera <bnocera@redhat.com> 1.0-3
 - Use gnome-disk-image-mounter from gnome-disk-utility to handle
@@ -593,7 +605,7 @@ update-mime-database -n %{_datadir}/mime &> /dev/null ||:
 - rebuilt for new gcc4.1 snapshot and glibc changes
 
 * Mon Jan 30 2006 Caolan McNamara <caolanm@redhat.com> - 0.16.cvs20051219-2
-- rh#179138# add openoffice.org as preferred app for oasis formats 
+- rh#179138# add openoffice.org as preferred app for oasis formats
 
 * Mon Dec 19 2005 Matthias Clasen <mclasen@redhat.com> - 0.16.cvs20051219-1
 - Newer cvs snapshot
@@ -645,7 +657,7 @@ update-mime-database -n %{_datadir}/mime &> /dev/null ||:
 - Handle XUL files. #134122
 
 * Wed Oct 13 2004 Colin Walters <walters@redhat.com> - 0.15-7
-- Make helix default for ogg and mp3, will switch wav/flac too 
+- Make helix default for ogg and mp3, will switch wav/flac too
   when support is added
 
 * Wed Oct  6 2004 Alexander Larsson <alexl@redhat.com> - 0.15-6

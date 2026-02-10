@@ -1,14 +1,15 @@
 Summary:        opentype text shaping engine
 Name:           harfbuzz
-Version:        3.4.0
-Release:        3%{?dist}
+Version:        8.3.0
+Release:        4%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Libraries
 URL:            https://harfbuzz.github.io/
 Source0:        https://github.com/%{name}/%{name}/releases/download/%{version}/%{name}-%{version}.tar.xz
-Patch0:         CVE-2023-25193.patch
+Patch0:         CVE-2024-56732.patch
+Patch1:         CVE-2026-22693.patch
 BuildRequires:  pkgconfig(cairo)
 BuildRequires:  pkgconfig(freetype2)
 BuildRequires:  pkgconfig(glib-2.0)
@@ -17,8 +18,7 @@ BuildRequires:  gcc-c++
 BuildRequires:  gobject-introspection-devel
 BuildRequires:  gtk-doc
 BuildRequires:  make
-%global with_check 1
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  python3-devel
 %endif
 Requires:       glib
@@ -59,24 +59,52 @@ find . -type f -name "*.py" -exec sed -i'' -e '1 s|^#!\s*/usr/bin/env\s\+python3
 %defattr(-,root,root)
 %license COPYING
 %doc NEWS AUTHORS README
-%{_libdir}/*.so*
+%{_libdir}/libharfbuzz.so.0*
+%{_libdir}/libharfbuzz-cairo.so.*
+%{_libdir}/libharfbuzz-gobject.so.0*
+%{_libdir}/libharfbuzz-subset.so.0*
 %dir %{_libdir}/girepository-1.0
 %{_libdir}/girepository-1.0/HarfBuzz-0.0.typelib
-%{_bindir}/*
 
 %files devel
 %defattr(-,root,root)
 %doc %{_datadir}/gtk-doc
+%{_bindir}/hb-info
+%{_bindir}/hb-view
+%{_bindir}/hb-ot-shape-closure
+%{_bindir}/hb-shape
+%{_bindir}/hb-subset
 %dir %{_includedir}/%{name}
 %{_includedir}/%{name}/*
-%{_libdir}/*.so
-%{_libdir}/pkgconfig/*.pc
-%{_libdir}/cmake/harfbuzz/harfbuzz-config.cmake
+%{_libdir}/libharfbuzz.so
+%{_libdir}/libharfbuzz-gobject.so
+%{_libdir}/libharfbuzz-cairo.so
+%{_libdir}/libharfbuzz-icu.so
+%{_libdir}/libharfbuzz-subset.so
+%{_libdir}/pkgconfig/harfbuzz.pc
+%{_libdir}/pkgconfig/harfbuzz-cairo.pc
+%{_libdir}/pkgconfig/harfbuzz-gobject.pc
+%{_libdir}/pkgconfig/harfbuzz-icu.pc
+%{_libdir}/pkgconfig/harfbuzz-subset.pc
+%{_libdir}/cmake/harfbuzz/
 %dir %{_datadir}/gir-1.0
 %{_datadir}/gir-1.0/HarfBuzz-0.0.gir
 %{_libdir}/libharfbuzz-icu.so.*
 
 %changelog
+* Mon Jan 12 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 8.3.0-4
+- Patch for CVE-2026-22693
+
+* Wed Jan 08 2025 Sudipta Pandit <sudpandit@microsoft.com> - 8.3.0-3
+- Patch for CVE-2024-56732
+
+* Wed Jul 31 2024 Andrew Phelps <anphel@microsoft.com> - 8.3.0-2
+- Update file listings to remove duplicate files
+
+* Mon Jan 29 2024 Bala <balakumaran.kannan@microsoft.com> - 8.3.0-1
+- Update source to 8.3.0
+- Removed CVE-2023-25193 patch as it was merged to latest version
+
 * Wed Feb 22 2023 Minghe Ren <mingheren@microsoft.com> - 3.4.0-3
 - Add patch for CVE-2023-25193 
 

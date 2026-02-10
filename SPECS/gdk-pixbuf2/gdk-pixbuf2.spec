@@ -1,19 +1,22 @@
 %global glib2_version 2.48.0
 Summary:        An image loading library
 Name:           gdk-pixbuf2
-Version:        2.40.0
-Release:        5%{?dist}
+Version:        2.42.10
+Release:        4%{?dist}
 License:        LGPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://gitlab.gnome.org/GNOME/gdk-pixbuf
-Source0:        https://download.gnome.org/sources/gdk-pixbuf/2.40/gdk-pixbuf-%{version}.tar.xz
+Source0:        https://download.gnome.org/sources/gdk-pixbuf/2.42/gdk-pixbuf-%{version}.tar.xz
+Patch0:         CVE-2022-48622.patch
+Patch1:         CVE-2025-6199.patch
+Patch2:         CVE-2025-7345.patch
+BuildRequires:  %{_bindir}/rst2man
 BuildRequires:  gettext
-BuildRequires:  gtk-doc
-BuildRequires:  jasper-devel
 BuildRequires:  libjpeg-devel
 BuildRequires:  libpng-devel
 BuildRequires:  libtiff-devel
+BuildRequires:  libxslt
 BuildRequires:  meson
 BuildRequires:  pkg-config
 # gdk-pixbuf does a configure time check which uses the GIO mime
@@ -59,11 +62,10 @@ the functionality of the installed %{name} package.
 %autosetup -n gdk-pixbuf-%{version} -p1
 
 %build
-%meson -Dbuiltin_loaders=png \
-       -Ddocs=true \
-       -Djasper=true \
-       -Dx11=false
+%meson \
+       -Dgtk_doc=false
 
+%global _smp_mflags -j1
 %meson_build
 
 %install
@@ -108,7 +110,6 @@ gdk-pixbuf-query-loaders-%{__isa_bits} --update-cache
 %{_bindir}/gdk-pixbuf-csource
 %{_bindir}/gdk-pixbuf-pixdata
 %{_datadir}/gir-1.0
-%{_datadir}/gtk-doc/html/*
 %{_mandir}/man1/gdk-pixbuf-csource.1*
 
 %files tests
@@ -116,6 +117,18 @@ gdk-pixbuf-query-loaders-%{__isa_bits} --update-cache
 %{_datadir}/installed-tests
 
 %changelog
+* Mon Jul 14 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.42.10-4
+- Patch for CVE-2025-7345
+
+* Tue Jul 01 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.42.10-3
+- Patch for CVE-2025-6199
+
+* Thu Sep 19 2024 Sumedh Sharma <sumsharma@microsoft.com> - 2.42.10-2
+- Add patch for CVE-2022-48622
+
+* Thu Feb 15 2024 Yash Panchal <yashpanchal@microsoft.com> - 2.42.10-1
+- Update to 2.42.10
+
 * Fri Mar 31 2023 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.40.0-5
 - Bumping release to re-build with newer 'libtiff' libraries.
 

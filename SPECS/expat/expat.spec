@@ -1,14 +1,18 @@
 %define         underscore_version %(echo %{version} | cut -d. -f1-3 --output-delimiter="_")
 Summary:        An XML parser library
 Name:           expat
-Version:        2.5.0
-Release:        1%{?dist}
+Version:        2.6.4
+Release:        4%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/GeneralLibraries
 URL:            https://libexpat.github.io/
 Source0:        https://github.com/libexpat/libexpat/releases/download/R_%{underscore_version}/%{name}-%{version}.tar.bz2
+Patch0:         CVE-2024-8176.patch
+Patch1:         CVE-2025-59375.patch
+Patch2:         CVE-2026-24515.patch
+Patch3:         CVE-2026-25210.patch
 Requires:       %{name}-libs = %{version}-%{release}
 
 %description
@@ -29,7 +33,7 @@ Group:          System Environment/Libraries
 This package contains minimal set of shared expat libraries.
 
 %prep
-%autosetup -p2
+%autosetup -p1
 
 %build
 %configure \
@@ -59,12 +63,34 @@ rm -rf %{buildroot}/%{_docdir}/%{name}
 %{_libdir}/pkgconfig/*
 %{_libdir}/libexpat.so
 %{_libdir}/cmake/expat-%{version}
+%{_mandir}/man1/xmlwf.1.gz
 
 %files libs
 %license COPYING
 %{_libdir}/libexpat.so.1*
 
 %changelog
+* Mon Feb 02 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.6.4-4
+- Patch for CVE-2026-25210
+
+* Tue Jan 27 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.6.4-3
+- Patch for CVE-2026-24515
+
+* Tue Sep 23 2025 Akhila Guruju <v-guakhila@microsoft.com> - 2.6.4-2
+- Fix CVE-2025-59375 with a patch
+
+* Thu Mar 20 2025 Kshitiz Godara <kgodara@microsoft.com> - 2.6.4-1
+- Fix CVE-2024-8176 with a patch
+
+* Wed Oct 30 2024 Sindhu Karri <lakarri@microsoft.com> - 2.6.3-2
+- Fix CVE-2024-50602 with a patch
+
+* Wed Sep 04 2024 Gary Swalling <gaswal@microsoft.com> - 2.6.3-1
+- Upgrade to 2.6.3 to fix CVE-2024-45490, CVE-2024-45491, CVE-2024-45492
+
+* Wed May 22 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 2.6.2-1
+- Upgrade to v2.6.2 to fix CVE-2024-28757
+
 * Wed Oct 26 2022 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.5.0-1
 - Upgrade to 2.5.0
 
@@ -74,7 +100,7 @@ rm -rf %{buildroot}/%{_docdir}/%{name}
 * Wed Apr 13 2022 Rachel Menge <rachelmenge@microsoft.com> - 2.4.8-1
 - Update source to 2.4.8 to address CVE-2022-23852, CVE-2022-23990,
   CVE-2022-25235, CVE-2022-25236
-  
+
 * Tue Apr 12 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 2.4.3-2
 - Fixing "%%underscore_version" macro definition.
 

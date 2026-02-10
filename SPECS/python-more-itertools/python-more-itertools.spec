@@ -1,4 +1,3 @@
-
 %global _description %{expand:
 Python's itertools library is a gem - you can compose elegant solutions for
 a variety of problems with the functions it provides. In more-itertools we
@@ -6,18 +5,21 @@ collect additional building blocks, recipes, and routines for working with
 Python iterables.}
 Summary:        More routines for operating on Python iterables, beyond itertools
 Name:           python-more-itertools
-Version:        8.13.0
+Version:        10.2.0
 Release:        2%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://github.com/erikrose/more-itertools
 Source0:        %{pypi_source more-itertools}
 BuildRequires:  python3-devel
+BuildRequires:  python3-flit-core
 BuildRequires:  python3-pip
 BuildRequires:  python3-wheel
-BuildRequires:  python3-flit-core
 BuildArch:      noarch
+%if 0%{?with_check}
+BuildRequires:  python3-pytest
+%endif
 
 %description %{_description}
 
@@ -37,13 +39,22 @@ Summary:        %{summary}
 %pyproject_save_files more_itertools
 
 %check
-%tox
+%pytest
 
 %files -n python3-more-itertools -f %{pyproject_files}
 %doc README.rst
 %license LICENSE
 
 %changelog
+* Tue Apr 29 2025 Riken Maharjan <rmaharjan@microsoft.com> - 10.2.0-2
+- Switch to pytest from tox to fix the pytest
+
+* Fri Feb 09 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 10.2.0-1
+- Auto-upgrade to 10.2.0 - 3.0 package upgrade
+
+* Tue Aug 22 2023 Osama Esmail <osamaesmail@microsoft.com> - 8.13.0-3
+- Fixing tests by adding 'tox'
+
 * Wed Jan 11 2023 Riken Maharjan <rmaharjan@microsoft.com> - 8.13.0-2
 - Initial CBL-Mariner import from Fedora 37 (license: MIT).
 - License verified.

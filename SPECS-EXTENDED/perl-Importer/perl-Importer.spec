@@ -1,10 +1,10 @@
 Name:           perl-Importer
-Version:        0.025
-Release:        8%{?dist}
+Version:        0.026
+Release:        1%{?dist}
 Summary:        Alternative interface to modules that export symbols
 License:        GPL+ or Artistic
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://metacpan.org/release/Importer
 Source0:        https://cpan.metacpan.org/authors/id/E/EX/EXODIST/Importer-%{version}.tar.gz#/perl-Importer-%{version}.tar.gz
 BuildArch:      noarch
@@ -49,6 +49,10 @@ make test
 %{_mandir}/man3/*
 
 %changelog
+* Tue Dec 24 2025 Kevin Lockwood <v-klockwood@microsoft.com> - 0.026-1
+- Update to 0.026
+- License verified.
+
 * Fri Oct 15 2021 Pawel Winogrodzki <pawelwi@microsoft.com> - 0.025-8
 - Initial CBL-Mariner import from Fedora 32 (license: MIT).
 

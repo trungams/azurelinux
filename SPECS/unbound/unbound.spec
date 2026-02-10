@@ -1,14 +1,19 @@
 Summary:        unbound dns server
 Name:           unbound
-Version:        1.16.3
-Release:        1%{?dist}
+Version:        1.19.1
+Release:        5%{?dist}
 License:        BSD
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System/Servers
 URL:            https://nlnetlabs.nl/projects/unbound/about/
 Source0:        https://github.com/NLnetLabs/%{name}/archive/release-%{version}.tar.gz#/%{name}-release-%{version}.tar.gz
 Source1:        %{name}.service
+Patch0:         CVE-2024-43168.patch
+Patch1:         CVE-2024-33655.patch
+Patch2:         CVE-2024-8508.patch
+Patch3:         CVE-2024-43167.patch
+Patch4:         CVE-2025-11411.patch
 BuildRequires:  expat-devel
 BuildRequires:  libevent-devel
 BuildRequires:  python3-devel
@@ -96,6 +101,24 @@ useradd -r -g unbound -d %{_sysconfdir}/unbound -s /sbin/nologin \
 %{_mandir}/*
 
 %changelog
+* Fri Oct 24 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 1.19.1-5
+- Patch for CVE-2025-11411
+
+* Tue Oct 08 2024 Sam Meluch <sammeluch@microsoft.com> - 1.19.1-4
+- Add patches for CVE-2024-8508 and CVE-2024-43167
+
+* Mon Aug 26 2024 Sumedh Sharma <sumsharma@microsoft.com> - 1.19.1-3
+- Add patch to resolve CVE-2024-33655
+
+* Thu Aug 15 2024 Aadhar Agarwal <aadagarwal@microsoft.com> - 1.19.1-2
+- Add patch to fix CVE-2024-43168
+
+* Mon Jul 08 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.19.1-1
+- Auto-upgrade to 1.19.1 - CVE-2023-50387
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.17.1-1
+- Auto-upgrade to 1.17.1 - Azure Linux 3.0 - package upgrades
+
 * Wed Oct 12 2022 Henry Li <lihl@microsoft.com> - 1.16.3-1
 - Upgrade to version 1.16.3 to resolve CVE-2022-3204
 

@@ -1,56 +1,57 @@
 %global bundled_slf4j_version 1.7.36
 %global homedir %{_datadir}/%{name}
 %global debug_package %{nil}
+%define maven_cache_name %{name}-%{version}-caches.tar.gz
 %define m2_cache_tarball_name apache-%{name}-%{version}-m2.tar.gz
 %define licenses_tarball_name apache-%{name}-%{version}-licenses.tar.gz
 %define offline_build -o
 %define _prefixmvn %{_var}/opt/apache-%{name}
 %define _bindirmvn %{_prefixmvn}/bin
 %define _libdirmvn %{_prefixmvn}/lib
-# maven 1.0 package version being used. This needs to be updated in case of updates in 1.0.
-%define mvn_1_0_pmc_ver 3.5.4-13
+# maven 2.0 package version being used. This needs to be updated in case of updates in 1.0.
+%define mvn_2_0_pmc_ver 3.8.7-3
 Summary:        Apache Maven
 Name:           maven
-Version:        3.8.7
+Version:        3.9.6
 Release:        3%{?dist}
 License:        ASL 2.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/System
 URL:            https://maven.apache.org/
 Source0:        https://archive.apache.org/dist/%{name}/%{name}-3/%{version}/source/apache-%{name}-%{version}-src.tar.gz
 # Since bootstrap has been removed for maven, it requires a pre-built maven binary to build itself.
-# Relying on 1.0 maven rpm to provide the mvn binary for the build.
-Source1:        %{_mariner_sources_url}/%{name}-%{mvn_1_0_pmc_ver}.cm1.x86_64.rpm
-Source2:        %{_mariner_sources_url}/%{name}-%{mvn_1_0_pmc_ver}.cm1.aarch64.rpm
+# Relying on 2.0 maven rpm to provide the mvn binary for the build.
+
+Source1:        %{_distro_sources_url}/%{name}-%{mvn_2_0_pmc_ver}.cm2.x86_64.rpm
+Source2:        %{_distro_sources_url}/%{name}-%{mvn_2_0_pmc_ver}.cm2.aarch64.rpm
 # CBL-Mariner build are without network connection. Hence, we need to generate build caches
 # as tarballs to build rpms in offline mode.
 # In order to generate tarballs, use "maven_build_caches.sh".
 # ./maven_build_caches.sh -v <Maven version string> -a <x86_64 | aarch64>
 # ex: ./maven_build_caches.sh -v 3.8.4 -a x86_64
-Source3:        %{m2_cache_tarball_name}
-Source4:        %{licenses_tarball_name}
+Source3:        %{maven_cache_name}
 BuildRequires:  javapackages-local-bootstrap
-BuildRequires:  msopenjdk-11
+BuildRequires:  msopenjdk-17
 BuildRequires:  wget
 BuildRequires:  which
+Provides:       maven3 = %{version}
 Requires:       %{_bindir}/which
-Requires:       msopenjdk-11
+Requires:       msopenjdk-17
 Requires:       %{name}-jdk-binding = %{version}-%{release}
-Conflicts:      maven3
 
 %description
 Maven is a software project management and comprehension tool. Based on the concept of a project object model (POM). Maven can manage a project's build, reporting and documentation from a central piece of information.
 
-%package openjdk11
+%package openjdk17
 Summary:        MSOpenJDK 11 binding for Maven
-RemovePathPostfixes: -openjdk11
+RemovePathPostfixes: -openjdk17
 Requires: %{name} = %{version}-%{release}
-Requires: msopenjdk-11
+Requires: msopenjdk-17
 Provides: %{name}-jdk-binding = %{version}-%{release}
  
-%description openjdk11
-Configures Maven to run with OpenJDK 11.
+%description openjdk17
+Configures Maven to run with OpenJDK 17.
 
 %prep
 # Installing 1.0 PMC packages to provide prebuilt mvn binary.
@@ -62,17 +63,19 @@ rpm -i --nodeps %{SOURCE2}
 %endif
 mvn -v
 
+tar xf %{SOURCE3} -C $HOME
+
 # Setup maven .m2 cache directory
 mkdir /root/.m2
 pushd /root/.m2
-tar xf %{SOURCE3} --no-same-owner
+tar xf $HOME/mavenCaches/%{m2_cache_tarball_name} --no-same-owner
 popd
 
 %setup -q -n apache-%{name}-%{version}
 # Setup licenses. Remove LICENSE.vm script, which downloads all subproject license files, and replace with prepopulated license tarball.
 rm -v apache-maven/src/main/appended-resources/META-INF/LICENSE.vm
 pushd apache-maven
-tar xf %{SOURCE4} --no-same-owner
+tar xf $HOME/mavenCaches/%{licenses_tarball_name} --no-same-owner
 cp -v ./target/licenses/lib/* %{_var}/opt/apache-maven/lib
 popd
 
@@ -80,8 +83,8 @@ popd
 # Changing distribution dir to BUILD directory as install macro clears buildroot prior to creating a fresh directory, thus clearing artifacts copied by maven. We copy them later.
 MAVEN_DIST_DIR=%{_builddir}%{_prefixmvn}
 
-export JAVA_HOME="%{_libdir}/jvm/msopenjdk-11"
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(find $JAVA_HOME/lib -name "jli")
+export JAVA_HOME="%{_libdir}/jvm/msopenjdk-17"
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/lib
 
 sed -i 's/www.opensource/opensource/g' DEPENDENCIES
 pwd
@@ -127,7 +130,7 @@ ln -sfv %{_bindirmvn}/mvn.1.gz %{buildroot}%{homedir}/bin/mvn.1.gz
 ln -sfv %{_bindirmvn}/mvnDebug.1.gz %{buildroot}%{homedir}/bin/mvnDebug.1.gz
 
 install -d -m 755 %{buildroot}%{_sysconfdir}/java/
-echo JAVA_HOME=%{_lib}/jvm/msopenjdk-11 >%{buildroot}%{_sysconfdir}/java/maven.conf-openjdk11
+echo JAVA_HOME=%{_lib}/jvm/msopenjdk-17 >%{buildroot}%{_sysconfdir}/java/maven.conf-openjdk17
 
 %files
 %defattr(-,root,root)
@@ -150,10 +153,18 @@ echo JAVA_HOME=%{_lib}/jvm/msopenjdk-11 >%{buildroot}%{_sysconfdir}/java/maven.c
 %{_prefixmvn}/NOTICE
 %{_prefixmvn}/README.txt
 
-%files openjdk11
-%config /etc/java/maven.conf-openjdk11
+%files openjdk17
+%config /etc/java/maven.conf-openjdk17
 
 %changelog
+* Thu Feb 22 2024 Riken Maharjan <rmaharjan@microsoft.com> - 3.9.6-3
+- Use msopenjdk-17
+* Thu Feb 22 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.9.6-2
+- Updating naming for 3.0 version of Azure Linux.
+
+* Fri Jan 12 2024 Riken Maharjan <rmaharjan@microsoft.com> - 3.9.6-1
+- Upgrade to 3.9.6
+
 * Tue Apr 04 2023 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 3.8.7-2
 - Applied linter changes
 

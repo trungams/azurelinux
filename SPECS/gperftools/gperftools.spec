@@ -1,13 +1,13 @@
 Summary:        A fast malloc tool for threads
 Name:           gperftools
-Version:        2.9.1
+Version:        2.12
 Release:        1%{?dist}
 License:        BSD
 URL:            https://github.com/gperftools/gperftools
 Source0:        %{url}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.gz
 Group:          Development/Tools
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 
 # Using an empty patch to ignoring this CVE because it's considered a false positive.
 # For more details see: https://github.com/gperftools/gperftools/issues/1013.
@@ -28,13 +28,32 @@ Group:          Development/Tools
 %description docs
 The contains gperftools package doc files.
 
+%package libs
+Summary:	Libraries provided by gperftools
+Group:   Development/Tools
+ 
+%description libs
+Libraries provided by gperftools, including libtcmalloc and libprofiler.
+
 %prep
 %setup -q
 
 %build
+export CFLAGS=`echo $RPM_OPT_FLAGS -fno-strict-aliasing -Wno-unused-local-typedefs -DTCMALLOC_LARGE_PAGES | sed -e 's|-fexceptions||g'`
+export CXXFLAGS=`echo $RPM_OPT_FLAGS -fno-strict-aliasing -Wno-unused-local-typedefs -DTCMALLOC_LARGE_PAGES | sed -e 's|-fexceptions||g'`
 ./configure \
    --prefix=%{_prefix} \
-   --docdir=%{_defaultdocdir}/%{name}-%{version}
+   --docdir=%{_defaultdocdir}/%{name}-%{version} \
+%ifarch s390x aarch64
+	--disable-general-dynamic-tls \
+%endif
+	--disable-dynamic-sized-delete-support \
+	--disable-static
+ 
+# Bad rpath!
+sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
+sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
+
 make %{?_smp_mflags}
 
 %install
@@ -43,6 +62,8 @@ find %{buildroot} -name '*.la' -delete
 
 %check
 TCMALLOC_SAMPLE_PARAMETER=128 && make check
+
+%ldconfig_scriptlets libs
 
 %files
 %defattr(-,root,root)
@@ -55,9 +76,7 @@ TCMALLOC_SAMPLE_PARAMETER=128 && make check
 %files devel
 %{_includedir}/google/*
 %{_includedir}/gperftools/*
-%{_libdir}/libprofiler*.a
 %{_libdir}/libprofiler*.so
-%{_libdir}/libtcmalloc*.a
 %{_libdir}/libtcmalloc*.so
 %{_libdir}/pkgconfig/lib*
 
@@ -65,7 +84,19 @@ TCMALLOC_SAMPLE_PARAMETER=128 && make check
 %{_docdir}/%{name}-%{version}/*
 %{_mandir}/man1/*
 
+%files libs
+%{_libdir}/*.so.*
+
 %changelog
+* Wed Mar 13 2024 Himaja Kesari <himajakesari@microsoft.com> 
+- Update build step from fedora and add libs package
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.12-1
+- Auto-upgrade to 2.12 - Azure Linux 3.0 - package upgrades
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 2.9.1-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Wed Feb 16 2022 Cameron Baird <cameronbaird@microsoft.com> 2.9.1-1
 - Update source to v2.9.1
 

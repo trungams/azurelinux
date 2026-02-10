@@ -1,33 +1,34 @@
 %global openssl_flags -DOPENSSL_NO_SSL3 -DOPENSSL_NO_SSL2 -DOPENSSL_NO_COMP
 %global __brp_python_bytecompile %{nil}
-# Automating the extraction of these alternate version strings has proven to be tricky,
-# with regards to tooling available in the toolchain build environment.
-# These will be manually maintained for the time being.
-%global majmin 3.9
-%global majmin_nodots 39
-# See Lib/ensurepip/__init__.py in Source0 for these version numbers
-%global pip_version 22.0.4
-%global setuptools_version 58.1.0
+%define majmin %(echo %{version} | cut -d. -f1-2)
+%define majmin_nodots %(echo %{majmin} | tr -d .)
 
 Summary:        A high-level scripting language
 Name:           python3
-Version:        3.9.14
-Release:        6%{?dist}
+Version:        3.12.9
+Release:        8%{?dist}
 License:        PSF
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Programming
 URL:            https://www.python.org/
 Source0:        https://www.python.org/ftp/python/%{version}/Python-%{version}.tar.xz
+# pathfix.py was provided by the previous Python source bundle (Python-3.9.14.tar.xz)
+# It has been removed in Python-3.12.0.tar.xz, but as our packages still require it, we will still provide for now.
+Source1:        https://github.com/python/cpython/blob/3.9/Tools/scripts/pathfix.py
 Patch0:         cgi3.patch
-Patch1:         CVE-2015-20107.patch
-# Backport https://github.com/python/cpython/commit/069fefdaf42490f1e00243614fb5f3d5d2614b81 from 3.10 to 3.9
-Patch2:         0001-gh-95231-Disable-md5-crypt-modules-if-FIPS-is-enable.patch
-Patch3:         CVE-2022-37454.patch
-Patch4:         CVE-2022-45061.patch
-Patch5:         CVE-2022-42919.patch
-# Patch for setuptools, resolved in 65.5.1
-Patch1000:        CVE-2022-40897.patch
+Patch1:         CVE-2025-4516.patch
+Patch2:         CVE-2025-4517.patch
+Patch3:         CVE-2025-6069.patch
+Patch4:         CVE-2025-8194.patch
+Patch5:         CVE-2025-8291.patch
+Patch6:         CVE-2025-6075.patch
+Patch7:         CVE-2025-12084.patch
+Patch8:         CVE-2025-13836.patch
+Patch9:         CVE-2025-13837.patch
+Patch10:        CVE-2025-11468.patch
+Patch11:        CVE-2026-0672.patch
+Patch12:        CVE-2026-0865.patch
 
 BuildRequires:  bzip2-devel
 BuildRequires:  expat-devel >= 2.1.0
@@ -52,7 +53,8 @@ Provides:       /bin/python3
 Provides:       %{name}-docs = %{version}-%{release}
 Provides:       python%{majmin} = %{version}-%{release}
 Provides:       python%{majmin_nodots} = %{version}-%{release}
-%if %{with_check}
+
+%if 0%{?with_check}
 BuildRequires:  iana-etc
 BuildRequires:  tzdata
 %endif
@@ -98,7 +100,9 @@ Summary:        The libraries and header files needed for Python development.
 Group:          Development/Libraries
 Requires:       expat-devel >= 2.1.0
 Requires:       %{name} = %{version}-%{release}
-Requires:       %{name}-setuptools = %{version}-%{release}
+# python3-setuptools is required, but provided in default worker chroot environment.
+#Requires:       python3-setuptools
+Provides:       python3-devel
 Provides:       python%{majmin}-devel = %{version}-%{release}
 Provides:       python%{majmin_nodots}-devel = %{version}-%{release}
 
@@ -124,28 +128,6 @@ Provides:       python%{majmin_nodots}-tools = %{version}-%{release}
 The Python package includes several development tools that are used
 to build python programs.
 
-%package        pip
-Summary:        The PyPA recommended tool for installing Python packages.
-Group:          Development/Tools
-Requires:       %{name} = %{version}-%{release}
-Provides:       python3dist(pip) = %{version}-%{release}
-Provides:       python%{majmin}dist(pip) = %{version}-%{release}
-BuildArch:      noarch
-
-%description    pip
-The PyPA recommended tool for installing Python packages.
-
-%package        setuptools
-Summary:        Download, build, install, upgrade, and uninstall Python packages.
-Group:          Development/Tools
-Requires:       %{name} = %{version}-%{release}
-Provides:       python3dist(setuptools) = %{version}-%{release}
-Provides:       python%{majmin}dist(setuptools) = %{version}-%{release}
-BuildArch:      noarch
-
-%description    setuptools
-setuptools is a collection of enhancements to the Python distutils that allow you to more easily build and distribute Python packages, especially ones that have dependencies on other packages.
-
 %package        test
 Summary:        Regression tests package for Python.
 Group:          Development/Tools
@@ -157,17 +139,7 @@ Provides:       python%{majmin_nodots}-test = %{version}-%{release}
 The test package contains all regression tests for Python as well as the modules test.support and test.regrtest. test.support is used to enhance your tests while test.regrtest drives the testing suite.
 
 %prep
-# We need to patch setuptools later, so manually manage patches with -N
-%autosetup -p1 -n Python-%{version} -N
-
-# Ideally we would use '%%autopatch -p1 -M 999', but unfortunately the GitHub CI pipelines use a very old version of rpm which doesn't support it.
-# We use the CI to validate the toolchain manifests, which means we need to parse this .spec file
-%patch0 -p1
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
-%patch5 -p1
+%autosetup -p1 -n Python-%{version}
 
 %build
 # Remove GCC specs and build environment linker scripts
@@ -194,38 +166,11 @@ export OPT="%{extension_cflags} %{openssl_flags}"
 %make_install
 %{_fixperms} %{buildroot}/*
 
-# Bootstrap `pip3` which casues ptest build failure.
-# The manual installation of pip in the RPM buildroot requires pip
-# to be already present in the chroot.
-# For toolchain builds, `pip3` requirement is staisfied by raw-toolchain's
-# version of python, so it does not do anything.
-# For builds other than toolchain, we would require pip to be present.
-# The line below install pip in the build chroot using the recently
-# compiled python3.
-# NOTE: This is a NO-OP for the toolchain build.
-python3 Lib/ensurepip
-
-# Installing pip/setuptools via ensurepip fails in our toolchain.
-# The versions of these tools from the raw toolchain are detected,
-# and install fails. We will install these two bundled wheels manually.
-# https://github.com/pypa/pip/issues/3063
-# https://bugs.python.org/issue31916
-pushd Lib/ensurepip/_bundled
-pip3 install --no-cache-dir --no-index --ignore-installed \
-    --root %{buildroot} \
-    setuptools-%{setuptools_version}-py3-none-any.whl \
-    pip-%{pip_version}-py3-none-any.whl
-popd
-
-# Manually patch CVE-2022-40897 which is a bundled wheel. We can only update the source code after install
-echo 'Patching CVE-2022-40897 in bundled wheel file %{_libdir}/python%{majmin}/site-packages/setuptools/package_index.py'
-patch %{buildroot}%{_libdir}/python%{majmin}/site-packages/setuptools/package_index.py < %{PATCH1000}
-
-# Windows executables get installed by pip and setuptools- we don't need these.
+# Windows executables get installed by pip - we don't need these.
 find %{buildroot}%{_libdir}/python%{majmin}/site-packages -name '*.exe' -delete -print
 
 # Install pathfix.py to bindir
-cp -p Tools/scripts/pathfix.py %{buildroot}%{_bindir}/pathfix%{majmin}.py
+cp -pv %{SOURCE1} %{buildroot}%{_bindir}/pathfix%{majmin}.py
 ln -s ./pathfix%{majmin}.py %{buildroot}%{_bindir}/pathfix.py
 
 # Remove unused stuff
@@ -235,8 +180,9 @@ find %{buildroot}%{_libdir} -name '*.o' -delete
 rm %{buildroot}%{_bindir}/2to3
 rm -rf %{buildroot}%{_bindir}/__pycache__
 
-# %check
-# make  %{?_smp_mflags} test
+%check
+# vsock_loopback module needed by `test_socket` is not loaded by default in AzureLinux.
+%{buildroot}%{_bindir}/python3 -m test --exclude test_socket
 
 %ldconfig_scriptlets
 
@@ -252,9 +198,8 @@ rm -rf %{buildroot}%{_bindir}/__pycache__
 %dir %{_libdir}/python%{majmin}
 %dir %{_libdir}/python%{majmin}/site-packages
 
-%exclude %{_libdir}/python%{majmin}/ctypes/test
-%exclude %{_libdir}/python%{majmin}/distutils/tests
-%exclude %{_libdir}/python%{majmin}/sqlite3/test
+%exclude %{_libdir}/python%{majmin}/test/test_ctypes
+%exclude %{_libdir}/python%{majmin}/test/test_sqlite3
 %exclude %{_libdir}/python%{majmin}/idlelib/idle_test
 %exclude %{_libdir}/python%{majmin}/test
 %exclude %{_libdir}/python%{majmin}/lib-dynload/_ctypes_test.*.so
@@ -266,11 +211,9 @@ rm -rf %{buildroot}%{_bindir}/__pycache__
 %{_libdir}/libpython3.so
 %{_libdir}/libpython%{majmin}.so.1.0
 %{_libdir}/python%{majmin}
-%{_libdir}/python%{majmin}/site-packages/README.txt
 %exclude %{_libdir}/python%{majmin}/site-packages/
-%exclude %{_libdir}/python%{majmin}/ctypes/test
-%exclude %{_libdir}/python%{majmin}/distutils/tests
-%exclude %{_libdir}/python%{majmin}/sqlite3/test
+%exclude %{_libdir}/python%{majmin}/test/test_ctypes
+%exclude %{_libdir}/python%{majmin}/test/test_sqlite3
 %exclude %{_libdir}/python%{majmin}/idlelib/idle_test
 %exclude %{_libdir}/python%{majmin}/test
 %exclude %{_libdir}/python%{majmin}/lib-dynload/_ctypes_test.*.so
@@ -293,7 +236,7 @@ rm -rf %{buildroot}%{_bindir}/__pycache__
 %{_bindir}/python%{majmin}-config
 %{_bindir}/pathfix.py
 %{_bindir}/pathfix%{majmin}.py
-%doc Misc/README.valgrind Misc/valgrind-python.supp Misc/gdbinit
+%doc Misc/README.valgrind Misc/valgrind-python.supp
 %exclude %{_bindir}/2to3*
 %exclude %{_bindir}/idle*
 
@@ -304,23 +247,80 @@ rm -rf %{buildroot}%{_bindir}/__pycache__
 %{_bindir}/2to3-%{majmin}
 %exclude %{_bindir}/idle*
 
-%files pip
-%defattr(-,root,root,755)
-%{_libdir}/python%{majmin}/site-packages/pip/*
-%{_libdir}/python%{majmin}/site-packages/pip-%{pip_version}.dist-info/*
-%{_bindir}/pip*
-
-%files setuptools
-%defattr(-,root,root,755)
-%{_libdir}/python%{majmin}/site-packages/pkg_resources/*
-%{_libdir}/python%{majmin}/site-packages/setuptools/*
-%{_libdir}/python%{majmin}/site-packages/_distutils_hack/
-%{_libdir}/python%{majmin}/site-packages/setuptools-%{setuptools_version}.dist-info/*
-
 %files test
 %{_libdir}/python%{majmin}/test/*
 
 %changelog
+* Wed Jan 28 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 3.12.9-8
+- Patch for CVE-2026-0865, CVE-2025-11468, CVE-2026-0672
+
+* Wed Dec 24 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 3.12.9-7
+- Patch for CVE-2025-13837, CVE-2025-12084, CVE-2025-13836
+
+* Tue Nov 04 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 3.12.9-6
+- Patch for CVE-2025-6075
+
+* Thu Oct 09 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 3.12.9-5
+- Patch for CVE-2025-8291
+
+* Wed Aug 06 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 3.12.9-4
+- Patch for CVE-2025-8194
+
+* Tue Jul 01 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 3.12.9-3
+- Patch CVE-2025-6069
+- Fixed the test in %check
+
+* Tue Jun 10 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 3.12.9-2
+- Patch CVE-2025-4516, CVE-2025-4517, CVE-2024-12718, CVE-2025-4138, CVE-2025-4330, CVE-2025-4330
+
+* Mon Feb 17 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.12.9-1
+- Auto-upgrade to 3.12.9 - to fix CVE-2025-0938 & CVE-2024-4032
+- Clean up the earlier patches not needed anymore
+
+* Thu Jan 30 2025 Bala <balakumaran.kannan@microsoft.com> - 3.12.3-6
+- Patch CVE-2023-27043
+
+* Mon Dec 10 2024 Ankita Pareek <ankitapareek@microsoft.com> - 3.12.3-5
+- Patch CVE-2024-12254
+
+* Fri Sep 20 2024 Himaja Kesari <himajakesari@microsoft.com> - 3.12.3-4
+- Patch CVE-2024-6232 and CVE-2024-8088
+
+* Wed Aug 28 2024 Rohit Rawat <rohitrawat@microsoft.com> - 3.12.3-3
+- Patch CVE-2024-6923
+
+* Wed Aug 21 2024 Brian Fjeldstad <bfjelds@microsoft.com> - 3.12.3-2
+- Patch CVE-2024-7592
+
+* Mon Jul 15 2024 Suresh Thelkar <sthelkar@microsoft.com> - 3.12.3-1
+- Upgrade to 3.12.3 to patch CVE-2024-0397, CVE-2023-6597
+- Clean up the earlier patches not needed anymore
+
+* Thu Jul 11 2024 Suresh Thelkar <sthelkar@microsoft.com> - 3.12.0-5
+- Patch CVE-2023-6597
+
+* Wed May 22 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 3.12.0-4
+- Bump release to build with new expat to fix CVE-2024-28757
+
+* Thu Mar 21 2024 Chris Co <chrco@microsoft.com> - 3.12.0-3
+- Enable and fix tests in check section
+
+* Fri Mar 01 2024 Andrew Phelps <anphel@microsoft.com> - 3.12.0-2
+- Remove pip subpackage
+
+* Fri Feb 23 2024 Andrew Phelps <anphel@microsoft.com> - 3.12.0-1
+- Upgrade to version 3.12.0
+- Split python-setuptools into separate spec
+
+* Thu Feb 15 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.9.14-9
+- Updated patch application macros.
+
+* Wed Oct 11 2023 Amrita Kohli <amritakohli@microsoft.com> - 3.9.14-8
+- Patch for CVE-2023-24329
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 3.9.14-7
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Thu Feb 02 2023 Daniel McIlvaney <damcilva@microsoft.com> - 3.9.14-6
 - Patch CVE-2022-40897 in the bundled setuptools wheel
 
@@ -347,11 +347,11 @@ rm -rf %{buildroot}%{_bindir}/__pycache__
 - Add CVE-2015-20107 patch from upstream
 
 * Tue Jul 12 2022 Olivia Crain <oliviacrain> - 3.9.13-3
-- Update cgi3 patch to use versioned python shebang 
+- Update cgi3 patch to use versioned python shebang
 
 * Fri Jul 01 2022 Olivia Crain <oliviacrain@microsoft.com> - 3.9.13-2
 - Remove Windows executables from pip, setuptools subpackages
-- Add provides in the style of python39-%%{subpackage}, python3.9-%%{subpackage} for all packages except pip, setuptools 
+- Add provides in the style of python39-%%{subpackage}, python3.9-%%{subpackage} for all packages except pip, setuptools
 
 * Mon Jun 20 2022 Olivia Crain <oliviacrain@microsoft.com> - 3.9.13-1
 - Upgrade to latest maintenance release for the 3.9 series

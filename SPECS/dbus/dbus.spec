@@ -1,19 +1,23 @@
 %{!?_versioneddocdir: %global _versioneddocdir %{_docdir}/%{name}-%{version}}
 Summary:        DBus for systemd
 Name:           dbus
-Version:        1.15.2
+Version:        1.15.8
 Release:        3%{?dist}
 License:        GPLv2+ OR AFL
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/File
 URL:            https://www.freedesktop.org/wiki/Software/dbus
 Source0:        https://%{name}.freedesktop.org/releases/%{name}/%{name}-%{version}.tar.xz
+BuildRequires:  autoconf-archive
+BuildRequires:  autoconf
 BuildRequires:  audit-devel
 BuildRequires:  expat-devel
 BuildRequires:  libselinux-devel
 BuildRequires:  systemd-bootstrap-devel
 BuildRequires:  xz-devel
+BuildRequires:  filesystem
+Requires:       filesystem
 Requires:       expat
 Requires:       xz
 # Using the weak dependency 'Recommends' to break a circular dependency during
@@ -40,10 +44,14 @@ It contains the libraries and header files to create applications
 %autosetup -p1
 
 %build
+libtoolize && aclocal
+autoupdate
+autoreconf -i
 %configure \
     --docdir=%{_versioneddocdir}  \
     --enable-libaudit=yes \
     --enable-selinux=yes \
+    --runstatedir=/run \
     --with-console-auth-dir=/run/console
 
 make %{?_smp_mflags}
@@ -61,31 +69,45 @@ make %{?_smp_mflags} check
 
 %files
 %defattr(-,root,root)
+%attr(4750,root,messagebus) %{_libexecdir}/dbus-daemon-launch-helper
 %license COPYING
-%{_sysconfdir}/dbus-1
 %{_bindir}/*
+%{_datadir}/dbus-1
+%{_docdir}/*
 %{_libdir}/libdbus-1.so.*
 %{_libdir}/tmpfiles.d/dbus.conf
-%exclude %{_libdir}/sysusers.d
+%{_sysconfdir}/dbus-1
 %{_unitdir}/*
-%{_libexecdir}/*
-%{_docdir}/*
-%{_datadir}/dbus-1
+%exclude %{_libdir}/sysusers.d
 
 #%%{_sharedstatedir}/*
 
 %files devel
 %defattr(-,root,root)
-%{_includedir}/*
 %{_datadir}/xml/dbus-1
-%{_libdir}/cmake/DBus1
-%dir %{_libdir}/dbus-1.0
-%{_libdir}/dbus-1.0/include/
-%{_libdir}/pkgconfig/*.pc
+%{_includedir}/*
 %{_libdir}/*.a
 %{_libdir}/*.so
+%{_libdir}/cmake/DBus1
+%{_libdir}/dbus-1.0/include/
+%{_libdir}/pkgconfig/*.pc
+%dir %{_libdir}/dbus-1.0
 
 %changelog
+* Tue Mar 20 2024 Sam Meluch <sammeluch@microsfot.com> - 1.15.8-3
+- fix attributes on dbus-daemon-launch-helper
+- sort files list
+
+* Wed Mar 20 2024 Dan Streetman <ddstreet@microsoft.com> - 1.15.8-2
+- specify runstatedir to avoid "Line references path below legacy
+  directory /var/run/" warnings
+
+* Thu Jan 04 2024 Brian Fjeldstad <bfjelds@microsoft.com> - 1.15.8-1
+- Upgrade to 1.15.8
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 1.15.2-4
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Tue Jun 27 2023 Chris Gunn <chrisgun@microsoft.com> - 1.15.2-3
 - Enable audit integration
 

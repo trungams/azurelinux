@@ -1,28 +1,37 @@
+%bcond daemon 1
+%bcond subtree 1
+%bcond svn 0
+%bcond email 0
+
 Summary:        Fast distributed version control system
 Name:           git
-Version:        2.33.8
-Release:        1%{?dist}
+Version:        2.45.4
+Release:        3%{?dist}
 License:        GPLv2
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Programming
 URL:            https://git-scm.com/
-Source0:        https://www.kernel.org/pub/software/scm/git/%{name}-%{version}.tar.xz
+Source0:        https://github.com/git/git/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+# Below patch not needed for Git 2.46.0, already includes this fix.
+Patch0:         Ptest-fix-git-config-syntax.patch
 BuildRequires:  curl-devel
 BuildRequires:  python3-devel
 Requires:       curl
 Requires:       expat
 Requires:       less
-Requires:       openssh
+Requires:       openssh-clients
 Requires:       openssl
 Requires:       perl-CGI
 Requires:       perl-DBI
 Requires:       perl-YAML
 Requires:       perl-interpreter
 Requires:       python3
+%if %{with svn}
 Requires:       subversion-perl
+%endif
 Provides:       git-core = %{version}-%{release}
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  perl(Getopt::Long)
 BuildRequires:  perl(IO::File)
 BuildRequires:  perl(lib)
@@ -46,11 +55,7 @@ Requires:       git >= 2.1.2
 %description lang
 These are the additional language files of git.
 
-%global with_daemon 1
-%global with_subtree 1
-%global with_svn 1
-%global with_email 0
-%if %{with_daemon}
+%if %{with daemon}
 %package        daemon
 Summary:        Git protocol daemon
 Requires:       git-core = %{version}-%{release}
@@ -64,7 +69,7 @@ The git daemon for supporting git:// access to git repositories
 %endif
 
 
-%if %{with_email}
+%if %{with email}
 %package        email
 Summary:        Git tools for sending patches via email
 Requires:       git = %{version}-%{release}
@@ -77,7 +82,7 @@ BuildArch:      noarch
 %endif
 
 
-%if %{with_subtree}
+%if %{with subtree}
 %package        subtree
 Summary:        Git tools to merge and split repositories
 Requires:       git-core = %{version}-%{release}
@@ -89,7 +94,7 @@ history.
 %endif
 
 
-%if %{with_svn}
+%if %{with svn}
 %package        svn
 Summary:        Git tools for interacting with Subversion repositories
 Requires:       git = %{version}-%{release}
@@ -102,10 +107,11 @@ BuildArch:      noarch
 %endif
 
 %prep
-%setup -q
+%autosetup -p1
 %{py3_shebang_fix} git-p4.py
 
 %build
+make configure
 %configure \
     CFLAGS="%{optflags}" \
     CXXFLAGS="%{optflags}" \
@@ -113,11 +119,13 @@ BuildArch:      noarch
     --libexec=%{_libexecdir} \
     --with-gitconfig=%{_sysconfdir}/gitconfig
 make %{?_smp_mflags} CFLAGS="%{optflags}" CXXFLAGS="%{optflags}"
+%make_build -C contrib/subtree/ all
 
 %install
 %make_install
 install -vdm 755 %{buildroot}%{_datadir}/bash-completion/completions
 install -m 0644 contrib/completion/git-completion.bash %{buildroot}%{_datadir}/bash-completion/completions/git
+%make_install -C contrib/subtree
 %find_lang %{name}
 %{_fixperms} %{buildroot}/*
 
@@ -147,27 +155,54 @@ fi
 %files lang -f %{name}.lang
 %defattr(-,root,root)
 
-%if %{with_daemon}
+%if %{with daemon}
 %files daemon
 %{_libexecdir}/git-core/git-daemon
 %endif
 
-%if %{with_email}
+%if %{with email}
 %files email
 %{_libexecdir}/git-core/git-send-email
 %endif
 
-%if %{with_subtree}
+%if %{with subtree}
 %files subtree
-%{_libexecdir}/git-core/git-merge-subtree
+%{_libexecdir}/git-core/git-subtree
 %endif
 
-%if %{with_svn}
+%if %{with svn}
 %files svn
 %{_libexecdir}/git-core/git-svn
 %endif
 
 %changelog
+* Wed Jul 23 2025 Muhammad Falak <mwani@microsoft.com> - 2.45.4-3
+- Fix subtree subpackage
+
+* Fri Jul 18 2025 Archana Shettigar <v-shettigara@microsoft.com> - 2.45.4-2
+- Fix ptest with new git config syntax in CVE-2025-48384
+
+* Fri Jul 11 2025 Archana Shettigar <v-shettigara@microsoft.com> - 2.45.4-1
+- Upgrade to 2.45.4 - CVE-2025-48384, CVE-2025-48385, CVE-2025-27613 & CVE-2025-27614
+
+* Thu Apr 17 2025 Muhammad Falak <mwani@microsoft.com> - 2.45.3-2
+- Add dependency only for openssh-clients instead of openssh
+
+* Tue Jan 14 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.45.3-1
+- Auto-upgrade to 2.45.3 - CVE-2024-50349 and CVE-2024-52006
+
+* Fri Jul 05 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.45.2-1
+- Auto-upgrade to 2.45.2 - none
+
+* Mon Feb 05 2024 Dan Streetman <ddstreet@ieee.org> - 2.42.0-2
+- do not build git-svn
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 2.42.0-1
+- Auto-upgrade to 2.42.0 - Azure Linux 3.0 - package upgrades
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 2.33.8-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Thu Apr 27 Sean Dougherty <sdougherty@microsoft.com> - 2.33.8-1
 - Upgrade to 2.33.8 to address CVE-2023-25652 and CVE-2023-29007
 

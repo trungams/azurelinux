@@ -11,6 +11,7 @@
     INITSYSTEM=systemd \\\
     PYTHON_BINARY=%{__python3} \\\
     SHELL_BINARY=%{_bindir}/sh \\\
+    DEFAULT_DNSSEC_ROOTKEY_FILE="/var/lib/unbound/root.key" \\\
     USE_DNSSEC=true \\\
     USE_LABELED_IPSEC=true \\\
     USE_LDAP=true \\\
@@ -25,11 +26,11 @@
 
 Summary:        Internet Key Exchange (IKEv1 and IKEv2) implementation for IPsec
 Name:           libreswan
-Version:        4.7
-Release:        4%{?dist}
+Version:        4.15
+Release:        1%{?dist}
 License:        GPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Libraries
 Url:            https://libreswan.org/
 Source0:        https://github.com/libreswan/libreswan/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
@@ -54,7 +55,7 @@ BuildRequires: nspr-devel
 BuildRequires: nss-devel >= %{nss_version}
 BuildRequires: nss-tools >= %{nss_version}
 BuildRequires: openldap-devel
-BuildRequires: mariner-release
+BuildRequires: azurelinux-release
 BuildRequires: pam-devel
 BuildRequires: pkgconfig
 BuildRequires: systemd-devel
@@ -173,7 +174,7 @@ certutil -N -d sql:$tmpdir --empty-password
 
 %files
 %license CREDITS COPYING LICENSE
-%doc CHANGES README* 
+%doc CHANGES README*
 %doc docs/*.* docs/examples
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/ipsec.conf
 %attr(0600,root,root) %config(noreplace) %{_sysconfdir}/ipsec.secrets
@@ -193,6 +194,19 @@ certutil -N -d sql:$tmpdir --empty-password
 %doc %{_mandir}/*/*
 
 %changelog
+* Sat Mar 29 2025 Kanishk Bansal <kanbansal@microsoft.com> - 4.15-1
+- Upgrade to 4.15 to fix CVE-2024-3652, CVE-2024-2357, CVE-2023-30570
+- Remove previously applied patches
+
+* Wed Apr 17 2024 Andrew Phelps <anphel@microsoft.com> - 4.7-7
+- Add capng_apply.patch to fix build break
+
+* Wed Feb 07 2024 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 4.7-6
+- Update the build dependency from mariner-release to azurelinux-release
+
+* Mon Aug 28 2023 Henry Beberman <henry.beberman@microsoft.com> - 4.7-5
+- Backport patches for CVE-2023-38710, CVE-2023-38711, CVE-2023-38712
+
 * Tue Oct 11 2022 Osama Esmail <osamaesmail@microsoft.com> - 4.7-4
 - Removed with_check macro
 

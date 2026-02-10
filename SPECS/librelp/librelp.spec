@@ -1,10 +1,10 @@
 Summary:        RELP Library
 Name:           librelp
-Version:        1.10.0
+Version:        1.11.0
 Release:        1%{?dist}
 License:        GPLv3+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Libraries
 URL:            https://github.com/rsyslog/librelp
 Source0:        https://download.rsyslog.com/%{name}/%{name}-%{version}.tar.gz
@@ -14,8 +14,8 @@ BuildRequires:  automake
 BuildRequires:  gnutls-devel
 BuildRequires:  libtool
 Requires:       gnutls
-
-%if %{with_check}
+%if 0%{?with_check}
+BuildRequires:  glibc-debuginfo
 BuildRequires:  valgrind
 %endif
 
@@ -25,8 +25,8 @@ for Reliable Event Logging Protocol) is a general-purpose, extensible
 logging protocol.
 
 %package        devel
-Summary:	    Development libraries and header files for librelp
-Requires:	    %{name} = %{version}-%{release}
+Summary:        Development libraries and header files for librelp
+Requires:       %{name} = %{version}-%{release}
 
 %description    devel
 The package contains libraries and header files for
@@ -61,6 +61,12 @@ find %{buildroot} -type f -name "*.la" -delete -print
 %{_libdir}/pkgconfig/relp.pc
 
 %changelog
+* Thu Nov 02 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.11.0-1
+- Auto-upgrade to 1.11.0 - Azure Linux 3.0 - package upgrades
+
+* Wed Sep 06 2023 Osama Esmail <osamaesmail@microsoft.com> - 1.10.0-2
+- Adding `glibc-debuginfo` to fix the tests
+
 * Mon Nov 29 2021 Thomas Crain <thcrain@microsoft.com> - 1.10.0-1
 - Upgrade to latest version
 - Remove upstreamed flaky test disabling

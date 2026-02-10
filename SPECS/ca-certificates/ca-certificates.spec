@@ -6,6 +6,8 @@
 
 %define p11_format_base_bundle ca-bundle.trust.base.p11-kit
 
+%define p11_format_distrusted_bundle ca-bundle.trust.distrusted.p11-kit
+
 %define p11_format_microsoft_bundle ca-bundle.trust.microsoft.p11-kit
 
 # List of packages triggering legacy certs generation if 'ca-certificates-legacy'
@@ -44,11 +46,11 @@ Name:           ca-certificates
 
 # When updating, "Epoch, "Version", AND "Release" tags must be updated in the "prebuilt-ca-certificates*" packages as well.
 Epoch:          1
-Version:        2.0.0
-Release:        13%{?dist}
+Version:        %{azl}.0.0
+Release:        14%{?dist}
 License:        MPLv2.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Security
 URL:            https://docs.microsoft.com/en-us/security/trusted-root/program-requirements
 Source2:        update-ca-trust
@@ -69,6 +71,8 @@ Source21:       certdata.base.txt
 Source22:       bundle2pem.sh
 # The certdata.microsoft.txt is provided by Microsoft's Trusted Root Program.
 Source23:       certdata.microsoft.txt
+# The certdata.distrusted.txt is provided by Microsoft's Trusted Root Program.
+Source24:       certdata.distrusted.txt
 
 BuildRequires:  /bin/ln
 BuildRequires:  asciidoc
@@ -146,11 +150,12 @@ cp -p %{SOURCE20} .
 
 %convert_certdata %{SOURCE21}
 %convert_certdata %{SOURCE23}
+%convert_certdata %{SOURCE24}
 
 #manpage
 cp %{SOURCE10} %{name}/update-ca-trust.8.txt
-asciidoc.py -v -d manpage -b docbook %{name}/update-ca-trust.8.txt
-xsltproc --nonet -o %{name}/update-ca-trust.8 %{_sysconfdir}/asciidoc/docbook-xsl/manpage.xsl %{name}/update-ca-trust.8.xml
+asciidoc -v -d manpage -b docbook %{name}/update-ca-trust.8.txt
+xsltproc --nonet -o %{name}/update-ca-trust.8 %{python3_sitelib}/asciidoc/resources/docbook-xsl/manpage.xsl %{name}/update-ca-trust.8.xml
 
 %install
 mkdir -p -m 755 %{buildroot}%{pkidir}/tls/certs
@@ -185,6 +190,9 @@ install -p -m 644 %{SOURCE18} %{buildroot}%{catrustdir}/source/README
 
 # Microsoft certs
 %install_bundles %{SOURCE23} %{p11_format_microsoft_bundle}
+
+# Distrusted certs
+%install_bundles %{SOURCE24} %{p11_format_distrusted_bundle}
 
 # TODO: consider to dynamically create the update-ca-trust script from within
 #       this .spec file, in order to have the output file+directory names at once place only.
@@ -257,13 +265,16 @@ rm -f %{pkidir}/tls/certs/*.{0,pem}
 %{_bindir}/bundle2pem.sh %{pkidir}/tls/certs/%{classic_tls_bundle}
 
 %files
+%defattr(-,root,root)
 # Microsoft certs bundle file with trust
 %{_datadir}/pki/ca-trust-source/%{p11_format_microsoft_bundle}
 
 %files base
+%defattr(-,root,root)
 %{_datadir}/pki/ca-trust-source/%{p11_format_base_bundle}
 
 %files shared
+%defattr(-,root,root)
 %license LICENSE
 
 # symlinks for old locations
@@ -307,6 +318,9 @@ rm -f %{pkidir}/tls/certs/*.{0,pem}
 %dir %{pkidir}/tls
 %dir %{pkidir}/tls/certs
 
+# Distrusted CAs
+%{_datadir}/pki/ca-trust-source/%{p11_format_distrusted_bundle}
+
 %ghost %{catrustdir}/extracted/pem/tls-ca-bundle.pem
 %ghost %{catrustdir}/extracted/pem/email-ca-bundle.pem
 %ghost %{catrustdir}/extracted/pem/objsign-ca-bundle.pem
@@ -315,15 +329,60 @@ rm -f %{pkidir}/tls/certs/*.{0,pem}
 %ghost %{catrustdir}/extracted/edk2/cacerts.bin
 
 %files tools
+%defattr(-,root,root)
 # update/extract tool
 %{_bindir}/update-ca-trust
 
 %{_mandir}/man8/update-ca-trust.8.gz
 
 %files legacy
+%defattr(-,root,root)
 %{_bindir}/bundle2pem.sh
 
 %changelog
+* Mon Nov 24 2025 Pawel Winogrodzki <pawelwi@microsoft.com> - 1:3.0.0-14
+- Adding 2 new base CAs: 'Microsoft TLS RSA Root G2' and 'Microsoft TLS ECC Root G2'.
+
+* Mon Oct 27 2025 Andrew Phelps <anphel@microsoft.com> - 1:3.0.0-13
+- Revert: Adding 2 new base CAs: 'Microsoft TLS RSA Root G2' and 'Microsoft TLS ECC Root G2'.
+
+* Wed Sep 24 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1:3.0.0-12
+- Updating Microsoft trusted root CAs.
+
+* Fri Sep 05 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1:3.0.0-11
+- Updating Microsoft trusted root CAs.
+
+* Tue Sep 02 2025 Pawel Winogrodzki <pawelwi@microsoft.com> - 1:3.0.0-10
+- Adding 2 new base CAs: 'Microsoft TLS RSA Root G2' and 'Microsoft TLS ECC Root G2'.
+
+* Thu Aug 28 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1:3.0.0-9
+- Updating Microsoft trusted root CAs.
+
+* Wed Dec 11 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.0.0-8
+- Update adding Microsoft distrusted CAs.
+- Explicitly set default file ownership to root:root.
+
+* Tue Aug 13 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.0.0-7
+- Updating Microsoft trusted root CAs.
+
+* Mon Apr 22 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.0.0-6
+- Updating Microsoft trusted root CAs.
+
+* Mon Mar 18 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.0.0-5
+- Extending base set of certificates.
+
+* Wed Feb 28 2024 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 3.0.0-4
+- Updated certdata.base.txt to replace CBL-Mariner with Azure Linux
+
+* Sat Jan 27 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.0.0-3
+- Updating Microsoft trusted root CAs.
+
+* Fri Jan 19 2024 Andrew Phelps <anphel@microsoft.com> - 3.0.0-2
+- Use asciidoc binary instead of asciidoc.py
+
+* Tue Jan 09 2024 Cameron Baird <cameronbaird@microsoft.com> - 3.0.0-1
+- Initial version for AzureLinux 3.0.
+
 * Mon May 08 2023 CBL-Mariner Service Account <cblmargh@microsoft.com> - 2.0.0-13
 - Updating Microsoft trusted root CAs.
 
@@ -403,10 +462,10 @@ rm -f %{pkidir}/tls/certs/*.{0,pem}
 * Wed Oct 21 2020 Pawel Winogrodzki <pawelwi@microsoft.com> - 20200720-9
 - Switching to the correct source for the Microsoft bundle.
 
-* Mon Sep 13 2020 Pawel Winogrodzki <pawelwi@microsoft.com> - 20200720-8
+* Sun Sep 13 2020 Pawel Winogrodzki <pawelwi@microsoft.com> - 20200720-8
 - Aligning 'nssckbi.h' with the used 'certdata.txt' version for the Mozilla bundle.
 
-* Mon Sep 13 2020 Pawel Winogrodzki <pawelwi@microsoft.com> - 20200720-7
+* Sun Sep 13 2020 Pawel Winogrodzki <pawelwi@microsoft.com> - 20200720-7
 - Removing unused 'Requires*'.
 
 * Wed Sep 09 2020 Pawel Winogrodzki <pawelwi@microsoft.com> - 20200720-6

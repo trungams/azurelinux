@@ -1,17 +1,22 @@
+%global pypkg python3
+%global pyver 3
+
+%define majminorver %(echo %{version} | cut -d. -f1-2)
 Summary:        Utilities for file systems, consoles, partitions, and messages
 Name:           util-linux
-Version:        2.37.4
-Release:        6%{?dist}
+Version:        2.40.2
+Release:        3%{?dist}
 License:        GPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/System
 URL:            https://git.kernel.org/pub/scm/utils/util-linux/util-linux.git/about/
-Source0:        https://mirrors.edge.kernel.org/pub/linux/utils/%{name}/v2.37/%{name}-%{version}.tar.xz
+Source0:        https://mirrors.edge.kernel.org/pub/linux/utils/%{name}/v%{majminorver}/%{name}-%{version}.tar.xz
 Source1:        runuser
 Source2:        runuser-l
 Source3:        su
-Patch0:         libblkid-src-probe-check-for-ENOMEDIUM.patch
+Source4:        su-l
+Patch0:         CVE-2025-14104.patch
 BuildRequires:  audit-devel
 BuildRequires:  libcap-ng-devel
 BuildRequires:  libselinux-devel
@@ -23,8 +28,9 @@ Conflicts:      toybox
 Provides:       %{name}-ng = %{version}-%{release}
 Provides:       hardlink = 1.3-9
 Provides:       uuidd = %{version}-%{release}
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  ncurses-term
+BuildRequires:  sudo
 %endif
 
 %description
@@ -62,6 +68,17 @@ Group:          Development/Libraries
 %description libs
 These are library files of util-linux.
 
+%package -n %{pypkg}-libmount
+Summary:        Python bindings for the libmount library
+Requires:       %{name}-libs = %{version}-%{release}
+License:        LGPL-2.1-or-later
+
+%description -n %{pypkg}-libmount
+The libmount-python package contains a module that permits applications
+written in the Python programming language to use the interface
+supplied by the libmount library to work with mount tables (fstab,
+mountinfo, etc) and mount filesystems.
+
 %prep
 %autosetup -p1
 sed -i -e 's@etc/adjtime@var/lib/hwclock/adjtime@g' $(grep -rl '%{_sysconfdir}/adjtime' .)
@@ -76,7 +93,8 @@ autoreconf -fi
     --disable-silent-rules \
     --disable-static \
     --disable-use-tty-group \
-    --without-python \
+    --disable-liblastlog2 \
+    --with-python=%{pyver} \
     --with-selinux \
     --with-audit
 make %{?_smp_mflags}
@@ -97,10 +115,11 @@ install -vdm755 %{buildroot}%{_sysconfdir}/pam.d
 install -vm644 %{SOURCE1} %{buildroot}%{_sysconfdir}/pam.d/
 install -vm644 %{SOURCE2} %{buildroot}%{_sysconfdir}/pam.d/
 install -vm644 %{SOURCE3} %{buildroot}%{_sysconfdir}/pam.d/
+install -vm644 %{SOURCE4} %{buildroot}%{_sysconfdir}/pam.d/
 
 %check
 chown -Rv nobody .
-sudo -u nobody -s /bin/bash -c "PATH=$PATH make -k check"
+sudo -u nobody -s /bin/bash -c "PATH=$PATH make -k check" || exit 1
 rm -rf %{buildroot}/lib/systemd/system
 
 %post   -p /sbin/ldconfig
@@ -126,6 +145,7 @@ rm -rf %{buildroot}/lib/systemd/system
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/runuser
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/runuser-l
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/su
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/su-l
 
 %files lang -f %{name}.lang
 %defattr(-,root,root)
@@ -139,6 +159,10 @@ rm -rf %{buildroot}/lib/systemd/system
 /lib/libsmartcols.so.*
 /lib/libfdisk.so.*
 
+%files -n %{pypkg}-libmount
+%license Documentation/licenses/COPYING.LGPL-2.1-or-later
+%{_libdir}/python*/site-packages/libmount/
+
 %files devel
 %defattr(-,root,root)
 %license Documentation/licenses/COPYING.LGPL-2.1-or-later libsmartcols/COPYING
@@ -148,6 +172,30 @@ rm -rf %{buildroot}/lib/systemd/system
 %{_mandir}/man3/*
 
 %changelog
+* Tue Dec 30 2025 Sandeep Karambelkar <skarambelkar@microsoft.com> - 2.40.2-3
+- Compiled with python
+- Added the package python3-libmount
+
+* Wed Dec 17 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 2.40.2-2
+- Patch for CVE-2025-14104
+
+* Wed Sep 18 2024 Vince Perri <viperri@microsoft.com> - 2.40.2-1
+- Upgrade to 2.40.2:
+-   Added --disable-liblastlog2 to avoid building new liblastlog2 libraries
+-   Removed CVE-2024-28085 patch as it is fixed in 2.40.2
+
+* Mon Sep 09 2024 Harshit Gupta <guptaharshit@microsoft.com> - 2.39.2-2
+- Fix CVE-2024-28085 by adding patch
+
+* Tue Nov 28 2023 Andrew Phelps <anphel@microsoft.com> - 2.39.2-1
+- Upgrade to 2.39.2
+
+* Thu Sep 21 2023 Andrew Phelps <anphel@microsoft.com> - 2.37.4-8
+- Add su-l file for PAM
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 2.37.4-7
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Wed May 24 2023 Tobias Brick <tobiasb@microsoft.com> - 2.37.4-6
 - Add SETUID bit to mount and umount.
 

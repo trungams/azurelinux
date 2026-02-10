@@ -1,18 +1,15 @@
+%global lld_srcdir llvm-project-llvmorg-%{version}
+
 Summary:        LLD is a linker from the LLVM project that is a drop-in replacement for system linkers and runs much faster than them
 Name:           lld
-Version:        12.0.1
+Version:        18.1.8
 Release:        1%{?dist}
 License:        NCSA
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Tools
-URL:            https://clang.llvm.org
-Source0:        https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}/lld-%{version}.src.tar.xz
-# The `lld` build needs access to `mach-o/compact_unwind_encoding.h` which LLVM
-# packages with the `libunwind` source.  We fetch and unpack both sources then
-# pass an additional `-I` to `CMAKE` to allow the build to find the header.
-Source1:        https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}/libunwind-%{version}.src.tar.xz
-BuildRequires:  build-essential
+URL:            https://lld.llvm.org/
+Source0:        https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-%{version}.tar.gz
 BuildRequires:  cmake
 BuildRequires:  file
 BuildRequires:  llvm-devel
@@ -38,7 +35,7 @@ programs that use the LLD infrastructure.
 Shared libraries for LLD.
 
 %prep
-%setup -q -b 1 -n lld-%{version}.src
+%autosetup -n %{lld_srcdir}
 
 %build
 mkdir -p build
@@ -50,8 +47,13 @@ cd build
        -DCMAKE_C_FLAGS=-I../../libunwind-%{version}.src/include   \
        -DCMAKE_CXX_FLAGS=-I../../libunwind-%{version}.src/include \
        -DLLVM_LINK_LLVM_DYLIB:BOOL=on                             \
+       -DCMAKE_INSTALL_PREFIX=%{_prefix}                          \
+       -DLLVM_DIR=%{_libdir}/cmake/llvm                           \
+       -DBUILD_SHARED_LIBS:BOOL=ON                                \
        -DLLVM_DYLIB_COMPONENTS="all"                              \
-       -Wno-dev
+       -Wno-dev                                                   \
+       ../lld
+
 %ninja_build
 
 %install
@@ -59,18 +61,37 @@ cd build
 %ninja_install
 
 %files
-%{_bindir}/*
+%license LICENSE.TXT
+%{_bindir}/lld*
+%{_bindir}/ld.lld
+%{_bindir}/ld64.lld
+%{_bindir}/wasm-ld
 
 %files devel
 %{_includedir}/lld/
 %{_libdir}/cmake/lld/*.cmake
-%{_libdir}/*.so
+%{_libdir}/liblld*.so
 
 %files libs
-%license LICENSE.TXT
-%{_libdir}/*.so.12*
+%{_libdir}/liblld*.so.*
 
 %changelog
-*   Thu Aug 12 2021 Andy Caldwell <andycaldwell@microsoft.com>  12.0.1-1
--   Original version for CBL-Mariner.
--   License verified
+* Tue Jun 03 2025 Pawel Winogrodzki <pawelwi@microsoft.com> - 18.1.8-1
+- Updated to version 18.1.8.
+
+* Tue Sep 03 2024 Andrew Phelps <anphel@microsoft.com> - 18.1.2-3
+- Update file listing with explicit filenames
+- Remove unnecessary BR on build-essential
+
+* Wed May 29 2024 Neha Agarwal <nehaagarwal@microsoft.com> - 18.1.2-2
+- Bump release to build with new llvm to fix CVE-2024-31852
+
+* Wed Apr 03 2024 Andrew Phelps <anphel@microsoft.com> - 18.1.2-1
+- Upgrade to version 18.1.2
+
+* Tue Jan 16 2024 Nicolas Guibourge <nicolasg@microsoft.com> - 17.0.6-1
+- Upgrade to 17.0.6
+
+* Thu Aug 12 2021 Andy Caldwell <andycaldwell@microsoft.com>  12.0.1-1
+- Original version for CBL-Mariner.
+- License verified

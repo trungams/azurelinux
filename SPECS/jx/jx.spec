@@ -1,10 +1,10 @@
 Summary:        Command line tool for working with Jenkins X.
 Name:           jx
-Version:        3.2.236
-Release:        12%{?dist}
+Version:        3.10.182
+Release:        3%{?dist}
 License:        Apache-2.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/Tools
 URL:            https://github.com/jenkins-x/jx
 Source0:        https://github.com/jenkins-x/jx/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
@@ -27,8 +27,9 @@ Source0:        https://github.com/jenkins-x/jx/archive/v%{version}.tar.gz#/%{na
 #         See: https://reproducible-builds.org/docs/archives/
 #       - For the value of "--mtime" use the date "2021-04-26 00:00Z" to simplify future updates.
 Source1:        %{name}-%{version}-vendor.tar.gz
+Patch0:         CVE-2025-58058.patch
 
-BuildRequires:  golang >= 1.17.1
+BuildRequires:  golang < 1.25
 %global debug_package %{nil}
 %define our_gopath %{_topdir}/.gopath
 
@@ -36,10 +37,12 @@ BuildRequires:  golang >= 1.17.1
 Command line tool for working with Jenkins X.
 
 %prep
-%autosetup -p1
+%autosetup -N
+# Apply vendor before patching
+tar --no-same-owner -xf %{SOURCE1}
+%autopatch -p1
 
 %build
-tar --no-same-owner -xf %{SOURCE1}
 export GOPATH=%{our_gopath}
 # No download use vednor cache locally
 sed -i 's/go mod download/# go mod download/' ./Makefile
@@ -60,6 +63,27 @@ install -p -m 755 -t %{buildroot}%{_bindir} ./build/jx
 %{_bindir}/jx
 
 %changelog
+* Wed Sep 03 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 3.10.182-3
+- Patch for CVE-2025-58058
+
+* Sun Aug 31 2025 Andrew Phelps <anphel@microsoft.com> - 3.10.182-2
+- Set BR for golang to < 1.25
+
+* Thu Feb 13 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.10.182-1
+- Auto-upgrade to 3.10.182 - Fix CVE-2023-39325 and CVE-2023-44487 in jx
+
+* Thu Aug 22 2024 Sumedh Sharma <sumsharma@microsoft.com> - 3.10.116-2
+- Add patch to resolve CVE-2023-45288
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.10.116-1
+- Auto-upgrade to 3.10.116 - Azure Linux 3.0 - package upgrades
+
+* Mon Oct 16 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.2.236-14
+- Bump release to rebuild with go 1.20.10
+
+* Tue Oct 10 2023 Dan Streetman <ddstreet@ieee.org> - 3.2.236-13
+- Bump release to rebuild with updated version of Go.
+
 * Mon Aug 07 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.2.236-12
 - Bump release to rebuild with go 1.19.12
 

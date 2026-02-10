@@ -1,11 +1,11 @@
 Name:		perl-File-Remove
-Version:	1.58
-Release:	7%{?dist}
+Version:	1.61
+Release:	1%{?dist}
 Summary:	Convenience module for removing files and directories
 License:	GPL+ or Artistic
 
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:		https://metacpan.org/release/File-Remove
 Source0:	https://cpan.metacpan.org/authors/id/S/SH/SHLOMIF/File-Remove-%{version}.tar.gz#/perl-File-Remove-%{version}.tar.gz
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
@@ -57,6 +57,10 @@ chmod -R u+w $RPM_BUILD_ROOT/*
 %{_mandir}/man3/*
 
 %changelog
+* Mon Dec 23 2024 Kevin Lockwood <v-klockwood@microsoft.com> - 1.61-1
+- Update to version 1.61
+- License verified
+
 * Fri Apr 22 2022 Muhammad Falak <mwani@microsoft.com> - 1.58-7
 - Add an explicit BR on `perl(blib)` to enable ptest
 - License verified

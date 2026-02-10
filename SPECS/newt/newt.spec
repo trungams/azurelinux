@@ -1,10 +1,10 @@
 Summary:        A library for text mode user interfaces
 Name:           newt
-Version:        0.52.21
-Release:        4%{?dist}
+Version:        0.52.23
+Release:        1%{?dist}
 License:        GPLv2
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Languages
 URL:            https://pagure.io/newt
 Source0:        https://pagure.io/releases/%{name}/%{name}-%{version}.tar.gz
@@ -95,6 +95,12 @@ make %{?_smp_mflags} test
 %defattr(-,root,root)
 
 %changelog
+* Tue Nov 21 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 0.52.23-1
+- Auto-upgrade to 0.52.23 - Azure Linux 3.0 - package upgrades
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 0.52.21-5
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Wed Apr 13 2022 Suresh Babu Chalamalasetty <schalam@microsoft.com> - 0.52.21-4
 - Create lang sub package for locales
 

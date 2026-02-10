@@ -7,13 +7,19 @@
 
 Summary:        Read and write Windows Registry binary hive files
 Name:           hivex
-Version:        1.3.21
-Release:        1%{?dist}
+Version:        1.3.23
+Release:        2%{?dist}
 License:        LGPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://libguestfs.org/
 Source0:        http://libguestfs.org/download/hivex/%{name}-%{version}.tar.gz
+# Upstream patches to fix Ruby minitest support.
+# https://bugzilla.redhat.com/show_bug.cgi?id=2229653
+Patch:          0001-ruby-Replace-MiniTest-with-Minitest.patch
+Patch:          0002-ruby-Get-rid-of-old-Test-Unit-compatibility.patch
+# Another upstream patch, not required.
+Patch:          0003-build-Go-back-to-gettext-0.19.patch
 
 BuildRequires:  %{_bindir}/pod2html
 BuildRequires:  %{_bindir}/pod2man
@@ -46,7 +52,7 @@ BuildRequires:  rubygem(minitest)
 BuildRequires:  rubygem(rdoc)
 
 %if %{with ocaml}
-BuildRequires:  ocaml
+BuildRequires:  ocaml >= 5.1.1
 BuildRequires:  ocaml-findlib-devel
 %endif
 
@@ -186,12 +192,12 @@ if ! make check -k; then
         cat $f
         echo
     done
-    exit 1
+    false
 fi
 
 %files -f %{name}.lang
 %license LICENSE
-%doc README
+%doc README.md
 %{_bindir}/hivexget
 %{_bindir}/hivexml
 %{_bindir}/hivexsh
@@ -211,7 +217,7 @@ fi
 
 %if %{with ocaml}
 %files -n ocaml-%{name}
-%doc README
+%doc README.md
 %{_libdir}/ocaml/hivex
 %exclude %{_libdir}/ocaml/hivex/*.a
 %exclude %{_libdir}/ocaml/hivex/*.cmxa
@@ -244,6 +250,19 @@ fi
 %{ruby_vendorarchdir}/_hivex.so
 
 %changelog
+* Wed May 08 2024 Mykhailo Bykhovtsev <mbykhovtsev@microsoft.com> - 1.3.23-2
+- Rebuild with using ocaml 5.1.1
+- Add patches for Ruby and gettext. Imported from Fedora 41
+
+* Fri Feb 16 2024 Yash Panchal <yashpanchal@microsoft.com> - 1.3.23-1
+- Upgrate to 1.3.23.
+
+* Tue Sep 26 2023 Pawel Winogrodzki <pawelwi@microsoft.com> - 1.3.21-3
+- Removing 'exit' calls from the '%%check' section.
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 1.3.21-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Tue May 31 2022 Nicolas Guibourge <nicolasg@microsoft.com> - 1.3.20-1
 - Upgrade to 1.3.21 to fix CVE-2021-3504 and CVE-2021-3622.
 

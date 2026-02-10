@@ -1,14 +1,13 @@
 Summary:        Contains the utilities for the ext2 file system
 Name:           e2fsprogs
-Version:        1.46.5
-Release:        3%{?dist}
+Version:        1.47.0
+Release:        2%{?dist}
 License:        GPLv2 AND LGPLv2 AND BSD AND MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Base
 URL:            http://e2fsprogs.sourceforge.net
 Source0:        https://prdownloads.sourceforge.net/e2fsprogs/%{name}-%{version}.tar.gz
-Patch0:         CVE-2022-1304.patch
 Requires:       %{name}-libs = %{version}-%{release}
 Conflicts:      toybox
 
@@ -63,6 +62,11 @@ rm -rf %{buildroot}%{_infodir}
 %find_lang %{name}
 
 %check
+# This test is known to fail; remove it
+# See upstream issue: https://github.com/tytso/e2fsprogs/issues/134
+# See also LFS: https://www.linuxfromscratch.org/lfs/downloads/stable/LFS-BOOK-12.1-NOCHUNKS.html#ch-system-e2fsprogs
+rm -rvf tests/m_assume_storage_prezeroed
+
 # Multi-threaded runs are flaky.
 make -j1 check
 test_status=$?
@@ -144,6 +148,12 @@ done
 %defattr(-,root,root)
 
 %changelog
+* Mon Aug 19 2024 Andrew Phelps <anphel@microsoft.com> - 1.47.0-2
+- Remove known bad package test
+
+* Tue Nov 28 2023 Andrew Phelps <anphel@microsoft.com> - 1.47.0-1
+- Upgrade to 1.47.0
+
 * Thu Aug 11 2022 Muhammad Falak <mwani@microsoft.com> - 1.46.5-3
 - Switch to `%autosetup` instead of `%setup`
 - Patch CVE-2022-1304

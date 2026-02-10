@@ -3,11 +3,11 @@
 %global manpages 0
 Summary:        Resource discovery and announcement over SSDP
 Name:           gssdp
-Version:        1.6.2
-Release:        3%{?dist}
-License:        LGPLv2+
+Version:        1.6.3
+Release:        1%{?dist}
+License:        LGPLv2.1+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://www.gupnp.org/
 Source0:        https://github.com/GNOME/%{name}/archive/refs/tags/%{name}-%{version}.tar.gz
 BuildRequires:  pkgconfig(gio-2.0)
@@ -115,6 +115,10 @@ This package contains developer documentation for %{name}.
 %endif
 
 %changelog
+* Fri Oct 18 2024 Kevin Lockwood <v-klockwood@microsoft.com> - 1.6.3-1
+- Update to latest current release for azurelinux 3.0
+- License verified
+
 * Tue Jan 31 2023 Sumedh Sharma <sumsharma@microsoft.com> - 1.6.2-3
 - Initial CBL-Mariner import from Fedora 38 (license: MIT)
 - Disable gssdp-device-sniffer, docs and manpage sub-package builds

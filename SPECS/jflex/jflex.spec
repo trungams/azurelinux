@@ -17,12 +17,12 @@
 
 Summary:        Lexical Analyzer Generator for Java
 Name:           jflex
-Version:        1.4.3
-Release:        31%{?dist}
+Version:        1.9.1
+Release:        2%{?dist}
 License:        GPL-2.0+
 Group:          Development/Libraries/Java
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Url:            http://www.jflex.de/
 Source0:        https://github.com/jflex-de/jflex/archive/refs/tags/release_1_4_3.tar.gz#/%{name}-%{version}.tar.gz
 Source1:        jflex.script
@@ -90,14 +90,14 @@ export CLASSPATH=$(build-classpath java-cup java-cup-runtime junit jflex)
 export OPT_JAR_LIST=:
 pushd src
 %{ant} realclean
-%{ant} -Dant.build.javac.source=1.6 -Dant.build.javac.target=1.6 jflex
+%{ant} -Dant.build.javac.source=1.8 -Dant.build.javac.target=1.8 jflex
 popd
-%patch0 -p1
+%patch 0 -p1
 
 # You must use Re jflex.spec and have a java-cup and jflex installed
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
+%patch 2 -p1
+%patch 3 -p1
+%patch 4 -p1
 
 %build
 cd jflex
@@ -105,7 +105,7 @@ pushd src
 export CLASSPATH=$(build-classpath java-cup java-cup-runtime junit jflex antlr-bootstrap)
 export OPT_JAR_LIST=:
 echo `pwd`
-%{ant} -Dant.build.javac.source=1.6 -Dant.build.javac.target=1.6 jar
+%{ant} -Dant.build.javac.source=1.8 -Dant.build.javac.target=1.8 jar
 popd
 
 %install
@@ -137,6 +137,12 @@ install -p -m 0755 %{SOURCE1} %{buildroot}%{_bindir}/jflex
 %doc jflex/examples jflex/doc
 
 %changelog
+* Tue Feb 27 2024 Riken Maharjan <rmaharjan@microsoft.com> - 1.9.1-2
+- rebuild with msopenjdk-17
+
+* Fri Nov 03 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.9.1-1
+- Auto-upgrade to 1.9.1 - Azure Linux 3.0 - package upgrades
+
 * Thu Mar 24 2022 Cameron Baird <cameronbaird@microsoft.com> - 1.4.3-31
 - Remove condition macros for with/without, bootstrap; redundant with separate spec
 - Switch source to one that is actively published on github

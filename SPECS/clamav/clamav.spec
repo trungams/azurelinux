@@ -1,17 +1,20 @@
 Summary:        Open source antivirus engine
 Name:           clamav
-Version:        0.105.2
-Release:        1%{?dist}
+Version:        1.0.9
+Release:        2%{?dist}
 License:        ASL 2.0 AND BSD AND bzip2-1.0.4 AND GPLv2 AND LGPLv2+ AND MIT AND Public Domain AND UnRar
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Security
 URL:            https://www.clamav.net
 Source0:        https://github.com/Cisco-Talos/clamav/archive/refs/tags/%{name}-%{version}.tar.gz
 # Note: the %%{name}-%%{name}-%%{version}-cargo.tar.gz file contains a cache created by capturing the contents downloaded into $CARGO_HOME.
 # To update the cache run:
 #   [repo_root]/toolkit/scripts/build_cargo_cache.sh %%{name}-%%{version}.tar.gz %%{name}-%%{name}-%%{version}
-Source1:        %{name}-%{name}-%{version}-cargo.tar.gz
+
+# Note: Required an updated cargo cache when rust was updated to 1.72.0, added "-rev2" to the filename to indicate the new cache for this
+# specific event. Revert back to the original filename when a new cache is created for a different version.
+Source1:        %{name}-%{version}-cargo.tar.gz
 BuildRequires:  bzip2-devel
 BuildRequires:  check-devel
 BuildRequires:  cmake
@@ -28,8 +31,10 @@ BuildRequires:  pcre2-devel
 BuildRequires:  python3
 BuildRequires:  python3-pip
 BuildRequires:  python3-pytest
-BuildRequires:  rust
+BuildRequires:  rust < 1.85.0
+BuildRequires:  systemd
 BuildRequires:  systemd-devel
+BuildRequires:  systemd-rpm-macros
 BuildRequires:  valgrind
 BuildRequires:  zlib-devel
 Requires:       openssl
@@ -72,11 +77,10 @@ cmake \
     -D ENABLE_SYSTEMD=ON \
     -D ENABLE_MILTER=OFF \
     -D ENABLE_EXAMPLES=OFF
-%cmake_build
+%cmake3_build
 
 %check
-cd build
-ctest --verbose
+%ctest3 -- -E valgrind
 
 %install
 %cmake_install
@@ -94,20 +98,24 @@ mv %{buildroot}%{_sysconfdir}/clamav/freshclam.conf{.sample,}
 chmod 600 %{buildroot}%{_sysconfdir}/clamav/freshclam.conf
 
 %pre
-if ! getent group clamav >/dev/null; then
-    groupadd -r clamav
-fi
-if ! getent passwd clamav >/dev/null; then
-    useradd -g clamav -d %{_sharedstatedir}/clamav\
-        -s /bin/false -M -r clamav
+if [ $1 -eq 1 ]; then
+    if ! getent group clamav >/dev/null; then
+        groupadd -r clamav
+    fi
+    if ! getent passwd clamav >/dev/null; then
+        useradd -g clamav -d %{_sharedstatedir}/clamav\
+            -s /bin/false -M -r clamav
+    fi
 fi
 
 %postun
-if getent passwd clamav >/dev/null; then
-    userdel clamav
-fi
-if getent group clamav >/dev/null; then
-    groupdel clamav
+if [ $1 -eq 0 ]; then
+    if getent passwd clamav >/dev/null; then
+        userdel clamav
+    fi
+    if getent group clamav >/dev/null; then
+        groupdel clamav
+    fi
 fi
 
 %files
@@ -128,6 +136,37 @@ fi
 %dir %attr(-,clamav,clamav) %{_sharedstatedir}/clamav
 
 %changelog
+* Mon Jul 21 2025 Jyoti Kanase <v-jykanase@microsoft.com> - 1.0.9-2
+- Bump release to rebuild with rust
+
+* Tue Jun 24 2025 Kshitiz Godara <kgodara@microsoft.com> - 1.0.9-1
+- Upgrade to version 1.0.9 to fix CVE-2025-20260
+
+* Tue Jun 10 2025 Kavya Sree Kaitepalli <kkaitepalli@microsoft.com> - 1.0.7-3
+- Bump release to rebuild with rust
+
+* Mon Apr 21 2025 Kavya Sree Kaitepalli <kkaitepalli@microsoft.com> - 1.0.7-2
+- Pin rust version
+
+* Fri Oct 18 2024 Archana Choudhary <archana1@microsoft.com> - 1.0.7-1
+- Upgrade to version 1.0.7
+- Fixes CVE-2024-20506, CVE-2024-20505
+
+* Thu Apr 18 2024 Betty Lakes <bettylakes@microsoft.com> - 1.0.6-1
+- Upgrade to version 1.0.6
+
+* Wed Apr 17 2024 Andrew Phelps <anphel@microsoft.com> - 0.105.2-5
+- Fix build break by adding BR for systemd
+
+* Fri Dec 08 2023 Neha Agarwal <nehaagarwal@microsoft.com> - 0.105.2-4
+- Fix resetting of user and group settings on package update
+
+* Thu Sep 07 2023 Daniel McIlvaney <damcilva@microsoft.com> - 0.105.2-3
+- Bump package to rebuild with rust 1.72.0
+
+* Tue Aug 29 2023 Tobias Brick <tobiasb@microsoft.com> - 0.105.2-2
+- Patch CVE-2022-48579
+
 * Fri Feb 17 2023 corvus-callidus <108946721+corvus-callidus@users.noreply.github.com> - 0.105.2-1
 - Upgrade to 0.105.2 to fix CVE-2023-20032 and CVE-2023-20052
 

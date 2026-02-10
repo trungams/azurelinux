@@ -1,12 +1,12 @@
-%global openssh_ver 8.9p1
+%global openssh_ver 9.8p1
 %global pam_ssh_agent_ver 0.10.3
 Summary:        Free version of the SSH connectivity tools
 Name:           openssh
 Version:        %{openssh_ver}
-Release:        1%{?dist}
+Release:        5%{?dist}
 License:        BSD
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Security
 URL:            https://www.openssh.com/
 Source0:        https://ftp.usa.openbsd.org/pub/OpenBSD/OpenSSH/portable/%{name}-%{openssh_ver}.tar.gz
@@ -32,7 +32,17 @@ Patch306:       pam_ssh_agent_auth-0.10.2-compat.patch
 # Fix NULL dereference from getpwuid() return value
 # https://sourceforge.net/p/pamsshagentauth/bugs/22/
 Patch307:       pam_ssh_agent_auth-0.10.2-dereference.patch
-Patch308:       CVE-2023-38408.patch
+#CVE Patches
+#This CVE Patches both CVE-2025-26465 and CVE-2025-26466
+Patch400:       CVE-2025-26465.patch
+Patch401:       CVE-2025-32728.patch
+Patch402:       CVE-2025-61984.patch
+Patch403:       CVE-2025-61985.patch
+# sk-dummy.so built with -fvisibility=hidden does not work
+# The tests fail with the following error:
+#   dlsym(sk_api_version) failed: (...)/sk-dummy.so: undefined symbol: sk_api_version
+Patch965: openssh-8.2p1-visibility.patch
+
 BuildRequires:  audit-devel
 BuildRequires:  autoconf
 BuildRequires:  e2fsprogs-devel
@@ -43,8 +53,8 @@ BuildRequires:  libselinux-devel
 BuildRequires:  make
 BuildRequires:  openssl-devel
 BuildRequires:  pam-devel
-BuildRequires:  systemd
-%if %{with_check}
+BuildRequires:  systemd-bootstrap-rpm-macros
+%if 0%{?with_check}
 BuildRequires:  shadow-utils
 BuildRequires:  sudo
 %endif
@@ -95,17 +105,22 @@ The module is most useful for su and sudo service stacks.
 %setup -q -a 3
 
 pushd pam_ssh_agent_auth-%{pam_ssh_agent_ver}
-%patch300 -p2 -b .psaa-build
-%patch301 -p2 -b .psaa-seteuid
-%patch302 -p2 -b .psaa-visibility
-%patch306 -p2 -b .psaa-compat
-%patch305 -p2 -b .psaa-agent
-%patch307 -p2 -b .psaa-deref
+%patch -P 300 -p2 -b .psaa-build
+%patch -P 301 -p2 -b .psaa-seteuid
+%patch -P 302 -p2 -b .psaa-visibility
+%patch -P 306 -p2 -b .psaa-compat
+%patch -P 305 -p2 -b .psaa-agent
+%patch -P 307 -p2 -b .psaa-deref
 # Remove duplicate headers and library files
 rm -f $(cat %{SOURCE4})
 autoreconf
 popd
-%patch308 -p2 -b .cve-2023-38408
+
+%patch -P 400 -p1 -b .CVE-2025-26465.patch
+%patch -P 401 -p1 -b .CVE-2025-32728.patch
+%patch -P 965 -p1 -b .visibility
+%patch -P 402 -p1 -b .CVE-2025-61984.patch
+%patch -P 403 -p1 -b .CVE-2025-61985.patch
 
 %build
 # The -fvisibility=hidden is needed for clean build of the pam_ssh_agent_auth.
@@ -228,6 +243,7 @@ fi
 /lib/systemd/system/sshd-keygen.service
 /lib/systemd/system/sshd.service
 %{_sbindir}/sshd
+%{_libexecdir}/sshd-session
 %{_libexecdir}/sftp-server
 %{_mandir}/man5/sshd_config.5.gz
 %{_mandir}/man8/sshd.8.gz
@@ -263,6 +279,33 @@ fi
 %{_mandir}/man8/ssh-sk-helper.8.gz
 
 %changelog
+* Tue Oct 07 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 9.8p1-5
+- Patch CVE-2025-61985, CVE-2025-61984
+
+* Thu Apr 17 2025 Sudipta Pandit <sudpandit@microsoft.com> - 9.8p1-4
+- Patch CVE-2025-32728
+
+* Sun Feb 16 2025 Jon Slobodzian <joslobo@microsoft.com> - 9.8p1-3
+- Patch CVE-2025-26465 and CVE-2025-26466
+
+* Fri Aug 16 2024 Pawel Winogrodzki <pawelwi@microsoft.com> - 9.8p1-2
+- Fixed 'openssh' ptests.
+
+* Mon Jul 01 2024 Jon Slobodzian <joslobo@microsoft.com> - 9.8p1-1
+- Upgrade to version 9.8p1. This fixes CVE-2024-6387 (a regression to CVE-2006-5051) in OpenSSH's server.
+
+* Thu May 02 2024 Tobias Brick <tobiasb@microsoft.com> - 9.7p1-1
+- Upgrade to version 9.7p1
+
+* Fri Feb 02 2024 Dan Streetman <ddstreet@ieee.org> - 9.5p1-2
+- workaround "circular dependencies" from build tooling
+
+* Tue Nov 14 2023 Andrew Phelps <anphel@microsoft.com> - 9.5p1-1
+- Upgrade to version 9.5p1
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 8.9p1-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Thu Jul 27 2023 Riken Maharjan <rmaharjan@microsoft.com> - 8.9p1-1
 - Fix CVE-2023-38408
 - Update to 8.9p1 so that the patch can be applied.

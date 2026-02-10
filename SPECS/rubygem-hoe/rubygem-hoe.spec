@@ -2,11 +2,11 @@
 %global gem_name hoe
 Summary:        Rake/Rubygems helper for project Rakefiles
 Name:           rubygem-hoe
-Version:        3.18.0
-Release:        2%{?dist}
+Version:        4.0.4
+Release:        1%{?dist}
 License:        MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Languages
 URL:            https://github.com/seattlerb/hoe
 Source0:        https://github.com/seattlerb/hoe/archive/refs/tags/v%{version}.tar.gz#/%{gem_name}-%{version}.tar.gz
@@ -23,6 +23,8 @@ Hoe is a rake/rubygems helper for project Rakefiles. It helps you manage, mainta
 %prep
 %setup -q -n %{gem_name}-%{version}
 cp %{SOURCE1} .
+git init .
+git add .
 
 %build
 gem build %{gem_name}
@@ -35,6 +37,9 @@ gem install -V --local --force --install-dir %{buildroot}/%{gemdir} %{gem_name}-
 %{gemdir}
 
 %changelog
+* Tue Apr 02 2024 Riken Maharjan <rmaharjan@microsoft.com> - 4.0.4-1
+- Upgrade to 4.0.4 - azl3.0
+
 * Thu Apr 21 2022 Neha Agarwal <nehaagarwal@microsoft.com> - 3.18.1-4
 - Cleanup
 

@@ -9,11 +9,11 @@
 
 Summary:        Domain Name System software
 Name:           bind
-Version:        9.16.33
-Release:        2%{?dist}
+Version:        9.20.18
+Release:        1%{?dist}
 License:        ISC
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Tools
 URL:            https://www.isc.org/downloads/bind/
 Source0:        https://ftp.isc.org/isc/bind9/%{version}/%{name}-%{version}.tar.xz
@@ -29,13 +29,14 @@ Source9:        named.root.key
 Source11:       setup-named-chroot.sh
 Source12:       generate-rndc-key.sh
 Source13:       named.rwtab
-Source14:       setup-named-softhsm.sh
-Source15:       named-chroot.files
-Patch9:         bind-9.14-config-pkcs11.patch
-Patch10:        bind-9.10-dist-native-pkcs11.patch
-Patch11:        CVE-2023-2828.patch
+Source14:       named-chroot.files
+Source15:       https://gitlab.isc.org/isc-projects/dlz-modules/-/archive/main/dlz-modules-main.tar.gz
+
+Patch0:         nongit-fix.patch
+Patch1:         fix-maybe-uninitialized-warning-in-dlz_mysqldyn_mod.patch
 
 BuildRequires:  gcc
+BuildRequires:  git
 BuildRequires:  json-c-devel
 BuildRequires:  krb5-devel
 BuildRequires:  libcap-devel
@@ -44,16 +45,21 @@ BuildRequires:  libuv-devel
 BuildRequires:  lmdb-devel
 BuildRequires:  make
 BuildRequires:  mariadb-devel
+BuildRequires:  nghttp2-devel
 BuildRequires:  openldap-devel
 BuildRequires:  openssl-devel
 BuildRequires:  postgresql-devel
 BuildRequires:  python3
 BuildRequires:  python3-ply
 BuildRequires:  sqlite-devel
+BuildRequires:  systemd-libs
 BuildRequires:  systemd-rpm-macros
+BuildRequires:  userspace-rcu-devel
 
+Requires:       %{name}-libs = %{version}-%{release}
 Requires:       libuv
 Requires:       openssl
+Requires:       userspace-rcu
 Requires(postun): %{_sbindir}/groupdel
 Requires(postun): %{_sbindir}/userdel
 Requires(pre):  %{_sbindir}/groupadd
@@ -99,48 +105,6 @@ Requires:       bind%{?_isa} = %{version}-%{release}
 
 %description dlz-sqlite3
 Dynamic Loadable Zones sqlite3 module for BIND server.
-
-%package pkcs11
-Summary:        Bind with native PKCS#11 functionality for crypto
-Requires:       bind%{?_isa} = %{version}-%{release}
-Requires:       bind-libs%{?_isa} = %{version}-%{release}
-Requires:       bind-pkcs11-libs%{?_isa} = %{version}-%{release}
-Requires:       systemd
-Recommends:     softhsm
-
-%description pkcs11
-This is a version of BIND server built with native PKCS#11 functionality.
-It is important to have SoftHSM v2+ installed and some token initialized.
-For other supported HSM modules please check the BIND documentation.
-
-%package pkcs11-utils
-Summary:        Bind tools with native PKCS#11 for using DNSSEC
-Requires:       bind-dnssec-doc = %{version}-%{release}
-Requires:       bind-pkcs11-libs%{?_isa} = %{version}-%{release}
-Obsoletes:      bind-pkcs11 < 9.9.4-16.P2
-
-%description pkcs11-utils
-This is a set of PKCS#11 utilities that when used together create rsa
-keys in a PKCS11 keystore. Also utilities for working with DNSSEC
-compiled with native PKCS#11 functionality are included.
-
-%package pkcs11-libs
-Summary:        Bind libraries compiled with native PKCS#11
-Requires:       bind-libs%{?_isa} = %{version}-%{release}
-Requires:       bind-license = %{version}-%{release}
-
-%description pkcs11-libs
-This is a set of BIND libraries (dns, isc) compiled with native PKCS#11
-functionality.
-
-%package pkcs11-devel
-Summary:        Development files for Bind libraries compiled with native PKCS#11
-Requires:       bind-devel%{?_isa} = %{version}-%{release}
-Requires:       bind-pkcs11-libs%{?_isa} = %{version}-%{release}
-
-%description pkcs11-devel
-This a set of development files for BIND libraries (dns, isc) compiled
-with native PKCS#11 functionality.
 
 %package libs
 Summary:        Libraries used by the BIND DNS packages
@@ -229,32 +193,33 @@ Summary:        BIND utilities
 %prep
 %setup -q
 
-%patch9 -p1 -b .config-pkcs11
-cp -r bin/named{,-pkcs11}
-cp -r bin/dnssec{,-pkcs11}
-cp -r lib/dns{,-pkcs11}
-cp -r lib/ns{,-pkcs11}
-%patch10 -p1 -b .dist_pkcs11
-%patch11 -p1
-
-libtoolize -c -f; aclocal -I libtool.m4 --force; autoconf -f
-
-%build
-
 # DLZ modules do not support oot builds. Copy files into build
 mkdir -p build/contrib/dlz
-cp -frp contrib/dlz/modules build/contrib/dlz/modules
+pushd build/contrib/dlz
+tar --no-same-owner -xf %{SOURCE15}
+mv dlz-modules-main/modules ./
+popd
 
+%autopatch -p1
+
+# Copying auxiliary files with libtoolize. Some files will be replaced by libtoolize -c -f.
+# The files "compile", "depcomp", and "missing" will be deleted by this process, as some
+# temporary files have the same name. The "compile" file is necessary for "configure",
+# so we need to save a backup of these files.
+mkdir backup
+mv compile depcomp missing backup/
+libtoolize -c -f; %{_bindir}/aclocal -I m4 --force; %{_bindir}/autoconf -f
+mv backup/* .
+rmdir backup
+
+%build
 ./configure \
     --prefix=%{_prefix} \
-    --with-python=python3 \
-    --with-libtool \
     --localstatedir=%{_var} \
     --disable-static \
     --includedir=%{_includedir}/bind9 \
-    --enable-native-pkcs11 \
     --with-lmdb=yes \
-    --without-libjson --with-json-c \
+    --with-json-c \
     --enable-fixed-rrset \
     --with-docbook-xsl=%{_datadir}/sgml/docbook/xsl-ns-stylesheets \
     --enable-full-report \
@@ -262,11 +227,6 @@ cp -frp contrib/dlz/modules build/contrib/dlz/modules
 %make_build
 
 pushd build/contrib/dlz/modules
-for DIR in mysql mysqldyn; do
-  sed -e 's/@DLZ_DRIVER_MYSQL_INCLUDES@/$(shell mysql_config --cflags)/' \
-      -e 's/@DLZ_DRIVER_MYSQL_LIBS@/$(shell mysql_config --libs)/' \
-      $DIR/Makefile.in > $DIR/Makefile
-done
 for DIR in filesystem ldap mysql mysqldyn sqlite3; do
   make -C $DIR CFLAGS="-fPIC -I../include $CFLAGS $LDFLAGS"
 done
@@ -300,35 +260,19 @@ mkdir -p  %{buildroot}%{_libexecdir}
 install -m 755 %{SOURCE11} %{buildroot}%{_libexecdir}/setup-named-chroot.sh
 install -m 755 %{SOURCE12} %{buildroot}%{_libexecdir}/generate-rndc-key.sh
 
-install -m 755 %{SOURCE14} %{buildroot}%{_libexecdir}/setup-named-softhsm.sh
-
 install -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/named
 mkdir -p %{buildroot}%{_sysconfdir}/sysconfig
 install -m 644 %{SOURCE1} %{buildroot}%{_sysconfdir}/sysconfig/named
-install -m 644 %{SOURCE15} %{buildroot}%{_sysconfdir}/named-chroot.files
+install -m 644 %{SOURCE14} %{buildroot}%{_sysconfdir}/named-chroot.files
 
 # Install isc/errno2result.h header
-install -m 644 lib/isc/unix/errno2result.h %{buildroot}%{_includedir}/bind9/isc
+install -m 644 lib/isc/errno2result.h %{buildroot}%{_includedir}/bind9/isc
 
 # Files required to run test-suite outside of build tree:
 cp -fp config.h %{buildroot}%{_includedir}/bind9
 
 # Remove libtool .la files:
 find %{buildroot} -type f -name "*.la" -delete -print
-
-# PKCS11 versions manpages
-pushd %{buildroot}%{_mandir}/man8
-ln -s named.8.gz named-pkcs11.8.gz
-ln -s dnssec-checkds.8.gz dnssec-checkds-pkcs11.8.gz
-ln -s dnssec-dsfromkey.8.gz dnssec-dsfromkey-pkcs11.8.gz
-ln -s dnssec-importkey.8.gz dnssec-importkey-pkcs11.8.gz
-ln -s dnssec-keyfromlabel.8.gz dnssec-keyfromlabel-pkcs11.8.gz
-ln -s dnssec-keygen.8.gz dnssec-keygen-pkcs11.8.gz
-ln -s dnssec-revoke.8.gz dnssec-revoke-pkcs11.8.gz
-ln -s dnssec-settime.8.gz dnssec-settime-pkcs11.8.gz
-ln -s dnssec-signzone.8.gz dnssec-signzone-pkcs11.8.gz
-ln -s dnssec-verify.8.gz dnssec-verify-pkcs11.8.gz
-popd
 
 # configuration files:
 touch %{buildroot}%{_sysconfdir}/rndc.{key,conf}
@@ -386,22 +330,26 @@ popd
 rm -f %{buildroot}%{_prefix}%{_sysconfdir}/bind.keys
 
 %pre
-if ! getent group named >/dev/null; then
-    groupadd -r named
-fi
-if ! getent passwd named >/dev/null; then
-    useradd -g named -d %{_sharedstatedir}/bind\
-        -s /bin/false -M -r named
+if [ $1 -eq 1 ]; then
+  if ! getent group named >/dev/null; then
+      groupadd -r named
+  fi
+  if ! getent passwd named >/dev/null; then
+      useradd -g named -d %{_sharedstatedir}/bind\
+          -s /bin/false -M -r named
+  fi
 fi
 
 %post -p /sbin/ldconfig
 %postun
 /sbin/ldconfig
-if getent passwd named >/dev/null; then
-    userdel named
-fi
-if getent group named >/dev/null; then
-    groupdel named
+if [ $1 -eq 0 ]; then
+  if getent passwd named >/dev/null; then
+      userdel named
+  fi
+  if getent group named >/dev/null; then
+      groupdel named
+  fi
 fi
 
 # Fix permissions on existing device files on upgrade
@@ -415,10 +363,8 @@ if [ $1 -gt 1 ]; then \
     fi \
   done \
 fi
-Vendor:         Microsoft Corporation
-Distribution:   Mariner
+
 %ldconfig_scriptlets libs
-%ldconfig_scriptlets pkcs11-libs
 
 %post chroot
 %chroot_fix_devices %{chroot_prefix}
@@ -430,6 +376,8 @@ fi;
 
 %files
 %dir %{_libdir}/bind
+%{_libdir}/bind/filter-a.so
+%{_libdir}/bind/filter-aaaa.so
 %dir %{_libdir}/named
 %{_libdir}/named/*.so
 %config(noreplace) %verify(not md5 size mtime) %{_sysconfdir}/sysconfig/named
@@ -437,8 +385,8 @@ fi;
 %config(noreplace) %{_sysconfdir}/logrotate.d/named
 %{_sysconfdir}/rwtab.d/named
 %{_tmpfilesdir}/named.conf
-%{_sbindir}/named-journalprint
-%{_sbindir}/named-checkconf
+%{_bindir}/named-journalprint
+%{_bindir}/named-checkconf
 %{_bindir}/named-rrchecker
 %{_bindir}/mdig
 %{_sbindir}/named
@@ -451,11 +399,12 @@ fi;
 %{_mandir}/man5/rndc.conf.5*
 %{_mandir}/man8/rndc.8*
 %{_mandir}/man8/named.8*
-%{_mandir}/man8/named-checkconf.8*
+%{_mandir}/man1/named-checkconf.1*
 %{_mandir}/man8/rndc-confgen.8*
-%{_mandir}/man8/named-journalprint.8*
+%{_mandir}/man1/named-journalprint.1*
 %{_mandir}/man8/filter-aaaa.8.gz
-%doc CHANGES README named.conf.default
+%{_mandir}/man8/filter-a.8.gz
+%doc README.md named.conf.default
 %doc sample/
 
 %defattr(0660,root,named,01770)
@@ -490,78 +439,40 @@ fi;
 
 %files dlz-ldap
 %{_libdir}/{named,bind}/dlz_ldap_dynamic.so
-%doc contrib/dlz/modules/ldap/testing/*
+%doc build/contrib/dlz/modules/ldap/testing/*
 
 %files dlz-sqlite3
 %{_libdir}/{named,bind}/dlz_sqlite3_dynamic.so
-%doc contrib/dlz/modules/sqlite3/testing/*
+%doc build/contrib/dlz/modules/sqlite3/testing/*
 
 %files libs
-%{_libdir}/*-%{version}*.so
-%exclude %{_libdir}/libdns-pkcs11*
-%exclude %{_libdir}/libns-pkcs11*
+%{_libdir}/libdns*.so
+%{_libdir}/libisc*.so
+%{_libdir}/libns*.so
 
 %files license
 %license LICENSE
 %license COPYRIGHT
 
 %files devel
-%{_libdir}/libbind9.so
-%{_libdir}/libisccc.so
-%{_libdir}/libns.so
-%{_libdir}/libdns.so
-%{_libdir}/libirs.so
-%{_libdir}/libisc.so
-%{_libdir}/libisccfg.so
 %dir %{_includedir}/bind9
 %{_includedir}/bind9/config.h
-%{_includedir}/bind9/bind9
 %{_includedir}/bind9/isccc
 %{_includedir}/bind9/ns
 %{_includedir}/bind9/dns
 %{_includedir}/bind9/dst
 %{_includedir}/bind9/irs
 %{_includedir}/bind9/isc
-%dir %{_includedir}/bind9/pk11
-%{_includedir}/bind9/pk11/site.h
 %{_includedir}/bind9/isccfg
 
-%files pkcs11
-%{_sbindir}/named-pkcs11
-%{_mandir}/man8/named-pkcs11.8*
-%{_libexecdir}/setup-named-softhsm.sh
-
-%files pkcs11-utils
-%{_sbindir}/dnssec*pkcs11
-%{_sbindir}/pkcs11-destroy
-%{_sbindir}/pkcs11-keygen
-%{_sbindir}/pkcs11-list
-%{_sbindir}/pkcs11-tokens
-%{_mandir}/man8/pkcs11*.8*
-%{_mandir}/man8/dnssec*-pkcs11.8*
-
-%files pkcs11-libs
-%{_libdir}/libdns-pkcs11*
-%{_libdir}/libns-pkcs11*
-
-%files pkcs11-devel
-%{_includedir}/bind9/pk11/*.h
-%exclude %{_includedir}/bind9/pk11/site.h
-%{_includedir}/bind9/pkcs11
-%{_libdir}/libdns-pkcs11.so
-%{_libdir}/libns-pkcs11.so
-
 %files dnssec-utils
-%{_sbindir}/dnssec*
-%exclude %{_sbindir}/dnssec*pkcs11
+%{_bindir}/dnssec*
 
 %files dnssec-doc
-%{_mandir}/man8/dnssec*.8*
-%exclude %{_mandir}/man8/dnssec*-pkcs11.8*
+%{_mandir}/man1/dnssec*.1*
 
 %files -n python3-bind
-%{python3_sitelib}/*.egg-info
-%{python3_sitelib}/isc/
+%exclude %{python3_sitelib}/python3-ply-*.noarch
 
 %files chroot
 %config(noreplace) %{_sysconfdir}/named-chroot.files
@@ -599,22 +510,85 @@ fi;
 
 %files utils
 %defattr(-,root,root)
+%{_bindir}/dig
+%{_bindir}/delv
+%{_bindir}/host
+%{_bindir}/nslookup
+%{_bindir}/nsupdate
+%{_bindir}/arpaname
 %{_sbindir}/ddns-confgen
 %{_sbindir}/tsig-keygen
-%{_sbindir}/nsec3hash
-%{_sbindir}/named-checkzone
-%{_sbindir}/named-compilezone
-%{_sbindir}/named-nzd2nzf
-%{_bindir}/*
-%{_mandir}/man1/*
+%{_bindir}/nsec3hash
+%{_bindir}/named-checkzone
+%{_bindir}/named-compilezone
+%{_bindir}/named-nzd2nzf
+%{_mandir}/man1/host.1*
+%{_mandir}/man1/nsupdate.1*
+%{_mandir}/man1/dig.1*
+%{_mandir}/man1/delv.1*
+%{_mandir}/man1/nslookup.1*
+%{_mandir}/man1/arpaname.1*
 %{_mandir}/man8/ddns-confgen.8*
 %{_mandir}/man8/tsig-keygen.8*
-%{_mandir}/man8/nsec3hash.8*
-%{_mandir}/man8/named-checkzone.8*
-%{_mandir}/man8/named-compilezone.8*
-%{_mandir}/man8/named-nzd2nzf.8*
+%{_mandir}/man1/nsec3hash.1*
+%{_mandir}/man1/named-checkzone.1*
+%{_mandir}/man1/named-compilezone.1*
+%{_mandir}/man1/named-nzd2nzf.1*
 
 %changelog
+* Wed Jan 21 2026 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 9.20.18-1
+- Auto-upgrade to 9.20.18 - for CVE-2025-13878
+
+* Fri Oct 24 2025 Kanishk Bansal <kanbansal@microsoft.com> - 9.20.15-1
+- Auto-upgrade to 9.20.15 - for CVE-2025-40778, CVE-2025-8677, CVE-2025-40780
+
+* Fri Jul 18 2025 Kevin Lockwood <v-klockwood@microsoft.com> - 9.20.11-1
+- Upgrade to 9.20.11 - for CVE-2025-40777
+
+* Mon May 26 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 9.20.9-1
+- Auto-upgrade to 9.20.9 - for CVE-2025-40775
+
+* Mon Mar 03 2025 Andrew Phelps <anphel@microsoft.com> - 9.20.5-4
+- Remove duplicate shared object files in base and devel packages
+- Remove duplicate files from utils package
+- Add requires for bind-libs from base package
+
+* Thu Feb 27 2025 Tobias Brick <tobiasb@microsoft.com> - 9.20.5-3
+- Fix uninitialized memory warning.
+
+* Tue Feb 25 2025 Tobias Brick <tobiasb@microsoft.com> - 9.20.5-2
+- Fix warning during package uninstall.
+
+* Tue Feb 04 2025 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 9.20.5-1
+- Auto-upgrade to 9.20.5 - to fix CVE-2024-12705 & CVE-2024-11187
+- Refresh nongit-fix patch to apply cleanly.
+
+* Wed Jul 24 2024 Muhammad Falak <mwani@microsoft.com> - 9.20.0-1
+- Upgrade version to 9.20.0 to address CVE-CVE-2024-0760, CVE-2024-1737, CVE-2024-1975 & CVE-2024-4076
+- Refresh patches to apply cleanly
+
+* Tue Feb 20 2024 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 9.19.21-1
+- Auto-upgrade to 9.19.21 - Mariner 3.0 package upgrade
+- Update the locations of files in the new build
+- Remove configure flags that no longer exist
+- Add patch to avoid error when not downloading bind source from git
+- Add backup of compile file to avoid deleting it by mistake
+- Remove libbind9 and libirs as they are part of the removed features in 9.19
+- Remove PKCS-11 subpackages as starting from BIND 9.18, native PKCS#11 support has been removed 
+- Update subpackages dependencies
+
+* Thu Dec 14 2023 Neha Agarwal <nehaagarwal@microsoft.com> - 9.16.44-2
+- Fix resetting of passwd and group on package update
+
+* Wed Sep 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 9.16.44-1
+- Auto-upgrade to 9.16.44 - Fix CVE-2023-3341
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 9.16.37-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
+* Thu Sep 07 2023 Betty Lakes <bettylakes@microsoft.com> - 9.16.37-1
+- Bump the version to 9.16.37 to fix CVE-2022-3924, CVE-2022-3094, CVE-2022-3736
+
 * Wed Jul 26 2023 Suresh Thelkar <sthelkar@microsoft.com> - 9.16.33-2
 - Patch to fix CVE-2023-2828
 

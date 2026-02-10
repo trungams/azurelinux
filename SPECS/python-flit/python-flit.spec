@@ -12,13 +12,13 @@ so long as they can be imported on Python 3.}
 
 Summary:        Simplified packaging of Python modules
 Name:           python-%{srcname}
-Version:        3.7.1
-Release:        3%{?dist}
+Version:        3.9.0
+Release:        2%{?dist}
 # ./flit/log.py under ASL 2.0 license
 # ./flit/upload.py under PSF license
 License:        BSD AND ASL 2.0 AND Python
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://flit.readthedocs.io/en/latest/
 Source0:        https://github.com/takluyver/flit/archive/%{version}/%{srcname}-%{version}.tar.gz
 # For the tests
@@ -32,7 +32,7 @@ BuildRequires:  python3-flit-core
 BuildRequires:  python3-pip
 BuildRequires:  python3-tomli
 
-%if %{with_check}
+%if 0%{?with_check}
 BuildRequires:  python3-atomicwrites
 BuildRequires:  python3-attrs
 BuildRequires:  python3-docutils
@@ -81,7 +81,7 @@ then
   ln -s "$(which python3)" "%{_bindir}/python"
 fi
 
-pip3 install more-itertools pluggy pytest testpath tomli_w
+pip3 install more-itertools pluggy pytest testpath tomli_w pyyaml
 
 # flit attempts to download list of classifiers from PyPI, but not if it's cached
 # test_invalid_classifier fails without the list
@@ -101,6 +101,12 @@ sudo -u test %pytest -k "not test_test_writable_dir_win"
 %{_bindir}/flit
 
 %changelog
+* Wed May 08 2024 Sam Meluch <sammeluch@microsoft.com> - 3.9.0-2
+- Add yaml dependency to pip install for check section
+
+* Fri Oct 27 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 3.9.0-1
+- Auto-upgrade to 3.9.0 - Azure Linux 3.0 - package upgrades
+
 * Wed Jul 20 2022 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.7.1-3
 - Using pip3 to install 'testpath' for ptest runs.
 

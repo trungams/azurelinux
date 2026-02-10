@@ -3,15 +3,26 @@
 Summary:        Local network service discovery
 Name:           avahi
 Version:        0.8
-Release:        1%{?dist}
+Release:        7%{?dist}
 License:        LGPLv2+
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://avahi.org
 Source0:        https://github.com/lathiat/avahi/releases/download/v%{version}/%{name}-%{version}.tar.gz
 Patch0:         %{name}-libevent-pc-fix.patch
 Patch1:         CVE-2021-3468.patch
 Patch2:         CVE-2021-3502.patch
+Patch3:         CVE-2023-1981.patch
+Patch4:         CVE-2023-38469.patch
+Patch5:         CVE-2023-38472.patch
+Patch6:         CVE-2023-38473.patch
+Patch7:         CVE-2023-38470.patch
+Patch8:         CVE-2023-38471.patch
+Patch9:         CVE-2024-52616.patch
+Patch10:        CVE-2025-68276.patch
+Patch11:        CVE-2025-68468.patch
+Patch12:        CVE-2025-68471.patch
+Patch13:        CVE-2026-24401.patch
 BuildRequires:  automake
 BuildRequires:  dbus-devel >= 0.90
 BuildRequires:  dbus-glib-devel >= 0.70
@@ -175,6 +186,16 @@ rm -fv docs/INSTALL
 %build
 # Use autogen to kill rpaths
 rm -fv missing
+
+# AZL: avahi-daemon hangs in libssp's fail() routine when built with libssp support enabled.
+# This support is dynamically set when avahi's configure scans the current build environment
+# for the presence of the standalone libssp built by gcc. 
+# This standalone implementation of libssp is generally obsoleted in most modern systems,
+# and instead the libc's implementation of SSP is used.
+# So we will remove the libssp files from here if we find they are present. Avahi's configure
+# will instead use glibc's ssp implementation which does not hang and is proper.
+rm -fv /usr/lib64/libssp.*
+
 NOCONFIGURE=1 ./autogen.sh
 
 # Note that "--with-distro=none" is necessary to prevent initscripts from being installed
@@ -204,6 +225,9 @@ NOCONFIGURE=1 ./autogen.sh
         --disable-gtk \
         --disable-gtk3 \
         --disable-mono \
+%if 0%{?with_check}
+        --enable-tests \
+%endif
 ;
 
 # workaround parallel build issues (aarch64 only so far, bug #1564553)
@@ -248,6 +272,7 @@ rm -fv  %{buildroot}%{_datadir}/avahi/interfaces/avahi-discover.ui
 
 
 %check
+%make_build -k V=1 check || make check V=1
 
 %pre
 getent group avahi >/dev/null || groupadd -f -g 70 -r avahi
@@ -405,6 +430,28 @@ exit 0
 %endif
 
 %changelog
+* Tue Jan 27 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 0.8-7
+- Patch for CVE-2026-24401
+
+* Wed Jan 14 2026 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 0.8-6
+- Patch for CVE-2025-68471, CVE-2025-68276, CVE-2025-68468
+
+* Thu Feb 13 2025 Kanishk Bansal <kanbansal@microsoft.com> - 0.8-5
+- Fix CVE-2024-52616 with an upstream patch
+
+* Mon Dec 02 2024 Kanishk Bansal <kanbansal@microsoft.com> - 0.8-4
+- Fix CVE-2023-38471 with an upstream patch
+- Fix CVE-2023-38470 with an upstream patch
+- Fix CVE-2023-38473 with an upstream patch
+- Fix CVE-2023-38472 with an upstream patch
+- Fix CVE-2023-38469 with an upstream patch
+
+* Tue Oct 29 2024 Daniel McIlvaney <damcilva@microsoft.com> - 0.8-3
+- Fix CVE-2023-1981 with an upstream patch, enable basic check section
+
+* Wed Aug 14 2024 Chris Co <chrco@microsoft.com> - 0.8-2
+- Remove libssp from build environment to fix avahi-daemon hang
+
 * Wed Apr 20 2022 Olivia Crain <oliviacrain@microsoft.com> - 0.8-1
 - Upgrade to latest upstream version to fix CVE-2017-6519
 - Add upstream patch to fix CVE-2021-3502

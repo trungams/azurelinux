@@ -2,11 +2,11 @@
 
 Summary:        Rocket-fast system for log processing
 Name:           rsyslog
-Version:        8.2204.1
-Release:        3%{?dist}
+Version:        8.2308.0
+Release:        5%{?dist}
 License:        GPLv3+ AND ASL 2.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          System Environment/Base
 URL:            https://www.rsyslog.com/
 Source0:        https://www.rsyslog.com/files/download/rsyslog/%{name}-%{version}.tar.gz
@@ -16,6 +16,7 @@ Source3:        rsyslog.conf
 # Upstream only publishes built docs for base_version.0
 Source4:        https://www.rsyslog.com/files/download/rsyslog/%{name}-doc-%{base_version}.0.tar.gz
 Source5:        rsyslog.logrotate
+Patch0:         issue5158.patch
 BuildRequires:  autogen
 BuildRequires:  curl-devel
 BuildRequires:  gnutls-devel
@@ -26,7 +27,6 @@ BuildRequires:  libgcrypt-devel
 BuildRequires:  liblognorm-devel
 BuildRequires:  librdkafka-devel
 BuildRequires:  librelp-devel
-BuildRequires:  net-snmp-devel
 BuildRequires:  postgresql-devel
 BuildRequires:  systemd-devel
 BuildRequires:  zlib-devel
@@ -63,9 +63,25 @@ BuildArch:      noarch
 %description    doc
 HTML documentation for %{name}
 
+%package mmsnmptrapd
+Summary: rsyslog support for snmptrapd
+Requires: %name = %version-%release
+
+%description mmsnmptrapd
+%{summary}
+
+%package snmp
+Summary: rsyslog support for SNMP
+Requires: %name = %version-%release
+BuildRequires: net-snmp-devel
+
+%description snmp
+%{summary}
+
 %prep
 # Unpack the code source tarball
 %setup -q
+%patch 0 -p1
 # Unpack the documentation tarball in the folder created above
 %setup -q -a 4 -T -D
 # Remove documentation sources
@@ -133,11 +149,13 @@ find %{buildroot} -type f -name "*.la" -delete -print
 %make_build check
 
 %pre
-if ! (getent passwd syslog >/dev/null); then
-    groupadd --system syslog
-fi
-if ! (getent passwd syslog >/dev/null); then
-useradd --system --comment 'System Logging'  --gid syslog --shell /bin/false syslog
+if [ $1 -eq 1 ]; then
+    if ! (getent passwd syslog >/dev/null); then
+        groupadd --system syslog
+    fi
+    if ! (getent passwd syslog >/dev/null); then
+        useradd --system --comment 'System Logging'  --gid syslog --shell /bin/false syslog
+    fi
 fi
 
 %post
@@ -150,11 +168,13 @@ fi
 %postun
 /sbin/ldconfig
 %systemd_postun_with_restart rsyslog.service
-if getent passwd syslog >/dev/null; then
-    userdel syslog
-fi
-if getent group syslog >/dev/null; then
-    groupdel syslog
+if [ $1 -eq 0 ]; then
+    if getent passwd syslog >/dev/null; then
+        userdel syslog
+    fi
+    if getent group syslog >/dev/null; then
+        groupdel syslog
+    fi
 fi
 
 %files
@@ -162,6 +182,9 @@ fi
 %license COPYING
 %{_bindir}/rscryutil
 %{_sbindir}/*
+# Exclude libraries that are packaged separately
+%exclude %{_libdir}/rsyslog/mmsnmptrapd.so
+%exclude %{_libdir}/rsyslog/omsnmp.so
 %{_libdir}/rsyslog/*.so
 %{_mandir}/man5/*
 %{_mandir}/man8/*
@@ -174,7 +197,28 @@ fi
 %files doc
 %doc %{_docdir}/%{name}/html
 
+%files mmsnmptrapd
+%{_libdir}/rsyslog/mmsnmptrapd.so
+
+%files snmp
+%{_libdir}/rsyslog/omsnmp.so
+
 %changelog
+* Tue Jan 06 2026 Pawel Winogrodzki <pawelwi@microsoft.com> - 8.2308.0-5
+- Bumping release to rebuild with new 'net-snmp' libs.
+
+* Tue Feb 04 2025 Andrew Phelps <anphel@microsoft.com> - 8.2308.0-4
+- Add patch to fix upstream issue #5158
+
+* Thu Feb 29 2024 Henry Beberman <henry.beberman@microsoft.com> - 8.2308.0-3
+- Move snmp libraries into subpackage to remove strict dependency on net-snmp-libs/perl
+
+* Thu Dec 14 2023 Neha Agarwal <nehaagarwal@microsoft.com> - 8.2308.0-2
+- Fix resetting of passwd and group on package update
+
+* Mon Nov 06 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 8.2308.0-1
+- Auto-upgrade to 8.2308.0 - Azure Linux 3.0 - package upgrades
+
 * Wed Oct 12 2022 Nan Liu <liunan@microsoft.com> - 8.2204.1-3
 - Add rsyslog configuration file to /etc/logrotate.d
 

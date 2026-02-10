@@ -1,16 +1,22 @@
 Summary:        A network performance benchmark tool.
 Name:           iperf3
-Version:        3.14
-Release:        1%{?dist}
+Version:        3.17.1
+Release:        4%{?dist}
 License:        BSD and MIT and Public Domain
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Applications/System
 URL:            https://github.com/esnet/iperf
 Source0:        https://github.com/esnet/iperf/archive/%{version}.tar.gz#/%{name}-%{version}.tar.gz
 Patch1:         disablepg.patch
+Patch2:         CVE-2024-53580.patch
+Patch3:         CVE-2025-54350.patch
+Patch4:         CVE-2025-54349.patch
+Patch5:         openssl_encrypt_buffer_size.patch
 BuildRequires:  autoconf >= 2.71
 BuildRequires:  automake
+BuildRequires:  openssl
+Requires:       openssl
 
 %description
 ipref is a network performance measurement tool that can measure the maximum
@@ -66,6 +72,24 @@ make %{?_smp_mflags} check
 %{_mandir}/man3/libiperf.3.gz
 
 %changelog
+* Tue Oct 14 2025 corvus-callidus <108946721+corvus-callidus@users.noreply.github.com> - 3.17.1-4
+- Patch for openssl buffer size issue during RSA encryption
+
+* Mon Aug 04 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 3.17.1-3
+- Patch for CVE-2025-54350, CVE-2025-54349
+
+* Tue Dec 31 2024 Kanishk Bansal <kanbansal@microsoft.com> - 3.17.1-2
+- Address CVE-2024-53580 using an upstream patch.
+
+* Fri Aug 09 2024 Muhammad Falak <mwani@microsoft.com> - 3.17.1-1
+- Update version to 3.17.1 to address CVE-2024-26306
+
+* Tue Jan 02 2024 Muhammad Falak <mwani@microsoft.com> - 3.16-1
+- Update version to 3.16
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 3.14-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Tue Aug 01 2023 Pawel Winogrodzki <pawelwi@microsoft.com> - 3.14-1
 - Updating to 3.14 to fix CVE-2023-38403.
 

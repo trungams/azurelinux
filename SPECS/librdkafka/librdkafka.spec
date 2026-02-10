@@ -4,15 +4,15 @@
 %define _binary_payload w9.gzdio
 Summary:        The Apache Kafka C library
 Name:           librdkafka
-Version:        1.8.2
-Release:        1%{?dist}
+Version:        2.3.0
+Release:        2%{?dist}
 # files like src/crc32c.c are under zlib license
 # files like win32/wingetopt.c are under ISC
 # files like src/rdfnv1a.c are under Public Domain
 # files like src/rdhdrhistogram.c are under MIT
 License:        BSD AND zlib AND ISC AND Public Domain AND MIT
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 Group:          Development/Libraries/C and C++
 URL:            https://github.com/edenhill/librdkafka
 #Source0:        https://github.com/edenhill/%{name}/archive/v%{version}.tar.gz
@@ -60,8 +60,14 @@ cat config.log
 make
 examples/rdkafka_example -X builtin.features
 
+%check
+make check
+
 %install
 DESTDIR=%{buildroot} make install
+
+# Remove extraneous license files from docs
+rm %{buildroot}%{_docdir}/librdkafka/LICENSE %{buildroot}%{_docdir}/librdkafka/LICENSES.txt
 
 %post   -n %{name}%{soname} -p /sbin/ldconfig
 %postun -n %{name}%{soname} -p /sbin/ldconfig
@@ -76,8 +82,8 @@ DESTDIR=%{buildroot} make install
 %doc %{_docdir}/librdkafka/INTRODUCTION.md
 %doc %{_docdir}/librdkafka/STATISTICS.md
 %doc %{_docdir}/librdkafka/CHANGELOG.md
-%license %{_docdir}/librdkafka/LICENSE
-%doc %{_docdir}/librdkafka/LICENSES.txt
+%license LICENSE
+%license LICENSES.txt
 
 %files -n %{name}-devel
 %defattr(-,root,root)
@@ -87,12 +93,22 @@ DESTDIR=%{buildroot} make install
 %{_libdir}/librdkafka.so
 %{_libdir}/librdkafka++.a
 %{_libdir}/librdkafka++.so
+%exclude %{_libdir}/librdkafka-static.a
 %{_libdir}/pkgconfig/rdkafka++.pc
 %{_libdir}/pkgconfig/rdkafka.pc
 %{_libdir}/pkgconfig/rdkafka-static.pc
 %{_libdir}/pkgconfig/rdkafka++-static.pc
 
 %changelog
+* Thu May 16 2024 Daniel McIlvaney <damcilva@microsoft.com> - 2.3.0-2
+- Sanitize license files
+
+* Thu Dec 21 2023 Neha Agarwal <nehaagarwal@microsoft.com> - 2.3.0-1
+- Update to v2.3.0
+
+* Wed Sep 20 2023 Jon Slobodzian <joslobo@microsoft.com> - 1.8.2-2
+- Recompile with stack-protection fixed gcc version (CVE-2023-4039)
+
 * Thu Jan 13 2022 Henry Li <lihl@microsoft.com> - 1.8.2-1
 - Upgrade to version 1.8.2
 - Use python3 as BR instead of python2

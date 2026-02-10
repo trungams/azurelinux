@@ -1,11 +1,11 @@
 %global debug_package %{nil}
 Summary:        NVIDIA container runtime hook
 Name:           nvidia-container-toolkit
-Version:        1.11.0
-Release:        11%{?dist}
+Version:        1.17.8
+Release:        2%{?dist}
 License:        ALS2.0
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
+Distribution:   Azure Linux
 URL:            https://github.com/NVIDIA/nvidia-container-toolkit
 #Source0:       https://github.com/NVIDIA/%%{name}/archive/v%%{version}.tar.gz
 Source0:        %{name}-%{version}.tar.gz
@@ -28,11 +28,13 @@ Source0:        %{name}-%{version}.tar.gz
 #         See: https://reproducible-builds.org/docs/archives/
 #       - For the value of "--mtime" use the date "2021-04-26 00:00Z" to simplify future updates.
 Source1:        %{name}-%{version}-vendor.tar.gz
-BuildRequires:  golang
+Patch0:         CVE-2025-22872.patch
+BuildRequires:  golang < 1.24.0
 Obsoletes: nvidia-container-runtime <= 3.5.0-1, nvidia-container-runtime-hook <= 1.4.0-2
 Provides: nvidia-container-runtime
 Provides: nvidia-container-runtime-hook
-Requires: libnvidia-container-tools >= 1.11.0, libnvidia-container-tools < 2.0.0
+Requires: libnvidia-container-tools >= %{version}, libnvidia-container-tools < 2.0.0
+Requires: nvidia-container-toolkit-base == %{version}-%{release}
 
 %description
 Provides a OCI hook to enable GPU support in containers.
@@ -51,32 +53,26 @@ Conflicts: nvidia-container-toolkit <= 1.10.0-1
 Provides tools such as the NVIDIA Container Runtime and NVIDIA Container Toolkit CLI to enable GPU support in containers.
 
 %prep
-%autosetup -p1
-tar -xvf %{SOURCE1}
+%autosetup -p1 -a1
 
 %build
 go build -ldflags "-s -w " -o "nvidia-container-runtime-hook" ./cmd/nvidia-container-runtime-hook
 go build -ldflags "-s -w " -o "nvidia-container-runtime" ./cmd/nvidia-container-runtime
 go build -ldflags "-s -w " -o "nvidia-ctk" ./cmd/nvidia-ctk
+go build -ldflags "-s -w " -o "nvidia-cdi-hook" ./cmd/nvidia-cdi-hook
 
 %install
 mkdir -p %{buildroot}%{_bindir}
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime-hook
 install -m 755 -t %{buildroot}%{_bindir} nvidia-container-runtime
 install -m 755 -t %{buildroot}%{_bindir} nvidia-ctk
-
-cp config/config.toml.rpm-yum config.toml
-mkdir -p %{buildroot}%{_sysconfdir}/nvidia-container-runtime
-install -m 644 -t %{buildroot}%{_sysconfdir}/nvidia-container-runtime config.toml
-
-mkdir -p %{buildroot}%{_libexecdir}/oci/hooks.d
-install -m 755 -t %{buildroot}%{_libexecdir}/oci/hooks.d oci-nvidia-hook
-
-mkdir -p %{buildroot}%{_datadir}/containers/oci/hooks.d
-install -m 644 -t %{buildroot}%{_datadir}/containers/oci/hooks.d oci-nvidia-hook.json
+install -m 755 -t %{buildroot}%{_bindir} nvidia-cdi-hook
 
 %posttrans
 ln -sf %{_bindir}/nvidia-container-runtime-hook %{_bindir}/nvidia-container-toolkit
+
+# Generate the default config; If this file already exists no changes are made.
+%{_bindir}/nvidia-ctk --quiet config --config-file=%{_sysconfdir}/nvidia-container-runtime/config.toml --in-place
 
 %postun
 rm -f %{_bindir}/nvidia-container-toolkit
@@ -84,16 +80,58 @@ rm -f %{_bindir}/nvidia-container-toolkit
 %files
 %license LICENSE
 %{_bindir}/nvidia-container-runtime-hook
-%{_libexecdir}/oci/hooks.d/oci-nvidia-hook
-%{_datadir}/containers/oci/hooks.d/oci-nvidia-hook.json
 
 %files base
 %license LICENSE
-%config %{_sysconfdir}/nvidia-container-runtime/config.toml
 %{_bindir}/nvidia-container-runtime
 %{_bindir}/nvidia-ctk
+%{_bindir}/nvidia-cdi-hook
 
 %changelog
+* Mon Jul 28 2025 Azure Linux Security Servicing Account <azurelinux-security@microsoft.com> - 1.17.8-2
+- Patch for CVE-2025-22872
+
+* Thu Jul 24 2025 Sam Meluch <sammeluch@microsoft.com> - 1.17.8-1
+- Upgrade to 1.17.8 to resolve CVE-2025-23266
+
+* Thu Apr 10 2025 Kanishk Bansal <kanbansal@microsoft.com> - 1.17.4-3
+- Removed extraction command from prep
+
+* Fri Mar 07 2025 Jon Slobodzian <joslobo@microsoft.com> - 1.17.4-2
+- Changing nvidia-container-toolkit to use latest golang before 1.24 as this will not compile without it.
+
+* Thu Feb 13 2025 Mitch Zhu <mitchzhu@microsoft.com> - 1.17.4-1
+- Upgrade to v1.17.4 to resolve CVE-2025-23359
+
+* Thu Dec 05 2024 Henry Li <lihl@microsoft.com> - 1.17.3-1
+- Upgrade to v1.17.3
+- Add nvidia-cdi-hook binary to nvidia-container-toolkit-base package
+- Add nvidia-container-toolkit-base as runtime requirement for nvidia-container-toolkit
+
+* Mon Nov 11 2024 Henry Li <lihl@microsoft.com> - 1.17.1-1
+- Upgrade to v1.17.1 to resolve CVE‑2024-0134
+
+* Sat Oct 05 2024 Mandeep Plaha <mandeepplaha@microsoft.com> - 1.16.2-1
+- Auto-upgrade to 1.16.2 - Critical vulnerability CVE-2024-0132, Medium vulnerability CVE-2024-0133
+
+* Fri Jun 07 2024 Henry Li <lihl@microsoft.com> - 1.15.0-1
+- Upgrade to version 1.15.0
+- Generate config.toml file during %posttrans
+
+* Mon Feb 05 2024 Bala <balakumaran.kannan@microsoft.com> - 1.14.4-1
+- Upgrade to version 1.14.4
+- Remove config and oci hooks from files as they are handled in post-install from v1.14.0
+
+* Mon Oct 16 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.13.5-3
+- Bump release to rebuild with go 1.20.10
+
+* Tue Oct 10 2023 Dan Streetman <ddstreet@ieee.org> - 1.13.5-2
+- Bump release to rebuild with updated version of Go.
+
+* Thu Aug 24 2023 Henry Li <lihl@microsoft.com> - 1.13.5-1
+- Upgrade to version 1.13.5
+- Enforce golang to be equal to or greater than v1.20.7
+
 * Mon Aug 07 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.11.0-11
 - Bump release to rebuild with go 1.19.12
 
@@ -203,5 +241,5 @@ rm -f %{_bindir}/nvidia-container-toolkit
 * Fri May 15 2020 NVIDIA CORPORATION <cudatools@nvidia.com> 1.1.0-1
 - 4e4de762 Update build system to support multi-arch builds
 - fcc1d116 Add support for MIG (Multi-Instance GPUs)
-- d4ff0416 Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_* 
+- d4ff0416 Add ability to merge envars of the form NVIDIA_VISIBLE_DEVICES_*
 - 60f165ad Add no-pivot option to toolkit

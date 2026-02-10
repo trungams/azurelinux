@@ -1,51 +1,65 @@
-%global with_bundled 1
 %global with_debug 1
+
 %if 0%{?with_debug}
 %global _find_debuginfo_dwz_opts %{nil}
 %global _dwz_low_mem_die_limit 0
 %else
 %global debug_package   %{nil}
 %endif
-%global provider github
-%global provider_tld com
-%global project containers
-%global repo buildah
-# https://github.com/containers/buildah
-%global import_path %{provider}.%{provider_tld}/%{project}/%{repo}
-%global git0 https://%{import_path}
-# Used for comparing with latest upstream tag
-# to decide whether to autobuild (non-rawhide only)
-%define built_tag v1.18.0
-%define built_tag_strip %(b=%{built_tag}; echo ${b:1})
-%define download_url https://%{import_path}/archive/%{built_tag}.tar.gz
-Summary:        A command line tool used for creating OCI Images
-Name:           buildah
-Version:        1.18.0
-Release:        16%{?dist}
-License:        ASL 2.0
+
+%global gomodulesmode GO111MODULE=on
+
+%if %{defined fedora}
+%define build_with_btrfs 1
+%endif
+
+%if %{defined rhel}
+%define fips 1
+%endif
+
+%global git0 https://github.com/containers/%{name}
+
+Name: buildah
+Epoch: 0
+# DO NOT TOUCH the Version string!
+# The TRUE source of this specfile is:
+# https://github.com/containers/skopeo/blob/main/rpm/skopeo.spec
+# If that's what you're reading, Version must be 0, and will be updated by Packit for
+# copr and koji builds.
+# If you're reading this on dist-git, the version is automatically filled in by Packit.
+Version: 1.41.4
+# The `AND` needs to be uppercase in the License for SPDX compatibility
+License: Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND ISC AND MIT AND MPL-2.0
+Release: 6%{?dist}
 Vendor:         Microsoft Corporation
-Distribution:   Mariner
-URL:            https://%{name}.io
-Source:         %{download_url}#/%{name}-%{version}.tar.gz
-BuildRequires:  btrfs-progs-devel
-BuildRequires:  device-mapper-devel
-BuildRequires:  git
-BuildRequires:  glib2-devel
-BuildRequires:  glibc-static >= 2.35-4%{?dist}
-BuildRequires:  go-md2man
-BuildRequires:  go-rpm-macros
-BuildRequires:  golang
-BuildRequires:  gpgme-devel
-BuildRequires:  libassuan-devel
-BuildRequires:  libseccomp-static
-BuildRequires:  make
-BuildRequires:  ostree-devel
-Requires:       libcontainers-common
-Requires:       libseccomp >= 2.4.1-0
-Requires:       moby-runc
-Recommends:     container-selinux
-Recommends:     fuse-overlayfs
-Recommends:     slirp4netns >= 0.3-0
+Distribution:   Azure Linux
+ExclusiveArch: aarch64 ppc64le s390x x86_64
+Summary: A command line tool used for creating OCI Images
+URL: https://%{name}.io
+# Tarball fetched from upstream
+Source: %{git0}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Patch0: 0001-Run-selective-tests.patch
+BuildRequires: device-mapper-devel
+BuildRequires: git-core
+BuildRequires: golang >= 1.16.6
+BuildRequires: glib2-devel
+BuildRequires: glibc-static >= 2.38-18%{?dist}
+%if !%{defined gobuild}
+BuildRequires: go-rpm-macros
+%endif
+BuildRequires: gpgme-devel
+BuildRequires: libassuan-devel
+BuildRequires: make
+%if %{defined build_with_btrfs}
+BuildRequires: btrfs-progs-devel
+%endif
+BuildRequires: shadow-utils-subid-devel
+BuildRequires: sqlite-devel
+BuildRequires:  netavark
+Requires: libcontainers-common
+BuildRequires: libseccomp-devel
+Requires: libseccomp >= 2.4.1-0
+Suggests: cpp
 
 %description
 The %{name} package provides a command line tool which can be used to
@@ -56,16 +70,25 @@ or
 * save container's root file system layer to create a new image
 * delete a working container or an image
 
-%package  tests
-Summary:        Tests for %{name}
-Requires:       %{name} = %{version}-%{release}
-Requires:       bats
-Requires:       bzip2
-Requires:       golang
-Requires:       httpd-tools
-Requires:       jq
-Requires:       openssl
-Requires:       podman
+# This subpackage is only intended for CI testing.
+# Not meant for end user/customer usage.
+%package tests
+Summary: Tests for %{name}
+
+Requires: %{name} = %{epoch}:%{version}-%{release}
+%if %{defined bats_epel}
+Requires: bats
+%else
+Recommends: bats
+%endif
+Requires: bzip2
+Requires: podman
+Requires: golang
+Requires: jq
+Requires: httpd-tools
+Requires: openssl
+Requires: nmap-ncat
+Requires: git-daemon
 
 %description tests
 %{summary}
@@ -73,42 +96,65 @@ Requires:       podman
 This package contains system tests for %{name}
 
 %prep
-%autosetup -Sgit -n %{name}-%{built_tag_strip}
-sed -i 's/GOMD2MAN =/GOMD2MAN ?=/' docs/Makefile
-sed -i '/docs install/d' Makefile
+%autosetup -p1 -Sgit -n %{name}-%{version}
 
 %build
-mkdir _build
-pushd _build
-mkdir -p src/%{provider}.%{provider_tld}/%{project}
-ln -s $(dirs +1 -l) src/%{import_path}
-popd
+%set_build_flags
+export CGO_CFLAGS=$CFLAGS
 
-mv vendor src
+# These extra flags present in $CFLAGS have been skipped for now as they break the build
+CGO_CFLAGS=$(echo $CGO_CFLAGS | sed 's/-flto=auto//g')
+CGO_CFLAGS=$(echo $CGO_CFLAGS | sed 's/-Wp,D_GLIBCXX_ASSERTIONS//g')
+CGO_CFLAGS=$(echo $CGO_CFLAGS | sed 's/-specs=\/usr\/lib\/rpm\/redhat\/redhat-annobin-cc1//g')
 
-export GOPATH=$(pwd)/_build:$(pwd)
-export BUILDTAGS='seccomp selinux'
-%if 0%{?centos} >= 8
-export BUILDTAGS+=' exclude_graphdriver_btrfs'
+%ifarch x86_64
+export CGO_CFLAGS+=" -m64 -mtune=generic -fcf-protection=full"
 %endif
-%gobuild -o bin/%{name} %{import_path}/cmd/%{name}
-%gobuild -o imgtype %{import_path}/tests/imgtype
-GOMD2MAN=go-md2man %{__make} -C docs
+
+export CNI_VERSION=`grep '^# github.com/containernetworking/cni ' src/modules.txt | sed 's,.* ,,'`
+export LDFLAGS="-X main.buildInfo=`date +%s` -X main.cniVersion=${CNI_VERSION}"
+
+export BUILDTAGS="seccomp $(hack/systemd_tag.sh) $(hack/libsubid_tag.sh) libsqlite3"
+%if !%{defined build_with_btrfs}
+export BUILDTAGS+=" exclude_graphdriver_btrfs"
+%endif
+
+%if %{defined fips}
+export BUILDTAGS+=" libtrust_openssl"
+%endif
+
+%gobuild -o bin/%{name} ./cmd/%{name}
+%gobuild -o bin/imgtype ./tests/imgtype
+%gobuild -o bin/copy ./tests/copy
+%gobuild -o bin/tutorial ./tests/tutorial
+%gobuild -o bin/inet ./tests/inet
+%gobuild -o bin/dumpspec ./tests/dumpspec
+%gobuild -o bin/passwd ./tests/passwd
+%{__make} docs
 
 %install
-export GOPATH=$(pwd)/_build:$(pwd):%{gopath}
 make DESTDIR=%{buildroot} PREFIX=%{_prefix} install install.completions
-make DESTDIR=%{buildroot} PREFIX=%{_prefix} -C docs install
 
 install -d -p %{buildroot}/%{_datadir}/%{name}/test/system
 cp -pav tests/. %{buildroot}/%{_datadir}/%{name}/test/system
-cp imgtype %{buildroot}/%{_bindir}/%{name}-imgtype
+cp bin/imgtype %{buildroot}/%{_bindir}/%{name}-imgtype
+cp bin/copy    %{buildroot}/%{_bindir}/%{name}-copy
+cp bin/tutorial %{buildroot}/%{_bindir}/%{name}-tutorial
+cp bin/inet     %{buildroot}/%{_bindir}/%{name}-inet
+cp bin/dumpspec %{buildroot}/%{_bindir}/%{name}-dumpspec
+cp bin/passwd %{buildroot}/%{_bindir}/%{name}-passwd
+
+rm %{buildroot}%{_datadir}/%{name}/test/system/tools/build/*
 
 #define license tag if not already defined
 %{!?_licensedir:%global license %doc}
 
+# Include check to silence rpmlint.
+%check
+make test-unit
+
 %files
-%license LICENSE
+%license LICENSE vendor/modules.txt
 %doc README.md
 %{_bindir}/%{name}
 %{_mandir}/man1/%{name}*
@@ -119,13 +165,89 @@ cp imgtype %{buildroot}/%{_bindir}/%{name}-imgtype
 %files tests
 %license LICENSE
 %{_bindir}/%{name}-imgtype
+%{_bindir}/%{name}-copy
+%{_bindir}/%{name}-tutorial
+%{_bindir}/%{name}-inet
+%{_bindir}/%{name}-dumpspec
+%{_bindir}/%{name}-passwd
 %{_datadir}/%{name}/test
 
 %changelog
+* Thu Jan 22 2026 Kanishk Bansal <kanbansal@microsoft.com> - 0:1.41.4-6
+- Bump to rebuild with updated glibc
+
+* Mon Jan 19 2026 Kanishk Bansal <kanbansal@microsoft.com> - 0:1.41.4-5
+- Bump to rebuild with updated glibc
+
+* Mon Nov 10 2025 Andrew Phelps <anphel@microsoft.com> - 0:1.41.4-4
+- Bump to rebuild with updated glibc
+
+* Thu Oct 23 2025 Kanishk Bansal <kanbansal@microsoft.com> - 0:1.41.4-3
+- Bump to rebuild with updated glibc
+
+* Wed Oct 08 2025 Andrew Phelps <anphel@microsoft.com> - 0:1.41.4-2
+- Bump to rebuild with updated glibc
+
+* Fri Sep 12 2025 Akarsh Chaudhary <v-akarshc@microsoft.com> - 1.41.4-1
+- Initial Azure Linux import from Fedora 41 (license: MIT).
+- Added Check section
+- License verified
+
+* Thu Aug 28 2025 Kanishk Bansal <kanbansal@microsoft.com> - 1.18.0-33
+- Bump to rebuild with updated glibc
+
+* Mon Aug 25 2025 Andrew Phelps <anphel@microsoft.com> - 1.18.0-32
+- Bump to rebuild with updated glibc
+
+* Thu May 22 2025 Kanishk Bansal <kanbansal@microsoft.com> - 1.18.0-31
+- Bump to rebuild with updated glibc
+
+* Mon May 12 2025 Andrew Phelps <anphel@microsoft.com> - 1.18.0-30
+- Bump to rebuild with updated glibc
+
+* Tue Feb 25 2025 Chris Co <chrco@microsoft.com> - 1.18.0-29
+- Bump to rebuild with updated glibc
+
+* Mon Aug 26 2024 Rachel Menge <rachelmenge@microsoft.com> - 1.18.0-28
+- Update to build dep latest glibc-static version
+
+* Wed Aug 21 2024 Chris Co <chrco@microsoft.com> - 1.18.0-27
+- Bump to rebuild with updated glibc
+
+* Wed May 22 2024 Suresh Babu Chalamalasetty <schalam@microsoft.com> - 1.18.0-26
+- update to build dep latest glibc-static version
+
+* Mon May 13 2024 Chris Co <chrco@microsoft.com> - 1.18.0-25
+- Update to build dep latest glibc-static version
+
+* Mon Mar 11 2024 Dan Streetman <ddstreet@microsoft.com> - 1.18.0-24
+- update to build dep latest glibc-static version
+
+* Tue Feb 27 2024 Dan Streetman <ddstreet@microsoft.com> - 1.18.0-23
+- updated glibc-static buildrequires release
+
+* Tue Nov 07 2023 Andrew Phelps <anphel@microsoft.com> - 1.18.0-22
+- Bump release to rebuild against glibc 2.38-1
+
+* Wed Oct 18 2023 Minghe Ren <mingheren@microsoft.com> - 1.18.0-21
+- Bump release to rebuild against glibc 2.35-6
+
+* Mon Oct 16 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.18.0-20
+- Bump release to rebuild with go 1.20.10
+
+* Tue Oct 10 2023 Dan Streetman <ddstreet@ieee.org> - 1.18.0-19
+- Bump release to rebuild with updated version of Go.
+
+* Tue Oct 03 2023 Mandeep Plaha <mandeepplaha@microsoft.com> - 1.18.0-18
+- Bump release to rebuild against glibc 2.35-5
+
+* Tue Sep 05 2023 Brian Fjeldstad <bfjelds@microsoft.com> - 1.18.0-17
+- Address CVE-2022-2990
+
 * Mon Aug 07 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.18.0-16
 - Bump release to rebuild with go 1.19.12
 
-* Wed Jul 14 2023 Andrew Phelps <anphel@microsoft.com> - 1.18.0-15
+* Fri Jul 14 2023 Andrew Phelps <anphel@microsoft.com> - 1.18.0-15
 - Bump release to rebuild against glibc 2.35-4
 
 * Thu Jul 13 2023 CBL-Mariner Servicing Account <cblmargh@microsoft.com> - 1.18.0-14
@@ -1862,7 +1984,7 @@ cp imgtype %{buildroot}/%{_bindir}/%{name}-imgtype
 
 * Thu Feb 22 2018 Dan Walsh <dwalsh@redhat.com> 0.13-1
 - Vendor in latest containers/storage
-- This fixes a large SELinux bug.  
+- This fixes a large SELinux bug.
 - run: do not open /etc/hosts if not needed
 - Add the following flags to buildah bud and from
             --add-host
@@ -1990,7 +2112,7 @@ cp imgtype %{buildroot}/%{_bindir}/%{name}-imgtype
 - Bump for inclusion of OCI 1.0 Runtime and Image Spec
 
 * Tue Jul 18 2017 Dan Walsh <dwalsh@redhat.com> 0.2.0-1.gitac2aad6
-- buildah run: Add support for -- ending options parsing 
+- buildah run: Add support for -- ending options parsing
 - buildah Add/Copy support for glob syntax
 - buildah commit: Add flag to remove containers on commit
 - buildah push: Improve man page and help information
