@@ -9,32 +9,35 @@
 
 %undefine _auto_set_build_flags
 
-Name:          dtc
-Version:       1.7.2
-Release: 10%{?dist}
-Summary:       Device Tree Compiler
-License:       GPL-2.0-or-later
-URL:           https://devicetree.org/
+Name:           dtc
+Version:        1.7.2
+Release: 12%{?dist}
+Summary:        Device Tree Compiler
+License:        GPL-2.0-or-later
+URL:            https://devicetree.org/
 
-Source0:       https://www.kernel.org/pub/software/utils/%{name}/%{name}-%{version}.tar.xz
-Patch0001:     0001-build-fix-Dtools-false-build.patch
+Source0:        https://www.kernel.org/pub/software/utils/%{name}/%{name}-%{version}.tar.xz
+Patch1:         0001-build-fix-Dtools-false-build.patch
 
-BuildRequires: gcc make
-BuildRequires: flex bison swig
-BuildRequires: python3-devel
-BuildRequires: python3-pip
-BuildRequires: python3-setuptools
-BuildRequires: python3-setuptools_scm
-BuildRequires: python3-wheel
+BuildRequires:  gcc
+BuildRequires:  make
+BuildRequires:  flex
+BuildRequires:  bison
+BuildRequires:  swig
+BuildRequires:  python3-devel
+BuildRequires:  python3-pip
+BuildRequires:  python3-setuptools
+BuildRequires:  python3-setuptools_scm
+BuildRequires:  python3-wheel
 
 %if %{with_mingw}
-BuildRequires: mingw32-filesystem >= 95
-BuildRequires: mingw32-gcc-c++
+BuildRequires:  mingw32-filesystem >= 95
+BuildRequires:  mingw32-gcc-c++
 
-BuildRequires: meson
+BuildRequires:  meson
 
-BuildRequires: mingw64-filesystem >= 95
-BuildRequires: mingw64-gcc-c++
+BuildRequires:  mingw64-filesystem >= 95
+BuildRequires:  mingw64-gcc-c++
 %endif
 
 %description
@@ -46,63 +49,59 @@ boot time. The devicetree is used by OpenFirmware, OpenPOWER Abstraction Layer
 Flattened Device Tree (FDT) form.
 
 %package -n libfdt
-Summary: Device tree library
+Summary:        Device tree library
 
 %description -n libfdt
 libfdt is a library to process Open Firmware style device trees on various
 architectures.
 
 %package -n libfdt-devel
-Summary: Development headers for device tree library
-Requires: libfdt = %{version}-%{release}
+Summary:        Development headers for device tree library
+Requires:       libfdt = %{version}-%{release}
 
 %description -n libfdt-devel
 This package provides development files for libfdt
 
 %package -n libfdt-static
-Summary: Static version of device tree library
-Requires: libfdt-devel = %{version}-%{release}
+Summary:        Static version of device tree library
+Requires:       libfdt-devel = %{version}-%{release}
 
 %description -n libfdt-static
 This package provides the static library of libfdt
 
 %package -n python3-libfdt
-Summary: Python 3 bindings for device tree library
+Summary:        Python 3 bindings for device tree library
 %{?python_provide:%python_provide python2-libfdt}
-Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description -n python3-libfdt
 This package provides python2 bindings for libfdt
-
 %if %{with_mingw}
 %package -n mingw32-libfdt
-Summary: MinGW Device tree library
-BuildArch: noarch
+Summary:        MinGW Device tree library
+BuildArch:      noarch
 
 %description -n mingw32-libfdt
 libfdt is a library to process Open Firmware style device trees on various
 architectures.
-
 %package -n mingw32-libfdt-static
-Summary: Static version of MinGW Device tree library
-Requires: mingw32-libfdt = %{version}-%{release}
-BuildArch: noarch
+Summary:        Static version of MinGW Device tree library
+Requires:       mingw32-libfdt = %{version}-%{release}
+BuildArch:      noarch
 
 %description -n mingw32-libfdt-static
 This package provides the static library of mingw32-libfdt
-
 %package -n mingw64-libfdt
-Summary: MinGW Device tree library
-BuildArch: noarch
+Summary:        MinGW Device tree library
+BuildArch:      noarch
 
 %description -n mingw64-libfdt
 libfdt is a library to process Open Firmware style device trees on various
 architectures.
-
 %package -n mingw64-libfdt-static
-Summary: Static version of MinGW Device tree library
-Requires: mingw64-libfdt = %{version}-%{release}
-BuildArch: noarch
+Summary:        Static version of MinGW Device tree library
+Requires:       mingw64-libfdt = %{version}-%{release}
+BuildArch:      noarch
 
 %description -n mingw64-libfdt-static
 This package provides the static library of mingw64-libfdt
@@ -117,7 +116,6 @@ This package provides the static library of mingw64-libfdt
 # .eggs are going to be deprecated, see https://github.com/pypa/pip/issues/11501
 sed -i 's@--prefix=$(PREFIX)@--prefix=$(PREFIX) --root=/@' pylibfdt/Makefile.pylibfdt
 
-
 %build
 export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 %{make_build} EXTRA_CFLAGS="%{build_cflags}" LDFLAGS="%{build_ldflags}"
@@ -130,7 +128,7 @@ export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 %install
 export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 %{make_install} V=1 DESTDIR=%{buildroot} PREFIX=%{buildroot}/%{_prefix} \
-                LIBDIR=%{_libdir} BINDIR=%{_bindir} INCLUDEDIR=%{_includedir}
+LIBDIR=%{_libdir} BINDIR=%{_bindir} INCLUDEDIR=%{_includedir}
 
 %if %{with_mingw}
 %mingw_ninja_install
@@ -279,7 +277,7 @@ export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 * Fri Mar 13 2020 Peter Robinson <pbrobinson@fedoraproject.org> - 1.6.0-1
 - Update to 1.6.0
 
-* Thu Jan 30 2020 Peter Robinson <pbrobinson@fedoraproject.org> 1.5.1-4
+* Thu Jan 30 2020 Peter Robinson <pbrobinson@fedoraproject.org>
 - Upstream patch to fix gcc-10 build
 
 * Tue Jan 28 2020 Fedora Release Engineering <releng@fedoraproject.org> - 1.5.1-3
@@ -288,7 +286,7 @@ export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 * Tue Jan 14 2020 Tom Stellard <tstellar@redhat.com> - 1.5.1-2
 - Use __cc macro instead of hard-coding gcc
 
-* Wed Sep 11 2019 Peter Robinson <pbrobinson@fedoraproject.org> 1.5.1-1
+* Wed Sep 11 2019 Peter Robinson <pbrobinson@fedoraproject.org>
 - New dtc 1.5.1 release
 
 * Tue Sep 10 2019 Miro Hrončok <mhroncok@redhat.com> - 1.5.0-3
@@ -297,16 +295,16 @@ export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 * Wed Jul 24 2019 Fedora Release Engineering <releng@fedoraproject.org> - 1.5.0-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_31_Mass_Rebuild
 
-* Tue Mar 12 2019 Peter Robinson <pbrobinson@fedoraproject.org> 1.5.0-1
+* Tue Mar 12 2019 Peter Robinson <pbrobinson@fedoraproject.org>
 - New dtc 1.5.0 release
 
 * Thu Jan 31 2019 Fedora Release Engineering <releng@fedoraproject.org> - 1.4.7-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_30_Mass_Rebuild
 
-* Tue Jan 15 2019 Peter Robinson <pbrobinson@fedoraproject.org> 1.4.7-2
+* Tue Jan 15 2019 Peter Robinson <pbrobinson@fedoraproject.org>
 - Upstream fix for crash (rhbz 1663054)
 
-* Sat Aug 18 2018 Peter Robinson <pbrobinson@fedoraproject.org> 1.4.7-1
+* Sat Aug 18 2018 Peter Robinson <pbrobinson@fedoraproject.org>
 - New dtc 1.4.7 release
 
 * Tue Jul 17 2018 Miro Hrončok <mhroncok@redhat.com> - 1.4.6-7
@@ -316,10 +314,10 @@ export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 * Thu Jul 12 2018 Fedora Release Engineering <releng@fedoraproject.org> - 1.4.6-6
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_29_Mass_Rebuild
 
-* Wed Jun 06 2018 Bas Mevissen <abuse@basmevissen.nl> 1.4.6-5
+* Wed Jun 06 2018 Bas Mevissen <abuse@basmevissen.nl>
 - Add static library package, see BZ#1440975
 
-* Wed Mar  7 2018 Peter Robinson <pbrobinson@fedoraproject.org> 1.4.6-4
+* Wed Mar 07 2018 Peter Robinson <pbrobinson@fedoraproject.org>
 - Add gcc BR
 
 * Wed Feb 07 2018 Fedora Release Engineering <releng@fedoraproject.org> - 1.4.6-3
@@ -328,10 +326,10 @@ export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 * Fri Jan 26 2018 Florian Weimer <fweimer@redhat.com> - 1.4.6-2
 - Use Fedora build flags during build
 
-* Mon Jan 22 2018 Peter Robinson <pbrobinson@fedoraproject.org> 1.4.6-1
+* Mon Jan 22 2018 Peter Robinson <pbrobinson@fedoraproject.org>
 - New dtc 1.4.6 release
 
-* Thu Sep 28 2017 Peter Robinson <pbrobinson@fedoraproject.org> 1.4.5-1
+* Thu Sep 28 2017 Peter Robinson <pbrobinson@fedoraproject.org>
 - New dtc 1.4.5 release
 
 * Wed Aug 02 2017 Fedora Release Engineering <releng@fedoraproject.org> - 1.4.4-4
@@ -340,35 +338,35 @@ export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 * Wed Jul 26 2017 Fedora Release Engineering <releng@fedoraproject.org> - 1.4.4-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
 
-* Mon Jun 12 2017 Peter Robinson <pbrobinson@fedoraproject.org> 1.4.4-2
+* Mon Jun 12 2017 Peter Robinson <pbrobinson@fedoraproject.org>
 - Add upstream patches for python bindings
 
-* Fri Mar 17 2017 Peter Robinson <pbrobinson@fedoraproject.org> 1.4.4-1
+* Fri Mar 17 2017 Peter Robinson <pbrobinson@fedoraproject.org>
 - New dtc 1.4.4 release
 
-* Tue Feb 28 2017 Peter Robinson <pbrobinson@fedoraproject.org> 1.4.2-3.0931cea
+* Tue Feb 28 2017 Peter Robinson <pbrobinson@fedoraproject.org>
 - Rebase to same git snapshot that kernel is using for DT Overlays
 
 * Fri Feb 10 2017 Fedora Release Engineering <releng@fedoraproject.org> - 1.4.2-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild
 
-* Sun Sep 11 2016 Peter Robinson <pbrobinson@fedoraproject.org> 1.4.2-1
+* Sun Sep 11 2016 Peter Robinson <pbrobinson@fedoraproject.org>
 - New dtc 1.4.2 release
 
 * Wed Feb 03 2016 Fedora Release Engineering <releng@fedoraproject.org> - 1.4.1-5
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
 
-* Tue Jun 16 2015 Peter Robinson <pbrobinson@fedoraproject.org> 1.4.1-4
+* Tue Jun 16 2015 Peter Robinson <pbrobinson@fedoraproject.org>
 - Use %%license
 
 * Sat Feb 21 2015 Till Maas <opensource@till.name> - 1.4.1-3
 - Rebuilt for Fedora 23 Change
   https://fedoraproject.org/wiki/Changes/Harden_all_packages_with_position-independent_code
 
-* Mon Jan  5 2015 Peter Robinson <pbrobinson@fedoraproject.org> 1.4.1-2
+* Mon Jan 05 2015 Peter Robinson <pbrobinson@fedoraproject.org>
 - Use tar file from kernel.org
 
-* Mon Jan  5 2015 Peter Robinson <pbrobinson@fedoraproject.org> 1.4.1-1
+* Mon Jan 05 2015 Peter Robinson <pbrobinson@fedoraproject.org>
 - New dtc 1.4.1 release
 - Update URL and Sources
 - Cleanup spec

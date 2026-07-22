@@ -1444,7 +1444,6 @@ includes = ["**/*.comp.toml", "component-bootstrap-uucore-pin.toml", "component-
 [components.jomolhari-fonts]
 [components.jose]
 [components.jpegxl]
-[components.jq]
 [components.js-d3-flame-graph]
 [components.js-jquery]
 [components.jsch]
