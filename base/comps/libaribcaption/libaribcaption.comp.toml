@@ -1,0 +1,17 @@
+[components.libaribcaption]
+
+# Onboard libaribcaption to the declarative cmake BuildSystem (rpm >= 4.20).
+# The upstream spec spells out %prep/%build/%install with the %cmake family of
+# macros; customize-build-system sets `BuildSystem: cmake` and removes those
+# now-redundant phases, which RPM regenerates from the cmake build system.
+#
+# This requires the cmake declarative-buildsystem macros (%buildsystem_cmake_*)
+# to be present at SRPM/parse time. They ship in cmake-srpm-macros, which the
+# PoC adds to the stage2 mock buildroot (see
+# distro/mock/azl4/stage2/azurelinux-4.0.tpl). The cmake %check macro is
+# %{?with_ctest:%ctest}, so it is a no-op unless -Dwith_ctest is set — safe for
+# a package without a registered test suite.
+[[components.libaribcaption.customizations]]
+type = "customize-build-system"
+description = "Onboard to the declarative cmake BuildSystem (rpm >= 4.20)"
+system = "cmake"

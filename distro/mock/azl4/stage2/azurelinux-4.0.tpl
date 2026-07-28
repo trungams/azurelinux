@@ -27,6 +27,12 @@ config_opts['chroot_setup_cmd'] += ' gzip'
 config_opts['chroot_setup_cmd'] += ' info'
 config_opts['chroot_setup_cmd'] += ' patch'
 config_opts['chroot_setup_cmd'] += ' azurelinux-rpm-config'
+# PoC (customization-poc): pull the cmake declarative-buildsystem macros into the
+# minimal buildroot so `BuildSystem: cmake` resolves at SRPM/parse time. Unlike
+# pyproject/tree-sitter/java (whose *-srpm-macros are required by
+# azurelinux-rpm-config), cmake-srpm-macros is not, so cmake onboarding otherwise
+# fails with "Unknown buildsystem: cmake".
+config_opts['chroot_setup_cmd'] += ' cmake-srpm-macros'
 config_opts['chroot_setup_cmd'] += ' rpm-build'
 config_opts['chroot_setup_cmd'] += ' sed'
 config_opts['chroot_setup_cmd'] += ' shadow-utils'

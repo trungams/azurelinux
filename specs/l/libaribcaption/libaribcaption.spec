@@ -3,7 +3,7 @@
 
 Name:           libaribcaption
 Version:        1.1.1
-Release: 4%{?dist}
+Release: 5%{?dist}
 Summary:        Portable ARIB STD-B24 Caption Decoder/Renderer
 License:        MIT
 URL:            https://github.com/xqq/libaribcaption
@@ -14,6 +14,7 @@ Patch0:         %{name}-version.patch
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
 BuildRequires:  pkgconfig(fontconfig)
+BuildSystem:    cmake
 
 %description
 Decoder and renderer for handling ARIB STD-B24 based broadcast captions, making
@@ -22,39 +23,29 @@ it possible for general players to render ARIB captions with the same effect
 
 Features
 - Support captions in Japanese (ARIB STD-B24 JIS), Latin languages (ABNT NBR
-  15606-1) and Philippine (ARIB STD-B24 UTF-8)
+15606-1) and Philippine (ARIB STD-B24 UTF-8)
 - Full support for rendering ARIB additional symbols (Gaiji) and DRCScharacters
 - Lightweight and portable implementation that works on various platforms
 - Performance optimized (SSE2 on x86/x64) graphics rendering
 - Multiple text rendering backend driven by DirectWrite / CoreText / FreeType
 - Zero third-party dependencies on Windows (using DirectWrite) and macOS / iOS
-  (using CoreText)
+(using CoreText)
 - Built-in font fallback mechanism
 - Built-in DRCS converting table for replacing / rendering known DRCS characters
-  into / by alternative Unicode
+into / by alternative Unicode
 
-%package        devel
+%package devel
 Summary:        Development files for %{name}
 Requires:       %{name}%{?_isa} = %{version}-%{release}
 Requires:       pkg-config
 
-%description    devel
+%description devel
 Decoder and renderer for handling ARIB STD-B24 based broadcast captions, making
 it possible for general players to render ARIB captions with the same effect
 (or even better) as Television.
 
 The %{name}-devel package contains libraries and header files for
 developing applications that use %{name}.
-
-%prep
-%autosetup
-
-%build
-%cmake
-%cmake_build
-
-%install
-%cmake_install
 
 %files
 %license LICENSE

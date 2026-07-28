@@ -1649,7 +1649,6 @@ includes = ["**/*.comp.toml", "component-bootstrap-uucore-pin.toml", "component-
 [components.libappindicator]
 [components.libappstream-glib]
 [components.libarchive]
-[components.libaribcaption]
 [components.libarrow]
 [components.libass]
 [components.libassuan]
