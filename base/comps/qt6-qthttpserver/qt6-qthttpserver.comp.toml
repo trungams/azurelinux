@@ -10,11 +10,11 @@
 # because Fedora only ships the newer private-devel subpackage. Relaxing it to
 # `>=` aligns with qt6-qtconnectivity and the other qt6 modules.
 #
-# This uses the declarative customize-dependency customization (set-constraint)
+# This uses the declarative dependency customization (set-constraint)
 # instead of a spec-search-replace overlay: the engine finds the BuildRequires
 # atom by name and changes only its operator, preserving the %{version} EVR.
 [[components.qt6-qthttpserver.customizations]]
-type = "customize-dependency"
+type = "dependency"
 description = "Relax qt6-qtbase-private-devel from '= %{version}' to '>= %{version}' for Qt patch bumps"
 action = "set-constraint"
 relationship = "buildrequires"

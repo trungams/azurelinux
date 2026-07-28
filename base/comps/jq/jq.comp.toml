@@ -4,8 +4,8 @@
 # Linux drops the test suite for this component via a declarative
 # customization, which removes the %check section from the rendered spec
 # entirely (as opposed to build.check.skip, which injects a skip guard). This
-# demonstrates the customize-tests customization end-to-end.
+# demonstrates the tests customization end-to-end.
 [[components.jq.customizations]]
-type = "customize-tests"
+type = "tests"
 description = "Disable the jq test suite — removes %check from the rendered spec"
 enabled = false
