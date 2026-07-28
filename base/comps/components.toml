@@ -109,7 +109,6 @@ includes = ["**/*.comp.toml", "component-bootstrap-uucore-pin.toml", "component-
 [components.aribb24]
 [components.armadillo]
 [components.asciidoc]
-[components.asio]
 [components.asl]
 [components.aspell]
 [components.assertj-core]

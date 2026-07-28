@@ -1,0 +1,12 @@
+[components.asio]
+
+# Drop the `asio-doc` sub-package via the declarative customize-remove-subpackage
+# customization. asio-doc's %files is `%doc doc/*` — documentation copied from
+# the source tree at packaging time, not produced by %install — so removing the
+# sub-package orphans nothing and the package still builds. (A sub-package whose
+# %files reference %install-produced paths would instead fail RPM's
+# unpackaged-files check; that case must also drop the files.)
+[[components.asio.customizations]]
+type = "customize-remove-subpackage"
+description = "Do not ship the asio-doc sub-package (source-tree docs only)"
+package = "doc"
