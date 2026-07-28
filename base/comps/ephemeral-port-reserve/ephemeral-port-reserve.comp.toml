@@ -1,0 +1,20 @@
+[components.ephemeral-port-reserve]
+
+# Onboard ephemeral-port-reserve to the declarative pyproject BuildSystem
+# (rpm >= 4.20). The upstream spec spells out %generate_buildrequires, %build
+# (%pyproject_wheel) and %install (%pyproject_install + %pyproject_save_files);
+# the customize-build-system customization sets `BuildSystem: pyproject` and
+# removes those now-redundant phases, which RPM regenerates. The module name is
+# passed to the install phase via BuildOption(install) so %{pyproject_files}
+# (used by the retained `%files -f %{pyproject_files}`) is populated correctly.
+#
+# Unlike cmake, the pyproject build-system macros ARE present in the Azure Linux
+# buildroot, so this onboarding both renders and builds.
+[[components.ephemeral-port-reserve.customizations]]
+type = "customize-build-system"
+description = "Onboard to the declarative pyproject BuildSystem (rpm >= 4.20)"
+system = "pyproject"
+
+[[components.ephemeral-port-reserve.customizations.build-options]]
+phase = "install"
+args = "ephemeral_port_reserve"

@@ -377,7 +377,6 @@ includes = ["**/*.comp.toml", "component-bootstrap-uucore-pin.toml", "component-
 [components.enchant2]
 [components.enscript]
 [components.environment-modules]
-[components.ephemeral-port-reserve]
 [components.epstool]
 [components.erlang-bbmustache]
 [components.erlang-certifi]

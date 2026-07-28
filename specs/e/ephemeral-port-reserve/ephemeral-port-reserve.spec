@@ -3,7 +3,7 @@
 
 Name:           ephemeral-port-reserve
 Version:        1.1.4
-Release: 17%{?dist}
+Release: 18%{?dist}
 Summary:        Bind to an ephemeral port, force it into the TIME_WAIT state, and unbind it.
 
 License:        MIT
@@ -17,6 +17,8 @@ Patch:          fix_test_fqdn.patch
 BuildArch:      noarch
 BuildRequires:  python3-devel
 BuildRequires:  python3-pytest
+BuildSystem:    pyproject
+BuildOption(install): ephemeral_port_reserve
 
 # Provide the python3-* namespace as the package
 # can also be used as a library.
@@ -28,27 +30,9 @@ Bind to an ephemeral port, force it into the TIME_WAIT state, and unbind it.}
 
 %description %_description
 
-%prep
-%autosetup -p1 -n ephemeral-port-reserve-%{version}
-
-
-%generate_buildrequires
-%pyproject_buildrequires -r
-
-
-%build
-%pyproject_wheel
-
-
-%install
-%pyproject_install
-%pyproject_save_files ephemeral_port_reserve
-
-
 %check
 %pyproject_check_import
 %pytest
-
 
 %files -f %{pyproject_files}
 %{_bindir}/ephemeral-port-reserve
