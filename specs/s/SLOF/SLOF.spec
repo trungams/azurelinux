@@ -79,6 +79,15 @@ install -c -m 0644 boot_rom.bin %{buildroot}%{_datadir}/%{targetdir}/slof.bin
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 20220719-11.git6b6c16b4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 20220719-10.git6b6c16b4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 20220719-9.git6b6c16b4
+- rebuilt
+
 * Wed Jul 23 2025 Fedora Release Engineering <releng@fedoraproject.org> - 20220719-8.git6b6c16b4
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_43_Mass_Rebuild
 

@@ -201,6 +201,15 @@ rm -f $RPM_BUILD_ROOT/usr/bin/dump
 %endif
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.14.2-0.9
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.14.2-0.8
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.14.2-0.7
+- rebuilt
+
 * Wed Jul 23 2025 Fedora Release Engineering <releng@fedoraproject.org> - 1.14.2-0.6
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_43_Mass_Rebuild
 

@@ -1103,6 +1103,15 @@ fi
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.123.1-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.123.1-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.123.1-2
+- rebuilt
+
 * Thu May  7 2026 Frantisek Krenzelok <fkrenzel@redhat.com> - 3.123.1-1
 - Update NSS to 3.123.1
 

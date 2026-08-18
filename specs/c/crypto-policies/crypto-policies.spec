@@ -292,6 +292,15 @@ exit 0
 %{_datarootdir}/crypto-policies/python
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 20251125-4.git63291f8
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 20251125-3.git63291f8
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 20251125-2.git63291f8
+- rebuilt
+
 * Tue Nov 25 2025 Alexander Sosedkin <asosedkin@redhat.com> - 20251125-1.git63291f8
 - sequoia: register "eddsa" as an alias to EDDSA-ED25519
 

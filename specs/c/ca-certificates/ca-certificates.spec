@@ -41,7 +41,7 @@ Name: ca-certificates
 Version: 2025.2.80_v9.0.304
 # for Rawhide, please always use release >= 2
 # for Fedora release branches, please use release < 2 (1.0, 1.1, ...)
-Release: 1.4%{?dist}
+Release: 4.1%{?dist}
 License: MIT AND GPL-2.0-or-later
 
 URL: https://fedoraproject.org/wiki/CA-Certificates
@@ -461,6 +461,15 @@ fi
 %ghost %{catrustdir}/extracted/edk2/cacerts.bin
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2025.2.80_v9.0.304-4.1
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2025.2.80_v9.0.304-3.1
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2025.2.80_v9.0.304-2.1
+- rebuilt
+
 * Tue Aug 26 2025 Frantisek Krenzelok <fkrenzel@redhat.com> - 2025.2.80_v9.0.304-1.1
 - Revert the "Dropping of cert.pem file" change to restore legacy CA symlinks
 - https://fedoraproject.org/wiki/Changes/droppingOfCertPemFile
