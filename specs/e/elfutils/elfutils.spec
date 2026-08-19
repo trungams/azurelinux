@@ -532,6 +532,15 @@ exit 0
 %systemd_postun_with_restart debuginfod.service
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
 * Thu Jul 23 2026 Lynsey Rydberg <lyrydber@microsoft.com> - 0.194-4
 - Rebuild without a default debuginfod server
 - Keep non-URL debuginfod client configuration

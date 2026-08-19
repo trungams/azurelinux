@@ -58,6 +58,15 @@ LIBDIR="%{_libdir}" INCLUDEDIR="%{_includedir}" CFLAGS="%{optflags}" make %{?_sm
 %ldconfig_scriptlets
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0-16.20200312git97d2850
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0-15.20200312git97d2850
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0-14.20200312git97d2850
+- rebuilt
+
 * Sun Sep 07 2025 Garry T. Williams <gtwilliams@gmail.com> 1.0-13.20200312git97d2850
 - Fix CVE-2025-9810
 

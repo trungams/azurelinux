@@ -259,6 +259,12 @@ popd
 %doc tool/LICENSE.txt
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1:3.5.3-18
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1:3.5.3-17
+- rebuilt
+
 * Fri Feb 20 2026 Jerry James <loganjerry@gmail.com> - 1:3.5.3-16
 - Remove the C and C++ backends
 - They contain files with a disallowed license

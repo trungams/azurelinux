@@ -101,6 +101,15 @@ rm -f doc*/w3m.1
 %{_libexecdir}/w3m/w3mimgdisplay
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.5.3-69.git20230121
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.5.3-68.git20230121
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.5.3-67.git20230121
+- rebuilt
+
 * Fri Jul 25 2025 Fedora Release Engineering <releng@fedoraproject.org> - 0.5.3-66.git20230121
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_43_Mass_Rebuild
 

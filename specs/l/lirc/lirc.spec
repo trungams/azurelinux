@@ -427,6 +427,15 @@ systemd-tmpfiles --create %{_tmpfilesdir}/lirc.conf
 %{_udevrulesdir}/99-remote-control-lirc.rules
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.10.2-7
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.10.2-6
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.10.2-5
+- rebuilt
+
 * Fri Sep 19 2025 Python Maint <python-maint@redhat.com> - 0.10.2-4
 - Rebuilt for Python 3.14.0rc3 bytecode
 

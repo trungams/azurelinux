@@ -179,6 +179,12 @@ fi
 %{_libdir}/libsbdtestbed*
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.5.2-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.5.2-3
+- rebuilt
+
 * Thu Sep 18 2025 Klaus Wenninger <kwenning@redhat.com> - 1.5.2-2
 - Convert STI tests to TMT (rhbz#2383068)
 - use baserelease as that rpmdev-bumpspec can be used

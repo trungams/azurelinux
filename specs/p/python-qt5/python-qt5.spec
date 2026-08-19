@@ -294,6 +294,15 @@ sed -i \
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 5.15.12-0.4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 5.15.12-0.3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 5.15.12-0.2
+- rebuilt
+
 * Tue Nov 04 2025 Jan Grulich <jgrulich@redhat.com> - 5.15.12-0.1^dev2507081429
 - Update to snapshot of pyqt5 5.15.12
 

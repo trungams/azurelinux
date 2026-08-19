@@ -89,6 +89,15 @@ done
 %{_libexecdir}/fcoe/
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0.34-15.gitb233050
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0.34-14.gitb233050
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0.34-13.gitb233050
+- rebuilt
+
 * Wed Jul 23 2025 Fedora Release Engineering <releng@fedoraproject.org> - 1.0.34-12.gitb233050
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_43_Mass_Rebuild
 

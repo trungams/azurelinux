@@ -307,6 +307,15 @@ rm -f %{buildroot}/%{_datadir}/tesseract/tessdata/pdf.ttf
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 4.1.0-14
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 4.1.0-13
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 4.1.0-12
+- rebuilt
+
 * Fri Jul 25 2025 Fedora Release Engineering <releng@fedoraproject.org> - 4.1.0-11
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_43_Mass_Rebuild
 

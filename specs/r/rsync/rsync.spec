@@ -153,6 +153,15 @@ install -D -m644 %{SOURCE6} $RPM_BUILD_ROOT/%{_unitdir}/rsyncd@.service
 %systemd_postun_with_restart rsyncd.service
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.4.1-8
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.4.1-7
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.4.1-6
+- rebuilt
+
 * Fri Feb 13 2026 Michal Ruprich <mruprich@redhat.com> - 3.4.1-5
 - Fix for CVE-2025-10158
 

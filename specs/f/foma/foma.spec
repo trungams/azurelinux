@@ -109,6 +109,15 @@ find %{buildroot} -name '*.a' -exec rm -f {} ';'
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.10.0-0.17.20210601gitdfe1ccb
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.10.0-0.16.20210601gitdfe1ccb
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.10.0-0.15.20210601gitdfe1ccb
+- rebuilt
+
 * Wed Jul 23 2025 Fedora Release Engineering <releng@fedoraproject.org> - 0.10.0-0.14.20210601gitdfe1ccb
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_43_Mass_Rebuild
 

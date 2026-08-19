@@ -353,7 +353,7 @@
 %global top_level_dir_name   %{vcstag}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        32
-%global rpmrelease      7
+%global rpmrelease      4
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1180,7 +1180,7 @@ Provides: java-%{origin}-src%{?1} = %{epoch}:%{version}-%{release}
 
 Name:    java-25-%{origin}
 Version: %{newjavaver}.%{buildver}
-Release: %{?eaprefix}%[%{rpmrelease} + %{azl_release}]%{?extraver}%{?dist}
+Release: %{?eaprefix}%[%{rpmrelease} + %{azl_release}]%{?extraver}%{?dist}.3
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons
 # and this change was brought into RHEL-4. java-1.5.0-ibm packages
 # also included the epoch in their virtual provides. This created a

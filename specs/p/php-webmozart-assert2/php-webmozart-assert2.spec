@@ -148,6 +148,15 @@ exit $RETURN_CODE
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.1.5-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.1.5-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.1.5-2
+- rebuilt
+
 * Thu Feb 19 2026 Remi Collet <remi@remirepo.net> - 2.1.5-1
 - update to 2.1.5
 

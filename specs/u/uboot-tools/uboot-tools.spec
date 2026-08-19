@@ -283,6 +283,15 @@ install -p -m 0755 builds/tools/env/fw_printenv %{buildroot}%{_bindir}
 %endif
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
 * Mon Oct 13 2025 Peter Robinson <pbrobinson@fedoraproject.org> - 1:2025.10-1
 - Update to 2025.10 GA (rhbz#2401964)
 - Fix booting when using FW device-tree (rhbz#2402498)

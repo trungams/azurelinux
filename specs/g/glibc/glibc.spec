@@ -2392,6 +2392,15 @@ update_gconv_modules_cache ()
 %endif
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.42-14
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.42-13
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.42-12
+- rebuilt
+
 * Wed Feb 18 2026 Frédéric Bérat <fberat@redhat.com> - 2.42-10
 - Auto-sync with upstream branch release/2.42/master,
   commit ebd45473f5421e0fced5ba2cde0f1aaa36e79b61:

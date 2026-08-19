@@ -96,6 +96,15 @@ PYTHONPATH=$(echo ../build/lib.linux-*) %{__python3} run_all.py
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.7.2-10.1
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.7.2-9.1
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.7.2-8.1
+- rebuilt
+
 * Fri Sep 19 2025 Python Maint <python-maint@redhat.com> - 1.7.2-7.1
 - Rebuilt for Python 3.14.0rc3 bytecode
 

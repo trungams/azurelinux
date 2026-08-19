@@ -1126,6 +1126,15 @@ popd
 %endif
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 8.4.8-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 8.4.8-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 8.4.8-2
+- rebuilt
+
 * Fri Jan 23 2026 Michal Schorm <mschorm@redhat.com> - 8.4.8-1
 - Rebase to 8.4.8
 

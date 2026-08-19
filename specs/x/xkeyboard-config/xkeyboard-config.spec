@@ -107,6 +107,15 @@ end
 %{_datadir}/pkgconfig/%{name}.pc
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.46-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.46-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.46-2
+- rebuilt
+
 * Thu Oct 09 2025 Peter Hutterer <peter.hutterer@redhat.com> - 2.46-1
 - xkeyboard-config 2.46
 

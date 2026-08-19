@@ -12,7 +12,7 @@
 #%%global rcversion RC1
 Name:       pcre2
 Version:    10.47
-Release:    %{?rcversion:0.}3%{?rcversion:.%rcversion}%{?dist}
+Release:    %{?rcversion:0.}1%{?rcversion:.%rcversion}%{?dist}.2
 %global     myversion %{version}%{?rcversion:-%rcversion}
 Summary:    Perl-compatible regular expression library
 # the library:                          BSD with exceptions
@@ -265,6 +265,12 @@ make %{?_smp_mflags} check VERBOSE=yes
 %{_mandir}/man1/pcre2test.*
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 10.47-1.2
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 10.47-1.1
+- rebuilt
+
 * Fri Nov 07 2025 Lukas Javorsky <ljavorsk@redhat.com> - 10.47-1
 - Rebase to version 10.47
 - Resolves: rhbz#2405255

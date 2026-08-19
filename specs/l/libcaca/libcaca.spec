@@ -205,6 +205,15 @@ mv %{buildroot}%{_docdir}/libcaca-dev libcaca-dev-docs
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.99-0.83.beta20
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.99-0.82.beta20
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.99-0.81.beta20
+- rebuilt
+
 * Fri Sep 19 2025 Python Maint <python-maint@redhat.com> - 0.99-0.80.beta20
 - Rebuilt for Python 3.14.0rc3 bytecode
 

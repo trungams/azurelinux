@@ -113,6 +113,12 @@ rspec spec/ || rspec --tag ~broken
 %doc	%{gem_docdir}
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.13.7-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.13.7-2
+- rebuilt
+
 * Thu Jan 29 2026 Mamoru TASAKA <mtasaka@fedoraproject.org> - 3.13.7-1
 - 3.13.7
 

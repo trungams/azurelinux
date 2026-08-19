@@ -765,6 +765,12 @@ fi
 %{_datadir}/pkgconfig/pacemaker-schemas.pc
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.0.1-14
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.0.1-13
+- rebuilt
+
 * Fri Sep 19 2025 Python Maint <python-maint@redhat.com> - 3.0.1-12
 - Rebuilt for Python 3.14.0rc3 bytecode (rhbz#2396740)
 

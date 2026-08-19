@@ -162,6 +162,15 @@ ln -s %{_bindir}/pidof %{buildroot}%{_sbindir}/pidof
 %files i18n -f %{name}.lang
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 4.0.4-10.1
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 4.0.4-9.1
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 4.0.4-8.1
+- rebuilt
+
 * Fri Oct 03 2025 Jan Rybar <jrybar@redhat.com> - 4.0.4-7.1
 - conflict of 'kill' i18n manpage with util-linux-i18n
 - Resolves: bz#2393949

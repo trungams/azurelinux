@@ -90,6 +90,15 @@ rm %{buildroot}%{_bindir}/stb
 %license LICENSE
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.2.0-0.28.b2
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.2.0-0.27.b2
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.2.0-0.26.b2
+- rebuilt
+
 * Fri Sep 19 2025 Python Maint <python-maint@redhat.com> - 0.2.0-0.25.b2
 - Rebuilt for Python 3.14.0rc3 bytecode
 

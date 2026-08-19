@@ -89,6 +89,15 @@ sed -i "s/lncurses/ltinfo/" configure
 %{_includedir}/editline/readline.h
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.1-60.20251016cvs
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.1-59.20251016cvs
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.1-58.20251016cvs
+- rebuilt
+
 * Thu Oct 16 2025 Jerry James <loganjerry@gmail.com> - 3.1-57.20251016cvs
 - New version (20251016-3.1)
 - Add bootstrap mode that does not need groff-base

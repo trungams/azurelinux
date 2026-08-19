@@ -283,6 +283,15 @@ cp -a src/bin-arm64-efi/ipxe.efi %{buildroot}/%{_datadir}/%{name}/arm64-efi/ipxe
 %endif
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 20240119-7.gitde8a0821
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 20240119-6.gitde8a0821
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 20240119-5.gitde8a0821
+- rebuilt
+
 * Thu Jul 24 2025 Fedora Release Engineering <releng@fedoraproject.org> - 20240119-4.gitde8a0821
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_43_Mass_Rebuild
 

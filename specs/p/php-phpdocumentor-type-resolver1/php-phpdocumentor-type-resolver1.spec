@@ -172,6 +172,15 @@ exit $RETURN_CODE
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.12.0-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.12.0-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.12.0-2
+- rebuilt
+
 * Tue Nov 25 2025 Remi Collet <remi@remirepo.net> - 1.12.0-1
 - update to 1.12.0
 

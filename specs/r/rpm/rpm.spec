@@ -627,6 +627,12 @@ fi
 %doc %{_defaultdocdir}/rpm/API/
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 6.0.1-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 6.0.1-2
+- rebuilt
+
 * Thu Dec 11 2025 Michal Domonkos <mdomonko@redhat.com> - 6.0.1-1
 - Rebase to 6.0.1 (https://rpm.org/releases/6.0.1)
 

@@ -5,7 +5,7 @@
 #%%global rcversion RC1
 Name:       pcre
 Version:    8.45
-Release:    %{?rcversion:0.}3%{?rcversion:.%rcversion}%{?dist}.9
+Release:    %{?rcversion:0.}1%{?rcversion:.%rcversion}%{?dist}.11
 %global myversion %{version}%{?rcversion:-%rcversion}
 Summary:    Perl-compatible regular expression library
 ## Source package only:
@@ -264,6 +264,12 @@ make %{?_smp_mflags} check VERBOSE=yes
 %{_mandir}/man1/pcretest.*
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 8.45-1.11
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 8.45-1.10
+- rebuilt
+
 * Fri Jul 25 2025 Fedora Release Engineering <releng@fedoraproject.org> - 8.45-1.9
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_43_Mass_Rebuild
 

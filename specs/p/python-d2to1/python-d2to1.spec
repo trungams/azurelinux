@@ -54,6 +54,15 @@ find . -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python3}|'
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.2.12-43.post1
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.2.12-42.post1
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.2.12-41.post1
+- rebuilt
+
 * Fri Sep 19 2025 Python Maint <python-maint@redhat.com> - 0.2.12-40.post1
 - Rebuilt for Python 3.14.0rc3 bytecode
 

@@ -91,6 +91,15 @@ make install DESTDIR=%{buildroot} -C %{_target_platform}
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0-0.54.rc3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0-0.53.rc3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0-0.52.rc3
+- rebuilt
+
 * Fri Jan 30 2026 Than Ngo <than@redhat.com> - 1.0-0.51.rc3
 - Update License
 

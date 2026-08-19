@@ -45,7 +45,7 @@
 
 Name:           rocm-compilersupport
 Version:        %{llvm_maj_ver}
-Release: %[23 + %{azl_release}].rocm%{rocm_version}%{?dist}
+Release: %[15 + %{azl_release}].rocm%{rocm_version}%{?dist}.8
 Summary:        Various AMD ROCm LLVM related services
 %if 0%{?suse_version}
 Group:          Development/Languages/Other
@@ -1053,6 +1053,30 @@ echo "--gcc-triple=%{_target_cpu}-%{_vendor}-linux" > %{buildroot}%{bundle_prefi
 %{bundle_prefix}/lib/libc++experimental.a
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
 * Tue Aug 5 2025 Tom Rix <Tom.Rix@amd.com> - 19-15.rocm6.4.2
 - Remove bootstrap logic
 - Use explicit Unix Makefiles for build-comgr step

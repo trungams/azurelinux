@@ -70,6 +70,15 @@ exit 0
 %gopkgfiles
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com>
+- rebuilt
+
 * Fri Aug 15 2025 Maxwell G <maxwell@gtmx.me> - 0-0.41
 - Rebuild for golang-1.25.0
 

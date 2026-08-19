@@ -112,6 +112,15 @@ rm -rf html/{.buildinfo,.doctrees}
 %endif
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0.0-0.20.beta2
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0.0-0.19.beta2
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0.0-0.18.beta2
+- rebuilt
+
 * Fri Sep 19 2025 Python Maint <python-maint@redhat.com> - 1.0.0-0.17.beta2
 - Rebuilt for Python 3.14.0rc3 bytecode
 

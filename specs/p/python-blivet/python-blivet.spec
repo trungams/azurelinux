@@ -147,6 +147,18 @@ make DESTDIR=%{buildroot} install
 %{python3_sitelib}/%{realname}-%{version}-py%{python3_version}.egg-info/
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1:3.12.1-14
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1:3.12.1-13
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1:3.12.1-12
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1:3.12.1-11
+- rebuilt
+
 * Tue Oct 14 2025 Adam Williamson <awilliam@redhat.com> - 1:3.12.1-9
 - Backport PR #1423 to fix anaconda rescue mounts (#2402976)
 

@@ -203,7 +203,7 @@ Release:          7%{?prereltag:%{prereltag}}%{?dist}
 %else
 Name:             @PACKAGE_NAME@
 Version:          @PACKAGE_VERSION@
-Release:          0.@PACKAGE_RELEASE@%{?dist}.26
+Release:          0.@PACKAGE_RELEASE@%{?dist}.29
 %endif
 License:          GPL-2.0-only OR LGPL-3.0-or-later
 URL:              http://docs.gluster.org/
@@ -1645,6 +1645,15 @@ exit 0
 %{_unitdir}/gluster-ta-volume.service
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 11.2-7
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 11.2-6
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 11.2-5
+- rebuilt
+
 * Fri Sep 19 2025 Python Maint <python-maint@redhat.com> - 11.2-4
 - Rebuilt for Python 3.14.0rc3 bytecode
 

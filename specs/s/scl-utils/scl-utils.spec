@@ -86,6 +86,15 @@ make check
 %{_rpmconfigdir}/brp-scl-python-bytecompile
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1:2.0.3-9
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1:2.0.3-8
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1:2.0.3-7
+- rebuilt
+
 * Tue Aug  5 2025 Remi Collet <remi@remirepo.net> - 1:2.0.3-6
 - fix build with GCC 15 using patch from
   https://github.com/sclorg/scl-utils/pull/57

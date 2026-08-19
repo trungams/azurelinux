@@ -279,6 +279,12 @@ popd
 %doc	%{gem_dir}/doc/%{gem_name}-%{mainver}%{?prever}/
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.19.1-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.19.1-2
+- rebuilt
+
 * Tue Feb 17 2026 Mamoru TASAKA <mtasaka@fedoraproject.org> - 1.19.1-1
 - 1.19.1
 

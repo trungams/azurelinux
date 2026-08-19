@@ -59,7 +59,7 @@ workload isolation and security advantages of VMs. https://katacontainers.io/.}
 # Unlike for RHEL, we cannot strip it down because we build all components
 # (RHEL builds only build kata-agent)
 Name:       %{repo}
-Release:    4%{?rcrel}%{?dist}
+Release:    1%{?rcrel}%{?dist}.3
 Summary:    Kata Containers version 3.x repository
 License:    Apache-2.0
 Url:        https://%{download}
@@ -393,6 +393,15 @@ fi
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.26.0-1.3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.26.0-1.2
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.26.0-1.1
+- rebuilt
+
 * Mon Feb 09 2026 Christophe de Dinechin <dinechin@redhat.com> - 3.26.0-1
 - kata-containers 3.26.0
 

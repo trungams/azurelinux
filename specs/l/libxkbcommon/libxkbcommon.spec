@@ -134,6 +134,15 @@ Requires:       %{name}-utils%{?_isa} = %{version}-%{release}
 %{_mandir}/man1/xkbcli-dump-keymap-x11.1.gz
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.11.0-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.11.0-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.11.0-2
+- rebuilt
+
 * Mon Aug 11 2025 Peter Hutterer <peter.hutterer@redhat.com> - 1.11.0-1
 - libxkbcommon 1.11.0
 

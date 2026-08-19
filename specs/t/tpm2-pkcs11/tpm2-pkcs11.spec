@@ -114,6 +114,15 @@ make check
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.9.1-9
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.9.1-8
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.9.1-7
+- rebuilt
+
 * Fri Sep 19 2025 Python Maint <python-maint@redhat.com> - 1.9.1-6
 - Rebuilt for Python 3.14.0rc3 bytecode
 

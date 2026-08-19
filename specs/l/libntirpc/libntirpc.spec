@@ -98,6 +98,15 @@ ln -s %{name}.so.%{version} %{buildroot}%{_libdir}/%{name}.so.7
 %{_libdir}/pkgconfig/libntirpc.pc
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 7.2-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 7.2-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 7.2-2
+- rebuilt
+
 * Tue Sep 30 2025 Kaleb S. KEITHLEY <kkeithle at redhat.com> 7.2-1
 - ntirpc-7.2 GA
 

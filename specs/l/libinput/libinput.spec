@@ -164,6 +164,15 @@ intended to be run by users.
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.30.2-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.30.2-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.30.2-2
+- rebuilt
+
 * Tue Feb 24 2026 Peter Hutterer <peter.hutterer@redhat.com> - 1.30.2-1
 - libinput 1.30.2
 

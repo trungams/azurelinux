@@ -83,6 +83,15 @@ Just-in-time compilation support for %{majorname}.
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.2.0-5.Final
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.2.0-4.Final
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.2.0-3.Final
+- rebuilt
+
 * Fri Jul 25 2025 Fedora Release Engineering <releng@fedoraproject.org> - 3.2.0-2.Final
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_43_Mass_Rebuild
 

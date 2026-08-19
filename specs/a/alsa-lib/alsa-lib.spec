@@ -181,6 +181,15 @@ rm %{buildroot}/%{_includedir}/asoundlib.h
 %{_datadir}/alsa/topology
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.2.15.3-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.2.15.3-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.2.15.3-2
+- rebuilt
+
 * Tue Jan 13 2026 Jaroslav Kysela <perex@perex.cz> - 1.2.15.3-1
 - update to 1.2.15.3
 

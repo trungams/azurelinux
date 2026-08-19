@@ -49,6 +49,15 @@ make DESTDIR=$RPM_BUILD_ROOT install.man
 %{_mandir}/man1/xclip*.1*
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.13-28.git11cba61
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.13-27.git11cba61
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.13-26.git11cba61
+- rebuilt
+
 * Fri Jul 25 2025 Fedora Release Engineering <releng@fedoraproject.org> - 0.13-25.git11cba61
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_43_Mass_Rebuild
 

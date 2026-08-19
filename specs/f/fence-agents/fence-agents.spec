@@ -1356,6 +1356,15 @@ are located on corosync cluster nodes.
 %{_libdir}/fence-virt/cpg.so
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 4.17.0-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 4.17.0-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 4.17.0-2
+- rebuilt
+
 * Mon Jan  5 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.17.0-1
 - new upstream release
 

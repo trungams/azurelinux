@@ -7,7 +7,7 @@
 Summary:        Tool to transform and deploy CPU microcode update for x86
 Name:           microcode_ctl
 Version:        2.1
-Release:        71.4%{?dist}
+Release:        74.1%{?dist}
 Epoch:          2
 License:        GPL-2.0-or-later AND LicenseRef-Fedora-Firmware
 URL:            https://pagure.io/microcode_ctl
@@ -39,6 +39,15 @@ make DESTDIR=%{buildroot} PREFIX=%{_prefix} INSDIR=/usr/sbin install clean
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2:2.1-74.1
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2:2.1-73.1
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2:2.1-72.1
+- rebuilt
+
 * Wed Feb 18 2026 Eugene Syromiatnikov <evgsyr@gmail.com> 2:2.1-71.1
 - Update to upstream 2.1-51. 20260210
  - Addition of 06-ae-01/0x97 (GNR-D B0/B1) microcode at revision

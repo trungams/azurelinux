@@ -1862,6 +1862,15 @@ fi
 %endif
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3:10.11.16-5
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3:10.11.16-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3:10.11.16-3
+- rebuilt
+
 * Mon Feb 16 2026 Pavol Sloboda <psloboda@redhat.com> - 3:10.11.16-2
 - Added a fix for SIGSEGV when using skip-grant-tables
 - Resolves: RHBZ#2438390

@@ -967,6 +967,15 @@ killall -SIGHUP dbus-daemon >/dev/null 2>&1 || :
 %endif
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 7.2-5
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 7.2-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 7.2-3
+- rebuilt
+
 * Wed Nov 19 2025 Kaleb S. KEITHLEY <kkeithle at redhat.com> - 7.2-2
 - NFS-Ganesha 8.1, rpc-statd unitdir
 

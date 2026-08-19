@@ -67,6 +67,15 @@ mkdir -p %{buildroot}%{_docdir}/civetweb
 %{_datadir}/pkgconfig/*
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.16-13
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.16-12
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.16-11
+- rebuilt
+
 * Mon Sep 29 2025 Kaleb S. KEITHLEY <kkeithle at redhat.com> - 1.16-10
 - civetweb 1.16, rhbz 2400162-2400166
 

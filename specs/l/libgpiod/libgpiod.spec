@@ -194,6 +194,15 @@ find %{buildroot} -name '*.la' -delete
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.2.3-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.2.3-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.2.3-2
+- rebuilt
+
 * Mon Feb 23 2026 Peter Robinson <pbrobinson@fedoraproject.org> - 2.2.3-1
 - Update to 2.2.3
 

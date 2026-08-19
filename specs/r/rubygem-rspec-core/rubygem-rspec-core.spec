@@ -212,6 +212,12 @@ done
 %{gem_docdir}
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.13.6-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.13.6-2
+- rebuilt
+
 * Mon Oct 20 2025 Mamoru TASAKA <mtasaka@fedoraproject.org> - 3.13.6-1
 - 3.13.6
 

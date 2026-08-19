@@ -100,6 +100,15 @@ rm setup.py
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.1-0.63.fcd686f1git
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.1-0.62.fcd686f1git
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 0.1-0.61.fcd686f1git
+- rebuilt
+
 * Fri Sep 19 2025 Python Maint <python-maint@redhat.com> - 0.1-0.60.fcd686f1git
 - Rebuilt for Python 3.14.0rc3 bytecode
 

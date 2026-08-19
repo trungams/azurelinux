@@ -93,6 +93,18 @@ echo "ant-contrib/ant-contrib" > $RPM_BUILD_ROOT%{_sysconfdir}/ant.d/ant-contrib
 %license target/docs/LICENSE.txt LICENSE-2.0.txt
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0-0.53.b3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0-0.52.b3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0-0.51.b3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0-0.50.b3
+- rebuilt
+
 * Mon Jul 28 2025 jiri vanek <jvanek@redhat.com> - 1.0-0.49.b3
 - Rebuilt for java-25-openjdk as preffered jdk
 

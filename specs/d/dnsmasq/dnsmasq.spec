@@ -238,6 +238,15 @@ fi
 %endif
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.92-4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.92-3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 2.92-2
+- rebuilt
+
 * Fri Jan 16 2026 Petr Menšík <pemensik@redhat.com> - 2.92-1
 - Update to 9.29 (rhbz#2429567)
 

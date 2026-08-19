@@ -276,6 +276,18 @@ test -z "$(pkg-config --cflags Qt5WebKit | grep Qt5WebKit)"
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 5.212.0-0.100alpha4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 5.212.0-0.99alpha4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 5.212.0-0.98alpha4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 5.212.0-0.97alpha4
+- rebuilt
+
 * Tue Nov 04 2025 Jan Grulich <jgrulich@redhat.com> - 5.212.0-0.95alpha4
 - Rebuild (qt5)
 

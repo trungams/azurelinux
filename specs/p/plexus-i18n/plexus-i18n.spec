@@ -55,6 +55,15 @@ is like a J2EE application server, without all the baggage.
 %files -f .mfiles
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0-0.39.b10.4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0-0.38.b10.4
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.0-0.37.b10.4
+- rebuilt
+
 * Tue Jul 29 2025 jiri vanek <jvanek@redhat.com> - 1.0-0.36.b10.4
 - Rebuilt for java-25-openjdk as preffered jdk
 

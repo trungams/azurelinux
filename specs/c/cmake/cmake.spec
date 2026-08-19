@@ -603,6 +603,12 @@ popd
 
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.31.10-5
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 3.31.10-4
+- rebuilt
+
 * Fri Dec 12 2025 Miro Hrončok <mhroncok@redhat.com> - 3.31.10-3
 - Declarative %%generate_buildrequires: Keep the BRs stable
 

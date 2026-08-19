@@ -209,6 +209,15 @@ exit 0
 %{_mandir}/man3/Mail::SPF_XS.3pm*
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.2.11-22.20210922git4915c308
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.2.11-21.20210922git4915c308
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 1.2.11-20.20210922git4915c308
+- rebuilt
+
 * Thu Jul 24 2025 Fedora Release Engineering <releng@fedoraproject.org> - 1.2.11-19.20210922git4915c308
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_43_Mass_Rebuild
 

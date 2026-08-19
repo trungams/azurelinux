@@ -213,7 +213,7 @@
 
 Name:           %{package_name}
 Version:        %{IPA_VERSION}
-Release:        8%{?rc_version:.%rc_version}%{?dist}
+Release:        5%{?rc_version:.%rc_version}%{?dist}.3
 Summary:        The Identity, Policy and Audit system
 
 License:        GPL-3.0-or-later
@@ -1970,6 +1970,15 @@ fi
 %endif
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 4.13.1-5.3
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 4.13.1-5.2
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 4.13.1-5.1
+- rebuilt
+
 * Wed Feb 18 2026 Alexander Bokovoy <abokovoy@redhat.com> - 4.13.1-5
 - More changes to SELinux policy to help upgrade SSSD helpers' contexts
 

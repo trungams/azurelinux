@@ -44,6 +44,15 @@ Kdump anaconda addon
 %{_datadir}/icons/hicolor/scalable/apps/kdump.svg
 
 %changelog
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 006-19.20250925git2a3605a
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 006-18.20250925git2a3605a
+- rebuilt
+
+* Mon Jan 06 2025 Azure Linux Packaging Team <azurelinux@microsoft.com> - 006-17.20250925git2a3605a
+- rebuilt
+
 * Thu Sep 25 2025 Coiby Xu <coxu@redhat.com> - 006-16.20250925git2a3605a
 - Feature: Set up crypttab for encrypted dump target
 
