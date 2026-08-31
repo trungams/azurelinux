@@ -6,6 +6,7 @@ includes = ["comps/components.toml", "images/images.toml"]
 
 [project]
 description = 'azurelinux-base'
+spec-editor = 'structural'
 log-dir = 'build/logs'
 work-dir = 'build/work'
 output-dir = 'out'
