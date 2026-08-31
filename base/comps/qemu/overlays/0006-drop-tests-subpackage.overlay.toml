@@ -6,9 +6,8 @@
 #
 # Implementation notes:
 # * `%define testsdir` lives inside the removed `%package tests` block but
-#   is referenced from `%install`; we re-hoist it via `%define` (lazy
-#   expansion of `%{name}` / `%{_libdir}`) near the other top-of-spec
-#   `%global` declarations so `%install` still expands cleanly.
+#   is referenced from `%install`; spec-remove-subpackage preserves the
+#   required macro automatically.
 # * The `%install` section still writes test artefacts under `%{testsdir}`
 #   and builds `accel-qtest-*.so` plugins, so we rm them from the buildroot
 #   after install to avoid "Installed (but unpackaged)" errors.
@@ -16,12 +15,6 @@
 metadata = { category = "azl-pruning", upstream-status = "inapplicable" }
 
 overlays = [
-    {
-        description = 'Hoist `%define testsdir` so %install expands correctly after %package tests is removed',
-        type = 'spec-search-replace',
-        regex = '^%global enable_werror 0$',
-        replacement = "%global enable_werror 0\n%define testsdir %{_libdir}/%{name}/tests-src",
-    },
     {
         description = 'Remove qemu-tests subpackage (test-only payload trips signing-pipeline deep scanner; not shipped in any Azure Linux image)',
         type = 'spec-remove-subpackage',
