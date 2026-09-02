@@ -84,13 +84,6 @@ determine_config_path()
 		else
 			config_path="rt/generic"
 		fi
-	elif [[ "$variant" == *"automotive"* ]]; then
-		# Automotive variant - goes under automotive/
-		if [[ "$variant" == *"debug"* ]]; then
-			config_path="automotive/debug"
-		else
-			config_path="automotive/generic"
-		fi
 	else
 		# Stock kernel - goes under top-level debug or generic
 		if [[ "$variant" == *"debug"* ]]; then
@@ -104,19 +97,6 @@ determine_config_path()
 	case "$arch" in
 		arm64)
 			config_path="$config_path/arm/aarch64"
-			;;
-		powerpc)
-			config_path="$config_path/powerpc"
-			;;
-		riscv)
-			config_path="$config_path/riscv/riscv64"
-			;;
-		s390)
-			if [[ "$variant" == *"zfcpdump"* ]]; then
-				config_path="$config_path/s390x/zfcpdump"
-			else
-				config_path="$config_path/s390x"
-			fi
 			;;
 		x86_64)
 			config_path="$config_path/x86"
