@@ -1,0 +1,6 @@
+spec-version = "0.1"
+includes = [
+  "configuration/base.toml",
+  "configuration/components/*.toml",
+  "configuration/optional/*.toml",
+]

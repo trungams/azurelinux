@@ -1,0 +1,11 @@
+[[checkout]]
+root = "/work/a/project"
+source-host-path = "/work/a/project/configuration/base.toml"
+expected-source-identity = "configuration/base.toml"
+expected-defining-path-base = "configuration"
+
+[[checkout]]
+root = "/mnt/b/project"
+source-host-path = "/mnt/b/project/configuration/base.toml"
+expected-source-identity = "configuration/base.toml"
+expected-defining-path-base = "configuration"

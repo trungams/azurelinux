@@ -1,0 +1,17 @@
+nan-a = nan
+nan-b = -nan
+positive-infinity-a = inf
+positive-infinity-b = +inf
+negative-infinity = -inf
+positive-zero = 0.0
+negative-zero = -0.0
+integer-one = 1
+float-one = 1.0
+local-date = 1979-05-27
+local-time-a = 07:32:00.1
+local-time-b = 07:32:00.100
+local-time-high-precision-a = 07:32:00.123456789
+local-time-high-precision-b = 07:32:00.1234567890
+local-date-time = 1979-05-27T07:32:00.100
+offset-date-time-a = 1979-05-27T07:32:00.100Z
+offset-date-time-b = 1979-05-27T00:32:00.100-07:00

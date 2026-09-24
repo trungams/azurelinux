@@ -3,9 +3,18 @@
 
 # components
 
+> **Slice 2 status:** This retained field page is provisional and
+> non-normative in Slice 1. It does not yet define canonical key spellings,
+> types, requiredness, defaults, composition, inheritance, path bases,
+> constraints, or error conditions.
+
 The components object provides configuration for one or more components (i.e. source packages). It contains any number object fields, with free-format keys corresponding to the name of each component, and fields as described below.
 
-Each component has an inheritance list, containing [all component groups that list it as a member](./component_groups.md) (ordered lexically by group name), and finally [the project's distro version's default_component_config](./distros.md#versions). Any field which is present in the directly defined component will be used without inheritance, while any field missing will search through the inheritance list, in order, and will use the first found definition. No merging is done for any inherited fields.
+Effective component values are produced during
+[resolution](./resolution.md#defaults-and-inheritance-boundary), not during
+TOML parsing. Inheritance layer precedence, multiple-group ordering, and
+conflict handling remain [explicit open decisions](./open-decisions.md); this
+chapter does not select them.
 
 ## spec
 

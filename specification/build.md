@@ -3,6 +3,11 @@
 
 # build
 
+> **Slice 2 status:** This retained field page is provisional and
+> non-normative in Slice 1. It does not yet define canonical key spellings,
+> types, requiredness, defaults, composition, inheritance, path bases,
+> constraints, or error conditions.
+
 The build object provides build-related configuration for a component, and contains the following fields.
 
 ## with

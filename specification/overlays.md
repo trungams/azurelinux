@@ -3,6 +3,13 @@
 
 # overlay
 
+> **Delivery status:** This retained field page is provisional and
+> non-normative in Slice 1. The component field that references overlay
+> operations and its object-model integration are completed with Slice 2. The
+> 17 operation objects listed below, including their fields, matching, ordering,
+> transformation semantics, failure behavior, and other operation contracts,
+> are owned by Slice 3.
+
 The overlay object defines a specific modification for a component, and contains the following field.
 
 - type

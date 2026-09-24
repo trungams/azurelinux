@@ -1,0 +1,7 @@
+includes = []
+
+[objects.includes]
+value = "ordinary nested name"
+
+[objects.spec-version]
+value = "ordinary nested name"

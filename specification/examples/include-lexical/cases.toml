@@ -1,0 +1,56 @@
+invalid = [
+  "",
+  "/absolute.toml",
+  '//server/share.toml',
+  '\server\share.toml',
+  '\\server\share.toml',
+  'dir\child.toml',
+  "C:relative.toml",
+  "C:/absolute.toml",
+  "https://example.test/fragment.toml",
+  "a:b.toml",
+  "bad/**/glob.toml",
+  "bad/[a-].toml",
+  "bad/[]a].toml",
+  "bad/[!]].toml",
+  "bad/[z-a].toml",
+  "bad/[Z-a].toml",
+  "bad/[0-A].toml",
+  "bad/[Å-Ö].toml",
+  "bad/[!].toml",
+  "bad/[unterminated.toml",
+]
+
+[[valid]]
+entry = "configuration/base.toml"
+classification = "literal"
+
+[[valid]]
+entry = "./configuration/../configuration/base.toml"
+classification = "literal"
+
+[[valid]]
+entry = "components/[a-z]*.toml"
+classification = "glob"
+
+[[valid]]
+entry = "components/[2-7][B-F][b-f].toml"
+classification = "glob"
+
+[[valid]]
+entry = "components/[!x]?.toml"
+classification = "glob"
+
+[[valid]]
+entry = "Case/Å.toml"
+classification = "literal"
+
+[[lookup]]
+available = "Case/Å.toml"
+requested = "case/Å.toml"
+matches = false
+
+[[lookup]]
+available = "Case/Å.toml"
+requested = "Case/A\u030A.toml"
+matches = false

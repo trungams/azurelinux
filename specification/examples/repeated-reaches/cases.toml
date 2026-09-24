@@ -1,0 +1,23 @@
+[[case]]
+category = "duplicate-literals"
+parents = ["azldev.toml", "azldev.toml"]
+entries = ["common.toml", "common.toml"]
+canonical = ["common.toml", "common.toml"]
+
+[[case]]
+category = "literal-glob-overlap"
+parents = ["azldev.toml", "azldev.toml"]
+entries = ["common.toml", "c*.toml"]
+canonical = ["common.toml", "common.toml"]
+
+[[case]]
+category = "multiple-parents"
+parents = ["left.toml", "right.toml"]
+entries = ["common.toml", "common.toml"]
+canonical = ["common.toml", "common.toml"]
+
+[[case]]
+category = "symlink-aliases"
+parents = ["azldev.toml", "azldev.toml"]
+entries = ["common.toml", "alias.toml"]
+canonical = ["common.toml", "common.toml"]

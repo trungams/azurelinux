@@ -1,22 +1,41 @@
-
 [Return to index](./index.md)
 
-# Top-level objects
+# Top-level object families
 
-The TOML parsing will result in a hierarchy of objects that describe the entire project and specify exactly how to perform the processing and transformation of the upstream dist-git repositories into local modified dist-git directories.
+The [composed model](./resolution.md#composed-model) and
+[resolved model](./resolution.md#resolved-model) contain the object families
+that describe a project and its components.
 
-## project
+This chapter is navigation for Slice 1. The linked object-field pages preserve
+useful baseline material but are provisional and non-normative until Slice 2
+defines each field's canonical spelling, type, requiredness, default,
+composition behavior, inheritance behavior, path base, constraints, and error
+conditions.
 
-This required object field contains general configuration for the project, and is [described here](./project.md).
+## Project
 
-## distros
+Project-wide identity and defaults are introduced in
+[project](./project.md).
 
-This required object field contains specific configuration for distributions. The object contains any number of object fields, each of which correspond to a specific distribution name, and whose value is an object [as described here](./distros.md).
+## Distros
 
-## components
+Named distributions and versions are introduced in
+[distros](./distros.md).
 
-This required object field contains specific configuration for components (i.e. source packages). The object contains any number of object fields, each of which correspond to a single component name, and whose value is an object [as described here](./components.md).
+## Components
 
-## component_groups
+Named source-package components are introduced in
+[components](./components.md).
 
-This optional object field contains general configuration for components (i.e. source packages). The object contains any number of object fields, each of which correspond to a single group name, and whose value is an object [as described here](./component_groups.md).
+Component inheritance is a resolution operation, not a TOML parsing behavior.
+Its precedence remains an
+[explicit open decision](./open-decisions.md#od-2-inheritance-layer-precedence).
+
+## Component groups
+
+Named component groups are introduced in
+[component groups](./component_groups.md).
+
+The canonical top-level field spelling is expected to be hyphenated, but its
+complete field contract and multiple-group behavior belong to Slice 2. No
+underscore alias is implied.
