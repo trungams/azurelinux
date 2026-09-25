@@ -46,7 +46,7 @@ Unless a row says otherwise:
   recursively present map/table leaves may combine only when disjoint, while
   any repeated non-append leaf is an `RM-EFFECTIVE` error.
 
-`overlays` is the sole Slice 2 document-composition array exception:
+`overlays` is the sole revision `0.1` document-composition array exception:
 contributions append in document reach order within one composed provider.
 Inheritance also appends `overlays` in low-to-high layer order. Contributions
 from several component groups append in group-name UTF-8 order; that sequence

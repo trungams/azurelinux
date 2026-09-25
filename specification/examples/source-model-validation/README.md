@@ -1,7 +1,9 @@
 # Source-model validation falsifier
 
-This Slice 1 fixture uses the metasyntactic field contract
-`example.names: array<string>`. It does not define an object field.
+This fixture illustrates
+[source-model validation](../../document.md#document-layer-validation) with the
+metasyntactic field contract `example.names: array<string>`. It does not define
+an object field.
 
 The earlier document contains an integer array element:
 

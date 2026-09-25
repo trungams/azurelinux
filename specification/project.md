@@ -20,6 +20,7 @@ from current tooling are explicitly outside the portable model.
 | `project.rendered-specs-dir` | reserved string path | Forbidden in a conforming `0.1` document. | Tool rendered-tree layout path. | N/A. | N/A. | Presence is an unknown-key error in conformance mode. | Excluded/deferred |
 | `project.lock-dir` | reserved string path | Forbidden in a conforming `0.1` document; no normative default. | Tool lock/cache layout path. | N/A. | N/A. | Presence is an unknown-key error. It does not establish a normative lock file. | Excluded/deferred |
 
-**Review note:** Current azldev accepts the five operational directory fields
-and defaults `lock-dir`. The portable specification instead defines observable
-inputs and outputs and does not standardize those layouts.
+**Non-normative implementation evidence:** The characterized azldev behavior
+accepts the five operational directory fields and defaults `lock-dir`. The
+portable specification instead defines observable inputs and outputs and does
+not standardize those layouts.

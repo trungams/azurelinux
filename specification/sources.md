@@ -160,10 +160,11 @@ During `RM-SOURCE-ID`, a processor MUST verify the effective
 model. Acquisition MUST check out the verified commit rather than the branch
 HEAD observed at acquisition time.
 
-**Review note:** Current azldev accepts abbreviated 7-40 digit, mixed-case pins,
-permits omitted distro-reference versions through `default-version`, rejects
-some direct component snapshots, and can materialize from branch HEAD. Those
-behaviors are characterized evidence, not this contract.
+**Non-normative implementation evidence:** The characterized azldev behavior
+accepts abbreviated 7-40 digit, mixed-case pins, permits omitted
+distro-reference versions through `default-version`, rejects some direct
+component snapshots, and can materialize from branch HEAD. Those behaviors are
+evidence, not this contract.
 
 ## Local component source
 
