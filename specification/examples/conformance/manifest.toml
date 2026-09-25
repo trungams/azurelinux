@@ -5,7 +5,7 @@ description = "Representative ordinary positive and negative fixture manifest"
 
 [[inputs]]
 path = "inputs/source-root.toml"
-sha256 = "931847fba4ce0d176dd3c63f2ed83f14c0297b5b9f2d24ef4df02683738745d7"
+sha256 = "67d9d8dafce2af2323efab35116e112886811d43bfb3b1526aea55d06dd78272"
 
 [[inputs]]
 path = "inputs/invalid-source.toml"

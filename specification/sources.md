@@ -568,7 +568,10 @@ generation. The operation inputs are:
 1. the exact resolved `SourceFile` entry;
 2. the snapshotted executable script bytes, script semantic identity, and
    script SHA-256;
-3. the exact target architecture and RFC 3339 UTC evaluation instant;
+3. the exact target architecture, a nonempty ASCII token matching
+   `[A-Za-z0-9][A-Za-z0-9._+-]*` under the
+   [selected-operation contract](./profiles.md#selected-operation-contracts),
+   and the RFC 3339 UTC evaluation instant;
 4. exact bytes and verified identities for every declared `origin.inputs`
    filename, with no forward or undeclared input;
 5. the ordered unique `origin.mock-packages` names and the selected

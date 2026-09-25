@@ -2,7 +2,7 @@ spec-version = "0.1"
 
 [project]
 description = "Conformance class-input fixture"
-default-distro = { name = "azurelinux", version = "3.0", snapshot = 2026-09-24T00:00:00Z }
+default-distro = { name = "azurelinux", version = "3.0", snapshot = "2026-09-24T00:00:00Z" }
 
 [distros.azurelinux]
 description = "Azure Linux"

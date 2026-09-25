@@ -75,13 +75,17 @@ profile operation identifier.
 | `image-build` | Exact image identity, target distro/version, one architecture listed by the image, selected repository references, immutable component/artifact and repository/package manifests including every required repository GPG-key binding, immutable toolchain manifest, evaluation instant, network context, and resource limits. | Capability selection, reference/resource expansion, GPG-key byte verification before repository use, input validation, and structured success/error reporting. | Final image bytes and image reproducibility. |
 | `publish-image` | Exact image artifact identity and digest, exact ordered channels, destination identity, network context, resource limits, and route-scoped credential references. | Capability selection, complete input/security preflight, preservation of the requested channel order, and a typed success or error result from the selected implementation. | Publication wire protocol, retries, replay, receipts, remote transaction semantics, retention, replication timing, and final image reproducibility. |
 | `test` | Exact test or group selection, resolved component or image identity, required capabilities, architecture when the selected runner needs one, immutable runner/toolchain manifest, network context, resource limits, and permitted credential references. | Reference expansion, capability matching, runner selection, and structured invocation/result classification. | Test timing, performance measurements, external service state, and a universal test-result byte format. |
-| `custom-source-generate` | Exact `custom` source entry, snapshotted script, target architecture, evaluation instant, declared input artifact bytes, declared mock-package names, implementation-specific isolation availability, and resource limits. | Declared-input/package availability, isolated execution, semantic output-tree validation, archive/hash boundary, and exact accepted artifact digest defined in [Sources](./sources.md#custom-source-generation-profile). | Portable execution-root or package-payload closure, kernel-observation proofs, final RPM/image bytes, and portable archive-byte conformance. |
+| `custom-source-generate` | Exact `custom` source entry, snapshotted script, target architecture matching `[A-Za-z0-9][A-Za-z0-9._+-]*`, evaluation instant, declared input artifact bytes, declared mock-package names, implementation-specific isolation availability, and resource limits. | Declared-input/package availability, isolated execution, semantic output-tree validation, archive/hash boundary, and exact accepted artifact digest defined in [Sources](./sources.md#custom-source-generation-profile). | Portable execution-root or package-payload closure, kernel-observation proofs, final RPM/image bytes, and portable archive-byte conformance. |
 
 An operation MUST NOT begin a network request, load a credential, create a
 build root, execute a child process, or mutate a destination until all
 required inputs in its row have passed `V-OPERATION`. Missing architecture,
 macro, package, toolchain, network, credential-scope, or resource-limit input
 is not filled from the host.
+
+For `custom-source-generate`, the target architecture is an exact nonempty
+ASCII operation input matching `[A-Za-z0-9][A-Za-z0-9._+-]*`. It MUST NOT be
+normalized, defaulted, or inferred from the host.
 
 A selected `rpm-build` or `image-build` operation that references an effective
 repository set with `disable-ssl-verify = true` fails `security-policy` at

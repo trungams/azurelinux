@@ -122,7 +122,7 @@ output-filename = "vendor.tar.gz"
 output-hash-type = "SHA512"
 output-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
 actual-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
-expected = "validation-error"
+expected = "transformation"
 
 [[cases]]
 id = "implementation-isolation-unavailable"

@@ -11,12 +11,13 @@ interfaces, or a reproducible sandbox proof.
 
 The root contains exactly one `cases` array with the seven retained closed
 records in `cases.toml`. Every record has the same exact key set. `id` uses the
-lowercase fixture-token grammar. `architecture` is a non-empty ASCII token
-matching `[A-Za-z0-9][A-Za-z0-9._+-]*`. `evaluation-instant` is a quoted
-RFC 3339 UTC string using `Z`. Package arrays contain unique non-empty strings;
-input arrays contain unique strings satisfying the configured source filename
-grammar. `isolation-supported`, `attempted-network`, and
-`semantic-output-valid` are TOML booleans.
+lowercase fixture-token grammar. `architecture` is the exact operation input
+and follows the `[A-Za-z0-9][A-Za-z0-9._+-]*` lexical grammar owned by the
+[selected-operation contract](../../profiles.md#selected-operation-contracts).
+`evaluation-instant` is a quoted RFC 3339 UTC string using `Z`. Package arrays
+contain unique non-empty strings; input arrays contain unique strings
+satisfying the configured source filename grammar. `isolation-supported`,
+`attempted-network`, and `semantic-output-valid` are TOML booleans.
 
 `network` is exactly `deny`; `script-read` is empty or a configured source
 filename; `output-kind` is exactly `archive-tree`; and `output-entry-count` is
@@ -25,4 +26,5 @@ configured source filename grammar and uses a supported custom archive suffix.
 `output-hash-type` is exactly `SHA256` or `SHA512`, and both digest strings are
 lowercase hexadecimal text of the matching length. `expected` is exactly one
 of `accept`, `integrity`, `security-policy`, `unsupported-operation`, or
-`validation-error`.
+`transformation`. Invalid semantic output maps to `transformation` at
+`V-TRANSFORM`.
