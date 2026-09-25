@@ -367,7 +367,9 @@ TOML reside in a digest-declared fixture file.
 
 For transformed archives, the expected complete archive bytes and configured
 post-overlay digest are required. Such a case remains `claimable = false`
-while OD-7 is open, even when one implementation reproduces the fixture.
+while the Materialized-tree class is in `draft`, even when one implementation
+reproduces the fixture. Reproduction is not evidence of a canonical encoder or
+cross-tool archive-byte reproducibility.
 
 RPM and image bytes are not output expectations in this revision. Test
 results, publishing receipts, and operational logs likewise are not core
@@ -523,11 +525,11 @@ All four classes remain in `draft` status and non-claimable:
 | Source-document | The manifest format and representative fixtures exist, but no normative complete source-model fixture-suite version and output oracle are enabled. |
 | Loading/composed-model | Repeated canonical-document behavior is defined, but no normative complete composed-model fixture-suite version and output oracle are enabled. |
 | Resolved-model | Typed inheritance and behavioral identity are defined, but no normative complete resolved-model fixture-suite version and output oracle are enabled. |
-| Materialized-tree | S3-R4-001, S3-R4-002, and OD-7 affect exact output bytes; no class suite is enabled. |
+| Materialized-tree | Overlay and artifact behavior is defined, but no normative complete Materialized-tree fixture-suite version and output oracle are enabled. |
 
-The open inputs remain visible and non-claimable. A fixture encountering one
-of them lists the exact identifier in `blocked-by`; it MUST NOT convert the
-case to success by choosing an alternative silently.
+Draft boundaries remain visible and non-claimable. A fixture encountering an
+actual unresolved blocker lists its exact identifier in `blocked-by`; it MUST
+NOT convert the case to success by choosing an alternative silently.
 
 Long-term version compatibility, deprecation timing, and future semantic
 overlay profiles remain outside this lifecycle until a later revision defines

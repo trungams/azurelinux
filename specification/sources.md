@@ -625,4 +625,5 @@ output-hash behavior.
 
 The profile remains non-claimable under the current class lifecycle. This
 contract prevents hidden ambient inputs and divergent accepted bytes, but it
-does not close OD-7 or claim final RPM or image reproducibility.
+does not define a canonical archive encoder or claim final RPM, image, or
+cross-tool archive-byte reproducibility.

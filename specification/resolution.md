@@ -303,5 +303,6 @@ undefined.
 
 The materialized-tree behavioral identity is defined in
 [Materialized artifacts](./artifacts.md#behavioral-tree-identity). That class
-also remains non-claimable; S3-R4-001, S3-R4-002, and OD-7 still affect exact
-active-spec or transformed-archive output.
+also remains non-claimable because no complete normative fixture suite and
+output oracle are enabled. Its active-spec and transformed-archive behavior is
+otherwise defined by the owning overlay and artifact contracts.

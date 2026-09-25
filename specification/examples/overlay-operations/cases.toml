@@ -235,6 +235,30 @@ expected-lines = [
 outcome = "success"
 
 [[regression]]
+id = "spec-insert-tag-repeatable-family-success"
+family = "spec-tag"
+operation = { type = "spec-insert-tag", tag = "Source2", value = "c.tar.gz" }
+input-lines = ["Name: example", "Source0: a.tar.gz", "Source1: b.tar.gz", "Version: 1"]
+expected-lines = ["Name: example", "Source0: a.tar.gz", "Source1: b.tar.gz", "Source2: c.tar.gz", "Version: 1"]
+outcome = "success"
+
+[[regression]]
+id = "spec-set-tag-zero-add-success"
+family = "spec-tag"
+operation = { type = "spec-set-tag", tag = "Vendor", value = "Azure Linux" }
+input-lines = ["Name: example", "Version: 1"]
+expected-lines = ["Name: example", "Version: 1", "Vendor: Azure Linux"]
+outcome = "success"
+
+[[regression]]
+id = "spec-remove-tag-value-all-success"
+family = "spec-tag"
+operation = { type = "spec-remove-tag", tag = "BuildRequires", value = "gcc" }
+input-lines = ["Name: example", "BuildRequires: gcc", "BuildRequires: make", "BuildRequires: gcc"]
+expected-lines = ["Name: example", "BuildRequires: make"]
+outcome = "success"
+
+[[regression]]
 id = "patch-add-no-existing-tags-success"
 family = "patch"
 operation = { type = "patch-add", source = "patches/fix.patch", file = "fix.patch" }
@@ -244,6 +268,62 @@ input-files = []
 expected-lines = ["Name: example", "Version: 1", "Patch0: fix.patch", "%description", "Example"]
 expected-files = [{ path = "fix.patch", mode = "0644", content-hex = "6669780a" }]
 expected-slot = 0
+outcome = "success"
+
+[[regression]]
+id = "patch-add-default-file-success"
+family = "patch"
+operation = { type = "patch-add", source = "patches/default.patch" }
+source-hex = "64656661756c740a"
+input-lines = ["Name: example", "Version: 1", "%description", "Example"]
+input-files = []
+expected-lines = ["Name: example", "Version: 1", "Patch0: default.patch", "%description", "Example"]
+expected-files = [{ path = "default.patch", mode = "0644", content-hex = "64656661756c740a" }]
+expected-slot = 0
+outcome = "success"
+
+[[regression]]
+id = "patch-add-patchlist-empty-section-success"
+family = "patch"
+operation = { type = "patch-add", source = "patches/fix.patch", file = "fix.patch" }
+source-hex = "6669780a"
+input-lines = ["Name: example", "%patchlist", "%build", "make"]
+input-files = []
+expected-lines = ["Name: example", "%patchlist", "fix.patch", "%build", "make"]
+expected-files = [{ path = "fix.patch", mode = "0644", content-hex = "6669780a" }]
+outcome = "success"
+
+[[regression]]
+id = "patch-add-patchlist-blank-only-section-success"
+family = "patch"
+operation = { type = "patch-add", source = "patches/fix.patch", file = "fix.patch" }
+source-hex = "6669780a"
+input-lines = ["Name: example", "%patchlist", "", " \t", "%build", "make"]
+input-files = []
+expected-lines = ["Name: example", "%patchlist", "fix.patch", "", " \t", "%build", "make"]
+expected-files = [{ path = "fix.patch", mode = "0644", content-hex = "6669780a" }]
+outcome = "success"
+
+[[regression]]
+id = "patch-add-patchlist-no-trailing-blank-success"
+family = "patch"
+operation = { type = "patch-add", source = "patches/fix.patch", file = "fix.patch" }
+source-hex = "6669780a"
+input-lines = ["Name: example", "%patchlist", "existing.patch", "%build", "make"]
+input-files = []
+expected-lines = ["Name: example", "%patchlist", "existing.patch", "fix.patch", "%build", "make"]
+expected-files = [{ path = "fix.patch", mode = "0644", content-hex = "6669780a" }]
+outcome = "success"
+
+[[regression]]
+id = "patch-add-patchlist-multiple-trailing-blanks-success"
+family = "patch"
+operation = { type = "patch-add", source = "patches/fix.patch", file = "fix.patch" }
+source-hex = "6669780a"
+input-lines = ["Name: example", "%patchlist", "existing.patch", "", " \t", "%build", "make"]
+input-files = []
+expected-lines = ["Name: example", "%patchlist", "existing.patch", "fix.patch", "", " \t", "%build", "make"]
+expected-files = [{ path = "fix.patch", mode = "0644", content-hex = "6669780a" }]
 outcome = "success"
 
 [[regression]]
@@ -427,6 +507,132 @@ input-lines = ["Requires: one", "Requires: two"]
 outcome = "error"
 failure-category = "cardinality"
 error = "multiple matching tags"
+
+[[negative]]
+id = "spec-update-tag-zero-error"
+family = "spec-tag"
+operation = { type = "spec-update-tag", tag = "Vendor", value = "new" }
+input-lines = ["Name: example"]
+outcome = "error"
+failure-category = "cardinality"
+error = "update requires exactly one matching tag"
+
+[[negative]]
+id = "spec-update-tag-multiple-error"
+family = "spec-tag"
+operation = { type = "spec-update-tag", tag = "Vendor", value = "new" }
+input-lines = ["Vendor: one", "Vendor: two"]
+outcome = "error"
+failure-category = "cardinality"
+error = "update rejects multiple matching tags"
+
+[[negative]]
+id = "spec-add-tag-empty-value-error"
+family = "spec-tag"
+operation = { type = "spec-add-tag", tag = "Vendor", value = "" }
+input-lines = ["Name: example"]
+outcome = "error"
+failure-category = "tag-value"
+error = "empty value rejected before tag-specific handling"
+
+[[negative]]
+id = "spec-add-tag-whitespace-value-error"
+family = "spec-tag"
+operation = { type = "spec-add-tag", tag = "Vendor", value = " \t " }
+input-lines = ["Name: example"]
+outcome = "error"
+failure-category = "tag-value"
+error = "whitespace-only value rejected before tag-specific handling"
+
+[[negative]]
+id = "spec-insert-tag-empty-value-error"
+family = "spec-tag"
+operation = { type = "spec-insert-tag", tag = "Source1", value = "" }
+input-lines = ["Name: example", "Source0: source.tar.gz"]
+outcome = "error"
+failure-category = "tag-value"
+error = "empty value rejected before tag-specific handling"
+
+[[negative]]
+id = "spec-insert-tag-whitespace-value-error"
+family = "spec-tag"
+operation = { type = "spec-insert-tag", tag = "Source1", value = " \t " }
+input-lines = ["Name: example", "Source0: source.tar.gz"]
+outcome = "error"
+failure-category = "tag-value"
+error = "whitespace-only value rejected before tag-specific handling"
+
+[[negative]]
+id = "spec-set-tag-empty-value-error"
+family = "spec-tag"
+operation = { type = "spec-set-tag", tag = "Vendor", value = "" }
+input-lines = ["Vendor: old"]
+outcome = "error"
+failure-category = "tag-value"
+error = "empty value rejected before tag-specific handling"
+
+[[negative]]
+id = "spec-set-tag-whitespace-value-error"
+family = "spec-tag"
+operation = { type = "spec-set-tag", tag = "Vendor", value = " \t " }
+input-lines = ["Vendor: old"]
+outcome = "error"
+failure-category = "tag-value"
+error = "whitespace-only value rejected before tag-specific handling"
+
+[[negative]]
+id = "spec-update-tag-empty-value-error"
+family = "spec-tag"
+operation = { type = "spec-update-tag", tag = "Vendor", value = "" }
+input-lines = ["Vendor: old"]
+outcome = "error"
+failure-category = "tag-value"
+error = "empty value rejected before tag-specific handling"
+
+[[negative]]
+id = "spec-update-tag-whitespace-value-error"
+family = "spec-tag"
+operation = { type = "spec-update-tag", tag = "Vendor", value = " \t " }
+input-lines = ["Vendor: old"]
+outcome = "error"
+failure-category = "tag-value"
+error = "whitespace-only value rejected before tag-specific handling"
+
+[[negative]]
+id = "spec-remove-tag-empty-value-error"
+family = "spec-tag"
+operation = { type = "spec-remove-tag", tag = "Vendor", value = "" }
+input-lines = ["Vendor: old"]
+outcome = "error"
+failure-category = "tag-value"
+error = "explicit empty removal filter rejected"
+
+[[negative]]
+id = "spec-remove-tag-whitespace-value-error"
+family = "spec-tag"
+operation = { type = "spec-remove-tag", tag = "Vendor", value = " \t " }
+input-lines = ["Vendor: old"]
+outcome = "error"
+failure-category = "tag-value"
+error = "explicit whitespace-only removal filter rejected"
+
+[[negative]]
+id = "spec-existing-empty-tag-value-error"
+family = "spec-tag"
+operation = { type = "spec-remove-tag", tag = "Vendor" }
+input-lines = ["Vendor: \t "]
+outcome = "error"
+failure-category = "tag-value"
+error = "parsed empty preamble value rejected before tag-specific handling"
+
+[[negative]]
+id = "spec-set-tag-configurable-match-field-error"
+family = "spec-tag"
+operation = { type = "spec-set-tag", tag = "Vendor", value = "new", match = "first" }
+input-lines = ["Vendor: old"]
+outcome = "error"
+failure-category = "field-contract"
+error = "configurable match field is not part of v0.1"
 
 [[negative]]
 id = "spec-lines-missing-section-error"

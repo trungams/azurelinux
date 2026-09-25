@@ -292,20 +292,23 @@ publication, or another mechanism, but readers MUST observe either the prior
 complete artifact or the new complete artifact, never a mixture. If the host
 cannot provide that observable guarantee, publication is unsupported.
 
-## Transformed archives and current claim status
+## Transformed archive byte boundary
 
-Regular-file identity includes complete transformed archive bytes.
-[OD-7](./open-decisions.md#od-7-canonical-transformed-archive-bytes)
-still lacks a portable producer algorithm for those bytes across supported
-tar/compression encoders. The configured post-overlay hash prevents divergent
-successful output for one declared model, but it does not define a general
-canonical encoder.
+Regular-file identity includes the complete emitted transformed-archive
+bytes, and those bytes MUST match the configured post-overlay hash. The
+normative archive transformation output is nevertheless the semantic
+extracted-tree result defined by
+[Overlay transformations](./overlays.md#archive-extraction-and-batching), with
+content-detected compression preserved.
 
-Therefore the Materialized-tree class remains forward-declared and
-non-claimable, and transformed-archive byte conformance is specifically
-prohibited. The artifact namespace, exact behavioral tree identity,
-placement, exclusions, provenance association, and atomic success/failure
-rules in this chapter are still normative prerequisites for later enablement.
-S3-R4-001 and S3-R4-002 additionally leave affected active-spec bytes
-non-claimable as recorded in
-[Conformance methodology](./conformance.md#current-revision-status).
+Revision `0.1` defines no canonical tar/compressor encoder, encoder version
+registry, or cross-tool archive-byte reproducibility guarantee. Different
+tools may be unable to produce the configured bytes from the same semantic
+tree; such a producer reports unsupported transformed-archive encoding or
+hash mismatch instead of publishing different bytes.
+
+The Materialized-tree class remains forward-declared and non-claimable solely
+because no complete normative class suite and output oracle are enabled. That
+lifecycle status does not weaken the artifact namespace, exact behavioral
+tree identity, placement, exclusions, provenance association, configured-hash
+gate, or atomic success/failure rules in this chapter.

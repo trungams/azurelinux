@@ -122,9 +122,8 @@ path bytes. Limit exhaustion aborts the complete component attempt and leaves
 no extracted partial tree.
 
 Repacking occurs only from the validated semantic archive result. The
-configured post-overlay hash remains required. OD-7 continues to prohibit a
-portable transformed-archive producer claim; this chapter does not select a
-canonical encoder.
+configured post-overlay hash remains required. This chapter does not select a
+canonical encoder or establish cross-tool archive-byte reproducibility.
 
 ## Custom generator isolation
 

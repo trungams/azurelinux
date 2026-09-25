@@ -77,96 +77,56 @@ portable source-document vocabulary.
 
 ## OD-6: Overlay match cardinality
 
-**Question:** What should happen when operations intended to identify one RPM
-tag encounter duplicate matching tag lines?
+**Status: resolved on 2026-09-25.**
 
-**Affected operations:** `spec-add-tag`, `spec-set-tag`, and
-`spec-update-tag`.
+Revision `0.1` uses fixed operation-specific behavior and adds no configurable
+match field:
 
-**Alternative A - singleton-safe errors**
+- `spec-add-tag` requires zero matching tag names;
+- `spec-set-tag` adds on zero, updates one, and errors on multiple;
+- `spec-update-tag` requires exactly one;
+- `spec-insert-tag` retains repeatable-family insertion semantics; and
+- `spec-remove-tag` retains all-match removal, optionally filtered by one
+  exact non-empty parsed value.
 
-- `spec-add-tag` succeeds only with zero matches.
-- `spec-set-tag` adds on zero, updates on one, and errors on several.
-- `spec-update-tag` requires exactly one.
-- Prevents silently treating malformed or conditionally duplicated singleton
-  tags as one arbitrary target.
+This decision avoids arbitrary first-match selection and prevents a hidden
+global multiplicity policy from changing operation meaning. The normative
+rules and executable cardinality fixtures are in
+[Overlay transformations](./overlays.md#spec-tag-operations).
 
-**Alternative B - all-match behavior**
-
-- `spec-add-tag` may append another instance.
-- Set/update may change every matching line.
-- Supports legitimate repeatable tags but can unexpectedly rewrite duplicate
-  singleton tags.
-
-**Alternative C - first-match behavior**
-
-- Set/update changes the first parsed match only.
-- Depends on source order and leaves other duplicates untouched.
-
-**Evidence:** Current documentation says `spec-add-tag` fails when the tag
-exists, while current runtime `AddTag` appends indiscriminately. Set/update
-comments describe the first instance, while the visitor currently continues
-and appears to update every matching instance. Repeatable tag families also
-make one global policy risky.
-
-**Recommendation and current containment:** Prefer explicit per-operation or
-per-tag multiplicity in a future semantic model. For the current low-level API,
-retain the normative provisional singleton-safe errors in
-[Overlay transformations](./overlays.md#spec-tag-operations). They make the
-present result deterministic without pretending the product decision is
-closed. `spec-insert-tag` and `spec-remove-tag` already define deliberate
-multi-instance behavior and are not gated by this question.
+Configurable modes such as first, last, all, or exactly N may be considered in
+a later revision only with concrete use cases and a schema extension. They are
+non-normative future work and do not alter revision `0.1`.
 
 ## OD-7: Canonical transformed-archive bytes
 
-**Question:** Which exact tar headers, metadata, padding, compression
-parameters, and encoder versions produce portable byte-identical transformed
-archives?
+**Status: resolved on 2026-09-25.**
 
-**Alternative A - one fully specified portable encoder**
+Revision `0.1` standardizes the semantic extracted-tree transformation result,
+preserves the compression family detected from the input content, and requires
+the exact emitted archive bytes to match the configured post-overlay hash.
+An implementation that cannot emit matching bytes fails rather than publishing
+a different archive.
 
-- Defines tar header format, field encodings, metadata, entry order, padding,
-  and compressor parameters for every supported compression.
-- Makes transformed archives independently reproducible.
-- Requires compatibility commitments for xz and zstd bitstreams or embedded
-  reference vectors.
+Revision `0.1` does not define a canonical tar/compressor encoder, encoder
+version registry, or cross-tool archive-byte reproducibility guarantee. The
+semantic result and configured-hash gate are the complete normative boundary;
+lack of a universal encoder is not an unresolved product decision and does not
+weaken the required byte hash.
 
-**Alternative B - semantic archive tree plus configured byte hash**
+A future specification may define a canonical encoder and cross-implementation
+vectors or deliberately narrow supported formats. That work is non-normative
+for revision `0.1`.
 
-- Defines one extracted-tree result and accepts an encoding only when its exact
-  bytes match the declared post-overlay hash.
-- Prevents incompatible successful output for one declaration.
-- Does not let a new implementation derive the expected bytes without a
-  compatible encoder.
+## Non-normative future work
 
-**Alternative C - restrict transformed archives**
+The following topics are intentionally deferred and do not change revision
+`0.1`:
 
-- Prohibits archive transformation until one canonical encoder is published,
-  or supports only a smaller format such as uncompressed tar.
-- Maximizes portability but drops current gzip/xz/zstd use cases.
-
-**Evidence:** Current azldev sorts entries, pins timestamps and ownership,
-normalizes gzip headers, and preserves content-detected compression. Exact xz
-and zstd bytes still depend on library behavior, and source archives can
-contain metadata or format variations without a published portable
-normalization contract.
-
-**Recommendation and current containment:** Retain Alternative B for this
-revision: the overlay chapter defines the semantic archive result and requires
-the configured post-overlay hash as the byte-level success gate. Portable
-transformed-archive byte claims and the Materialized-tree class remain
-prohibited. Before enabling them, publish one canonical encoder contract and
-cross-implementation vectors, or deliberately narrow supported formats.
-
-## Decisions assigned to later work
-
-The following approved questions remain open and are intentionally assigned to
-later work:
-
-| Decision | Owning slice |
+| Topic | Owning revision |
 | --- | --- |
-| Overlay match-cardinality closure (OD-6) | Human/product review |
-| Canonical transformed-archive bytes (OD-7) | Human/product review |
+| Configurable tag match modes or match fields | Later schema revision |
+| Canonical archive encoder and cross-tool byte vectors | Later archive/conformance revision |
 | Long-term version compatibility and deprecation | Later revision |
 | Future semantic component-transformation model | Future specification revision |
 

@@ -10,7 +10,7 @@ claimable = false
 
 [[suites.packages]]
 manifest = "manifest.toml"
-sha256 = "84a0a8681163cc1441006914015460ba0a9e7a83a5ee656330250f2069ff2eb4"
+sha256 = "b50fd050a8cf06a81d9d5a6c54cc819e723e6bfb9e4a7f1a936fa2613ce6000c"
 
 [[suites.requirements]]
 class = "Source-document"
@@ -46,10 +46,10 @@ case-ids = ["resolved-target-leaf"]
 class = "Materialized-tree"
 role = "producer"
 profile = "core"
-case-ids = ["materialized-output-blocked"]
+case-ids = ["materialized-output-draft"]
 
 [[suites.requirements]]
 class = "Materialized-tree"
 role = "consumer"
 profile = "core"
-case-ids = ["materialized-output-blocked"]
+case-ids = ["materialized-output-draft"]

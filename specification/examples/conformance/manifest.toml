@@ -3,7 +3,7 @@ fixture-id = "slice4-format-example"
 spec-version = "0.1"
 description = "Representative non-claimable conformance fixture manifest"
 claimable = false
-blocked-by = ["S3-R4-001", "S3-R4-002", "OD-7"]
+blocked-by = []
 suite-id = "slice4-draft-example"
 suite-version = "0"
 suite-classes = ["Source-document", "Loading/composed-model", "Resolved-model", "Materialized-tree"]
@@ -209,13 +209,13 @@ supplier = "operation-input"
 effective-object = "evaluation"
 
 [[cases]]
-id = "materialized-output-blocked"
+id = "materialized-output-draft"
 kind = "output"
 class = "Materialized-tree"
 role = "both"
 profile = "core"
 claimable = false
-blocked-by = ["S3-R4-001", "S3-R4-002", "OD-7"]
+blocked-by = []
 operation = "none"
 processing-boundary = "MT-MATERIALIZE"
 expected-output-manifest = "input:expected/materialized.manifest"

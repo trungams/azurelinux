@@ -70,7 +70,7 @@ implementations MUST NOT infer ignored fields.
 | `section` | string RPM section token | Required, optional, or forbidden by the matrix. | `%` followed by a lowercase ASCII letter and then lowercase ASCII letters, digits, or `_`; path base N/A. | Entry scalar. | Inherited with the entry. | Matches the recognized section's canonical ASCII-lowercase token, not retained header spelling; operation-specific package relation applies. | Core |
 | `package` | string RPM package selector | Required, optional, or forbidden by the matrix. | Non-empty and without NUL, CR, or LF; path base N/A. | Entry scalar. | Inherited with the entry. | Exact parser-associated selector text without case folding, Unicode normalization, or base-name synthesis. | Core |
 | `tag` | string RPM tag token | Required or forbidden by the matrix. | `[A-Za-z][A-Za-z0-9]*`; path base N/A. | Entry scalar. | Inherited with the entry. | Matching is ASCII case-insensitive; emitted spelling is exact. | Core |
-| `value` | string | Required, optional, or forbidden by the matrix. | Exact UTF-8 without NUL, CR, or LF; path base N/A. | Entry scalar. | Inherited with the entry. | Empty is valid only when the individual operation permits it. | Core |
+| `value` | string | Required, optional, or forbidden by the matrix. | Exact UTF-8 without NUL, CR, or LF; path base N/A. | Entry scalar. | Inherited with the entry. | For every spec-tag operation, an explicitly present value MUST contain at least one scalar other than ASCII space or tab after the bounded tag whitespace handling. | Core |
 | `regex` | string RE2 expression | Required or forbidden by the matrix. | Non-empty RE2 syntax; path base N/A. | Entry scalar. | Inherited with the entry. | Backreferences, lookaround, and any unsupported construct are errors. | Core |
 | `replacement` | string | Required, optional, or forbidden by the matrix. | Exact UTF-8 literal text without NUL or CR; path base N/A. LF is forbidden for `spec-search-replace` and `file-rename` and permitted only for `file-search-replace`. | Entry scalar. | Inherited with the entry. | `$`, `\`, and digits have no capture-expansion meaning; omitted optional value is empty. A permitted LF is already a normalized logical-line separator, never a CRLF fragment. | Core |
 | `lines` | ordered array of strings | Required or forbidden by the matrix. | Non-empty; each element has no NUL, CR, or LF; path base N/A. | Entry array. | Inherited with the entry. | Empty element represents one empty logical line. | Core |
@@ -233,7 +233,10 @@ classified in this order:
 5. in the global preamble or a `%package` preamble, a tag line has the exact
    lexical form `hspace* tag ":" hspace* value hspace*`, where `tag` is
    `[A-Za-z][A-Za-z0-9]*`; the parsed value begins after the post-colon
-   horizontal space and excludes trailing horizontal space; and
+   horizontal space and excludes trailing horizontal space. After removing
+   that framing horizontal space, the parsed value MUST be non-empty; an
+   empty or ASCII-space/tab-only field is a model error before tag-specific
+   matching or operation handling; and
 6. every other line, including an unrecognized `%word` such as `%autosetup`,
    is ordinary body text.
 
@@ -392,8 +395,8 @@ and valid block structure, declared content size when present, and checksum
 when present. Concatenated members/streams/frames, skippable frames, integrity
 errors, premature compressed EOF, and any compressed trailing byte are errors.
 The decompressed byte sequence is then subject to the exact tar EOF rule below.
-These are input-decoder rules only and do not select compressor or tar output
-bytes under OD-7.
+These are input-decoder rules only. They do not select compressor or tar
+output bytes.
 
 The accepted base-header dialect is POSIX.1-1988 ustar: each non-zero header is
 512 bytes, bytes 257..262 are `ustar` followed by NUL, and bytes 263..264 are
@@ -563,12 +566,13 @@ UID, GID, owner/group names, timestamps, archive header format, compression
 parameters, padding, and extended metadata do not participate in that semantic
 result.
 
-Exact canonical transformed-archive encoding remains open in
-[OD-7](./open-decisions.md#od-7-canonical-transformed-archive-bytes).
-Consequently no implementation may claim portable transformed-archive byte
-conformance or Materialized-tree conformance in this revision. This does not
-permit divergent successful output: the configured post-overlay hash below is
-a required byte-level acceptance gate.
+Revision `0.1` deliberately defines no canonical tar or compressor encoder,
+encoder version registry, or cross-tool archive-byte reproducibility
+guarantee. The normative transformation output at this boundary is the
+semantic archive result above, with the input's content-detected compression
+family preserved. This representation freedom does not permit divergent
+successful bytes for one declaration: the configured post-overlay hash below
+is the required byte-level acceptance gate.
 
 ### Post-overlay hash and `sources` association
 
@@ -608,6 +612,22 @@ one provenance association.
 
 ## Spec-tag operations
 
+All five operations use fixed operation-specific cardinality. It is not a
+configurable policy, and revision `0.1` defines no match field, first/last/all
+mode, exact-count mode, or priority selector. `spec-add-tag` requires zero
+matching tag names; `spec-set-tag` adds on zero, updates one, and errors on
+multiple; `spec-update-tag` requires exactly one; `spec-insert-tag` retains
+its repeatable-family insertion behavior; and `spec-remove-tag` removes every
+selected match.
+
+For `spec-add-tag`, `spec-insert-tag`, `spec-set-tag`, and
+`spec-update-tag`, `value` MUST be present and MUST contain at least one scalar
+other than ASCII space or tab after the bounded tag whitespace handling.
+`spec-remove-tag` uses omission of `value` for name-only removal. If `value`
+is explicitly present for removal, the same non-empty rule applies before
+exact parsed-value filtering. Empty and whitespace-only values are errors
+before any tag-specific matching, cardinality, insertion, update, or removal.
+
 ### Operation: `spec-add-tag`
 
 **Fields and representation.** Parsed spec. `type`, `tag`, and `value` are
@@ -622,12 +642,8 @@ that preamble is ASCII case-insensitive.
 after existing preamble lines. The emitted tag and value use the supplied
 spellings.
 
-**Failures and provisional cardinality.** A missing package or one or more
-matching tags is an error. The zero-match precondition is provisional
-containment for the documentation/runtime disagreement recorded in
-[OD-6](./open-decisions.md#od-6-overlay-match-cardinality). It prevents two
-implementations from successfully producing singleton versus duplicate-tag
-results.
+**Failures and cardinality.** A missing package, an empty or whitespace-only
+`value`, or one or more matching tags is an error.
 
 ### Operation: `spec-insert-tag`
 
@@ -646,8 +662,9 @@ such enclosing block and insert after the `%endif` of the outermost one. This
 makes the new tag unconditional with respect to all nested enclosing blocks.
 Existing tags with the exact requested name do not prevent insertion.
 
-**Failures.** A missing package, an unbalanced conditional, or a selected
-conditional whose closing directive lies outside the preamble is an error.
+**Failures.** A missing package, an empty or whitespace-only `value`, an
+unbalanced conditional, or a selected conditional whose closing directive
+lies outside the preamble is an error.
 
 ### Operation: `spec-set-tag`
 
@@ -661,10 +678,8 @@ selected package preamble.
 `spec-add-tag` insertion position. Exactly one match replaces that complete
 tag line with `<tag>: <value>`.
 
-**Failures and provisional cardinality.** A missing package or more than one
-match is an error. The multiple-match error is provisional containment for the
-first-versus-all implementation disagreement in
-[OD-6](./open-decisions.md#od-6-overlay-match-cardinality).
+**Failures and cardinality.** A missing package, an empty or whitespace-only
+`value`, or more than one match is an error.
 
 ### Operation: `spec-update-tag`
 
@@ -677,9 +692,8 @@ selected package preamble.
 **Effect and postconditions.** Exactly one match is replaced by
 `<tag>: <value>`.
 
-**Failures and provisional cardinality.** A missing package, zero matches, or
-more than one match is an error. The multiple-match error is the same
-provisional containment as `spec-set-tag`.
+**Failures and cardinality.** A missing package, an empty or whitespace-only
+`value`, zero matches, or more than one match is an error.
 
 ### Operation: `spec-remove-tag`
 
@@ -695,9 +709,10 @@ does not filter by value.
 **Effect and postconditions.** Remove every selected tag line while preserving
 the order and text of every other line.
 
-**Failures.** A missing package or zero selected tag lines is an error. The
-exact value comparison is the normative v1 rule; characterized
-case-insensitive value matching is not copied.
+**Failures.** A missing package, an explicitly present empty or
+whitespace-only `value`, or zero selected tag lines is an error. The exact
+value comparison is the normative v1 rule; characterized case-insensitive
+value matching is not copied.
 
 ## Spec line and text operations
 
@@ -809,8 +824,11 @@ an existing subpackage preamble.
 
 **Effect and postconditions.**
 
-- If exactly one `%patchlist` section exists and `package` is absent, append the
-  destination basename as its final non-header logical line.
+- If exactly one `%patchlist` section exists and `package` is absent, insert
+  the destination basename immediately before all trailing blank logical lines
+  in that section. A blank logical line is empty or contains only ASCII space
+  or tab under the bounded grammar. If the section has no trailing blank
+  logical lines, insert immediately before the next section header or EOF.
 - Otherwise no `%patchlist` may exist. In the selected package preamble, a
   patch tag name is ASCII-case-insensitive `Patch` followed by either no
   suffix or one or more ASCII decimal digits. Any other non-empty suffix is an
@@ -975,7 +993,7 @@ is no archive-scoped form.
 
 Metadata never changes operation order or transformation semantics.
 
-## Evidence, provisional rules, and claim status
+## Evidence and claim status
 
 The operation names and low-level effects are characterized from current
 azldev code, tests, documentation, and Azure Linux usage. Normative v1 rules
@@ -988,8 +1006,8 @@ operation family, every enum value, archive safety and conflict cases,
 post-overlay hash association, and atomic publication. These assertions are not
 an exhaustive conformance suite.
 
-All conformance classes remain forward-declared and non-claimable.
-Transformed-archive bytes additionally remain gated by OD-7. Implementations
-MUST NOT describe current-tool compatibility, a passing representative
-fixture, or a configured post-overlay hash as a portable Materialized-tree
-claim.
+All conformance classes remain forward-declared and non-claimable because no
+class suite is enabled. Implementations MUST NOT describe current-tool
+compatibility, a passing representative fixture, or a configured post-overlay
+hash as proof of a canonical encoder or cross-tool archive-byte
+reproducibility.

@@ -5,7 +5,10 @@ overlay operations and positive/negative coverage for every operation family.
 It also executes the bounded RPM line grammar, sequential reparse state,
 uppercase canonical section identity, duplicate-preamble rejection, nested
 conditional placement, directive-versus-section recognition, `patch-add` slot
-allocation, mixed suffix/`-n` package-selector identity, generated
+allocation and `%patchlist` placement before empty/whitespace-only trailing
+logical lines, mixed suffix/`-n` package-selector identity, fixed spec-tag
+cardinalities, empty/whitespace tag-value rejection for all five spec-tag
+operations, the absence of a configurable match field, generated
 required/forbidden field failures, CRLF-before-match behavior, and post-edit
 line-ending/grammar validation.
 
