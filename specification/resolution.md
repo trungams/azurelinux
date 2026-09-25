@@ -28,17 +28,10 @@ source-local key, type, element-type, nested-shape, and local-constraint checks
 defined by that contract.
 
 Every key is validated against the closed vocabulary during `SD-MODEL`;
-unknown or noncanonical keys are errors. Source-document and
-Loading/composed-model remain non-claimable because their output-oracle and
-conformance packages are not complete, not because the vocabulary is open.
-Retention of typed values and exact key spelling is
-preparatory representation behavior only. Source-document and
-Loading/composed-model therefore remain non-claimable at the vocabulary
-boundary.
-
-Source-document and Loading/composed-model therefore remain
-non-claimable until their owning contracts close the complete output oracle
-and explicitly enable each class.
+unknown or noncanonical keys are errors. Retention of typed values and exact
+key spelling is preparatory representation behavior. The Source-document and
+Loading/composed-model class labels are not enabled or claimed in revision
+`0.1`; that status does not make the vocabulary open.
 
 ### Composed model
 
@@ -62,11 +55,9 @@ A branch, snapshot, tag, or abbreviated commit is not an immutable final source
 identity. Detailed source fields and selector precedence are defined in
 [Source identity and acquisition](./sources.md).
 
-Resolved-model is forward-declared and is not currently claimable. Requirements
-in this chapter define prerequisites for its future enabling; they do not
-authorize a producer or consumer conformance claim before all owning chapters
-are complete and the class status in [Conformance](./index.md#conformance) is
-explicitly changed.
+The Resolved-model class label is not enabled or claimed. Requirements in this
+chapter define the current behavioral boundary without defining a class
+lifecycle, role protocol, or claim mechanism.
 
 The resolved model MUST retain enough provenance to identify the defining
 source document and path base of every path-valued effective value using the
@@ -296,13 +287,10 @@ Implementations MAY use any internal representation and comparison method that
 preserves the behavioral contract above. Fixture metadata may select typed
 leaves and provenance for review without becoming a canonical encoding.
 
-The Resolved-model class remains forward-declared and non-claimable because no
-complete normative fixture suite and output oracle is enabled. That lifecycle
-status does not leave inheritance, typed values, or behavioral identity
-undefined.
+The Resolved-model class is not enabled or claimed. That status does not leave
+inheritance, typed values, or behavioral identity undefined.
 
 The materialized-tree behavioral identity is defined in
 [Materialized artifacts](./artifacts.md#behavioral-tree-identity). That class
-also remains non-claimable because no complete normative fixture suite and
-output oracle are enabled. Its active-spec and transformed-archive behavior is
-otherwise defined by the owning overlay and artifact contracts.
+is also not enabled or claimed. Its active-spec and transformed-archive
+behavior is defined by the owning overlay and artifact contracts.

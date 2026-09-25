@@ -62,10 +62,10 @@ toolchain, repository, network, credential-scope, and resource-limit inputs
 under [Profiles](./profiles.md#selected-operation-contracts).
 
 For `publish-image`, `images.<image>.publish.channels` is the exact attempt
-order after duplicate validation; it is not an unordered set. Every channel
-becomes one publication-plan item for the same exact image identity and digest.
-Single-attempt execution, idempotency identities, receipts, explicit
-destination transactions, and partial remote effects follow
-[Remote publication attempts](./profiles.md#remote-publication-attempts).
-Failure after an accepted channel does not imply remote rollback unless the
-selected destination transaction capability confirms it.
+input order after duplicate validation; it is not an unordered set. Every
+channel is supplied with the same exact image identity and digest to the
+selected publishing implementation.
+
+Revision `0.1` does not standardize the remote publication protocol, replay,
+retry, receipt, transaction, or rollback behavior. A publication error does
+not imply that a remote system reversed any prior effect.

@@ -26,8 +26,8 @@ For diagnostic and conformance grouping, the validation phases are:
 | `V-ACQUIRE` | Git, local filesystem, HTTPS, repository, and declared artifact acquisition | Every selected input has exact identity and verified bytes before candidate insertion. |
 | `V-TRANSFORM` | Overlay source snapshots, archive interpretation, operation execution, and custom-source generation inside materialization | All preconditions and every sequential postcondition succeed in private state. |
 | `V-ARTIFACT` | Final tree, `sources`, hashes, and provenance ledger | The complete candidate satisfies its owning artifact contracts. |
-| `V-PUBLISH` | Local artifact commit and selected-profile remote publication attempts | Local artifact observers see the prior complete result or the new complete result. Remote publication follows the owning attempt, idempotency, receipt, transaction-capability, and partial-effect reporting contract. |
-| `V-CONFORMANCE` | Fixture, claim-scope, environment, output, and report verification | Evidence matches the manifest and no blocker or excluded input is concealed. |
+| `V-PUBLISH` | Local artifact commit and selected-profile publication preflight/result classification | Local artifact observers see the prior complete result or the new complete result. Remote publication validates required inputs before side effects and returns a typed success or error without a standardized transport, replay, receipt, transaction, or rollback protocol. |
+| `V-CONFORMANCE` | Ordinary fixture format, declared-input, expectation, and traceability verification | The fixture is a closed union, every declared digest and requirement reference is valid, and no undeclared input is consumed. |
 
 `LD-INCLUDES` is the sole owner of include expansion, canonical target
 classification, active-chain cycle detection, and previous-reach
@@ -83,11 +83,11 @@ set used by fixtures and reports follows this rule.
 | `unsupported-operation` | A selected profile capability, required explicit environmental input, host guarantee, algorithm, format, or output boundary is unavailable before side effects. |
 | `security-policy` | Credential-scope, URI, archive, sandbox, script, privilege, secret-handling, resource-limit, or other security requirement is violated. |
 | `authorization` | Required authorization is unavailable or the owning typed protocol outcome is authorization failure. |
-| `transport` | TLS or transport failure, malformed network response, redirect-policy failure, or unavailable replay input under the owning network contract. |
+| `transport` | TLS or transport failure, malformed network response, or redirect-policy failure under the owning network contract. |
 | `integrity` | Commit, digest, signature, package, archive, cache, manifest, or generated-output identity does not match the declared value. |
 | `transformation` | An overlay or generator precondition, match cardinality, sequential parse, change postcondition, archive semantic result, or rollback requirement fails. |
 | `artifact-validation` | Final tree, manifest, mode, behavioral identity, provenance ledger, or atomic-publication invariant fails. |
-| `conformance` | Fixture format, expected outcome, claim scope, blocker, report, or evidence lifecycle requirement fails. |
+| `conformance` | Fixture format, declared input, expected outcome, closed-union, or normative traceability requirement fails. |
 
 The typed HTTPS outcomes in [Sources](./sources.md#https-artifact-fetch-and-source-selection)
 retain their exact names. `authorization-failure` maps to `authorization`;
@@ -123,16 +123,14 @@ Every error is terminal for the subject boundary owned by its phase:
 - acquisition or transformation failure publishes no candidate artifact;
 - local artifact validation or commit failure leaves the prior local artifact
   unchanged; and
-- remote package or image publication failure emits the exact attempt/receipt
-  ledger and known, possible, or absent partial remote effects. It claims
-  rollback only when the selected operation supplied an explicit remote
-  transaction capability and the destination confirmed abort or rollback.
+- remote package or image publication failure produces no portable success
+  result. The specification does not infer, simulate, or claim reversal of
+  remote effects.
 
 An implementation MUST NOT emit a success-shaped empty result, warning-only
 fallback, skipped operation, placeholder file, failure marker, or partially
 updated local destination where this specification requires an error. A
-partial remote effect is not success; it is an explicit failed publication
-result whose ledger identifies every attempted and unattempted item.
+remote error is not evidence that a destination rolled back a prior effect.
 
 The tracked [conformance manifest](./examples/conformance/README.md) includes
 positive and negative diagnostic expectations using classes, phases, and

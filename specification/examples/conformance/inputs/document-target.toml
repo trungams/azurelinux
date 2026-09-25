@@ -1,5 +1,0 @@
-format-version = 1
-document-kind = "document-target"
-document-role = "root"
-project-relative-path = "azldev.toml"
-bytes = "input:inputs/source-root.toml"

@@ -1,5 +1,0 @@
-format-version = 1
-document-kind = "project-root"
-root-id = "slice4-fixture-project"
-root-document = "input:inputs/document-target.toml"
-documents = ["input:inputs/document-target.toml"]

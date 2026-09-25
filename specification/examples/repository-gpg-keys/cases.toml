@@ -92,13 +92,12 @@ expected-requirement = "REPO-GPG-BINDING-LOCATOR"
 repository-accessed = false
 
 [[diagnostic-cases]]
-name = "malformed key bytes"
-defect = "malformed-key-bytes"
+name = "selected package manager rejects key material"
+defect = "rejected-key-material"
 operation = "image-build"
 repository = "fixture-local"
 selected-repositories = ["fixture-local"]
-binding-sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-bytes-hex = ""
+package-manager-accepted = false
 expected-class = "integrity"
 expected-validation-phase = "V-ACQUIRE"
 expected-processing-phase = "image-build"

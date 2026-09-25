@@ -1,6 +1,0 @@
-format-version = 1
-document-kind = "prior-class-output"
-output-class = "Loading/composed-model"
-payload-kind = "composed-model"
-payload = "input:inputs/composed-model.toml"
-producer-case-id = "loading-root-positive"

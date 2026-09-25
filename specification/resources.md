@@ -157,6 +157,14 @@ closed key-binding record. The complete binding set is validated before any
 repository metadata or package access. Each defect has one required portable
 diagnostic:
 
+The repository-key binding manifest is a narrow immutable input, not a
+selected-operation request envelope. Its root contains exactly integer
+`format-version = 1`, one `manifest-id` using the fixture-token grammar, and
+one non-empty ordered `key-bindings` array. Unknown root keys, a missing root
+key, another version, or a wrong TOML type is an error. The manifest carries no
+target component, profile selection, macro/toolchain/package context, or
+publication input.
+
 | Defect | Diagnostic class | Validation phase | Requirement identity |
 | --- | --- | --- | --- |
 | A selected repository has no record | `unsupported-operation` | `V-OPERATION` | `REPO-GPG-BINDING-MISSING` |

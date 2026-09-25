@@ -127,6 +127,9 @@ The following topics are intentionally deferred and do not change revision
 | --- | --- |
 | Configurable tag match modes or match fields | Later schema revision |
 | Canonical archive encoder and cross-tool byte vectors | Later archive/conformance revision |
+| External-operation replay or publication simulation | Later conformance specification, if concrete interoperability use cases require it |
+| Portable custom-generator execution-root and package closure | Later custom-generation profile revision |
+| Package-manager internals or OpenPGP packet grammar/vectors | Not owned by this source-document specification |
 | Long-term version compatibility and deprecation | Later revision |
 | Future semantic component-transformation model | Future specification revision |
 

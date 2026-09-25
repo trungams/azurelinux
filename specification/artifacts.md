@@ -209,7 +209,8 @@ No canonical serialization, traversal order, digest framing, semantic
 comparison algorithm, or conformance tool is defined for this identity.
 Implementations MAY compare or index trees by any method that preserves every
 observable property above. A digest is sufficient evidence only when the
-producer and consumer have separately agreed on a non-normative encoding.
+digest's non-normative encoding is explicitly agreed outside this
+specification.
 
 The tracked
 [materialized-artifact fixture](./examples/materialized-artifact/README.md)
@@ -274,9 +275,9 @@ All acquisition, candidate assembly, archive extraction/repacking, overlay
 application, manifest rewriting, behavioral-identity validation, hash
 verification, and final validation occur in private staging state. This section
 owns only the local materialized-artifact commit. Remote package and image
-publication is governed by
-[Remote publication attempts](./profiles.md#remote-publication-attempts) and
-does not inherit a rollback guarantee from this local boundary.
+publication is governed by the selected-operation boundary in
+[Profiles](./profiles.md#publishing-boundary) and does not inherit a rollback
+guarantee from this local boundary.
 
 On success, the complete validated tree becomes the component's published
 materialized artifact as one observable transition. On any failure:
@@ -307,8 +308,7 @@ tools may be unable to produce the configured bytes from the same semantic
 tree; such a producer reports unsupported transformed-archive encoding or
 hash mismatch instead of publishing different bytes.
 
-The Materialized-tree class remains forward-declared and non-claimable solely
-because no complete normative class suite and output oracle are enabled. That
-lifecycle status does not weaken the artifact namespace, exact behavioral
+The Materialized-tree class is not enabled or claimed. That status does not
+weaken the artifact namespace, exact behavioral
 tree identity, placement, exclusions, provenance association, configured-hash
 gate, or atomic success/failure rules in this chapter.

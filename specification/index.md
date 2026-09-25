@@ -131,45 +131,29 @@ The build-ready dist-git tree is the final core artifact.
 ## Conformance
 
 A conformance class names an input boundary, required processing, and
-observable output. A **producer** computes that output from the class input. A
-**consumer** accepts an output supplied through an implementation-defined
-transport and validates every invariant required at that boundary. When a
-class is enabled, a claim MUST state producer, consumer, or both.
+observable output. Revision `0.1` uses the names only to describe boundaries.
+The ordinary fixture contains Source-document and Loading/composed-model
+examples; it does not contain executable Resolved-model or Materialized-tree
+success cases. Revision `0.1` defines no class lifecycle, role protocol, suite
+registry, or claim issuance mechanism.
 
-| Conformance class | Specification revision | Lifecycle token | Available role | Required suite ID/version | Future input | Future observable output | Required phase identifiers and chapters | Enablement boundary |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Source-document** | `0.1` | `draft` | None | Absent | One UTF-8 root document or included fragment; its root/fragment role; a canonical project root and canonical document target used only to derive and validate relocatable semantic location; and every applicable field contract | A validated source model or an error with structured diagnostics | Future use of [`SD-BYTES`, `SD-CONTROLS`, and `SD-MODEL`](./resolution.md#processing-and-validation-order); [Document format](./document.md), [Path provenance](./loading.md#path-provenance), [Validation](./validation.md), and every object/profile chapter | No current claim. The key and field vocabulary and fixture format are closed, but no normative complete source-model fixture-suite version and output oracle are enabled. |
-| **Loading/composed-model** | `0.1` | `draft` | None | Absent | A project root and root document whose individual documents satisfy the future Source-document class | The ordered unique document evaluations, repeated-reach provenance, and one atomic composed model, or an error with structured diagnostics | Future use of [`LD-ROOT`, `SD-BYTES`, `SD-CONTROLS`, `SD-MODEL`, `LD-INCLUDES`, `CM-COMPOSE`, and `CM-VALIDATE`](./resolution.md#processing-and-validation-order); future Source-document requirements plus [Document loading and composition](./loading.md), [Determinism](./determinism.md), and [Validation](./validation.md) | No current claim. Repeated-reach behavior is defined, but no normative complete composed-model fixture-suite version and output oracle are enabled. |
-| **Resolved-model** | `0.1` | `draft` | None | Absent | A conforming composed model, explicit immutable target distro/version input, immutable environmental-input record, and all other declared resolution inputs | One behaviorally defined typed resolved model with relocatable provenance, or an error with structured diagnostics | Future use of [`RM-TARGET`, `RM-EFFECTIVE`, `RM-REFERENCES`, `RM-VALIDATE`, and `RM-SOURCE-ID`](./resolution.md#processing-and-validation-order); [Resolution](./resolution.md), [Determinism](./determinism.md), [Validation](./validation.md), and all owning field/source chapters | No current claim. Inheritance and typed behavioral identity are defined, but no normative complete resolved-model fixture-suite version and output oracle are enabled; no canonical serialization is required. |
-| **Materialized-tree** | `0.1` | `draft` | None | Absent | A conforming resolved model, all declared acquisition/transformation inputs, immutable environmental-input record, security context, and resource limits | A build-ready materialized dist-git tree with exact behavioral identity and semantic provenance, or an error with structured diagnostics | Future use of [`MT-MATERIALIZE`](./resolution.md#processing-and-validation-order); [Sources](./sources.md), [Overlay transformations](./overlays.md), [Materialized artifacts](./artifacts.md), [Determinism](./determinism.md), [Validation](./validation.md), [Security](./security.md), and selected profile chapters | No current claim. The behavioral output contract is defined, but no normative complete Materialized-tree fixture-suite version and output oracle are enabled. |
+| Conformance class | Specification revision | Status | Input boundary | Observable boundary | Required phase identifiers and chapters |
+| --- | --- | --- | --- | --- | --- |
+| **Source-document** | `0.1` | Not enabled or claimed | One UTF-8 root document or included fragment, its root/fragment role, canonical project root, canonical document target, and applicable field contracts | A validated source model or structured diagnostics | [`SD-BYTES`, `SD-CONTROLS`, and `SD-MODEL`](./resolution.md#processing-and-validation-order); [Document format](./document.md), [Path provenance](./loading.md#path-provenance), and [Validation](./validation.md) |
+| **Loading/composed-model** | `0.1` | Not enabled or claimed | A project root and root document whose reached documents satisfy the source-document requirements | Ordered unique document evaluations, repeated-reach provenance, and one atomic composed model, or structured diagnostics | [`LD-ROOT`, `SD-BYTES`, `SD-CONTROLS`, `SD-MODEL`, `LD-INCLUDES`, `CM-COMPOSE`, and `CM-VALIDATE`](./resolution.md#processing-and-validation-order); [Document loading and composition](./loading.md), [Determinism](./determinism.md), and [Validation](./validation.md) |
+| **Resolved-model** | `0.1` | Not enabled or claimed | A valid composed model, exact target distro/version input, environmental-input record, and declared resolution inputs | One behaviorally defined typed resolved model with relocatable provenance, or structured diagnostics | [`RM-TARGET`, `RM-EFFECTIVE`, `RM-REFERENCES`, `RM-VALIDATE`, and `RM-SOURCE-ID`](./resolution.md#processing-and-validation-order); [Resolution](./resolution.md), [Determinism](./determinism.md), and [Validation](./validation.md) |
+| **Materialized-tree** | `0.1` | Not enabled or claimed | A valid resolved model, declared acquisition/transformation inputs, environmental-input record, security context, and resource limits | A build-ready materialized dist-git tree with exact behavioral identity and semantic provenance, or structured diagnostics | [`MT-MATERIALIZE`](./resolution.md#processing-and-validation-order); [Sources](./sources.md), [Overlay transformations](./overlays.md), [Materialized artifacts](./artifacts.md), [Determinism](./determinism.md), [Validation](./validation.md), and [Security](./security.md) |
 
-The lifecycle column uses only the closed tokens defined by
-[Claim lifecycle](./conformance.md#claim-lifecycle). Required suite ID/version
-is absent while a class is `draft`; no free-form status text or implied suite
-membership enables a claim.
+The authoritative status is simple: no class is enabled or claimed. The table
+does not reserve lifecycle states, roles, required suites, or transition
+rules.
 
-All four classes are forward-declared roadmap architecture and none is currently
-claimable. An implementation MUST NOT name any of them in a conformance claim
-under this revision. The future input and output columns make the intended
-architecture reviewable; they do not accept an input, establish a complete
-success/error oracle, or authorize a producer or consumer claim.
-No undefined or later-layer requirement is excluded or waived.
-
-An owning later chapter can explicitly enable a class only after closing its
-complete input vocabulary, observable output oracle, and every requirement
-owned by that boundary, and after changing the lifecycle token and required
-suite fields in this table. The
-absence of a currently defined later-layer requirement is not an exclusion and
-MUST NOT be treated as permission to omit that requirement from a future
-claim.
-
-Before Source-document can be enabled, its canonical project root and canonical
-document target MUST satisfy the [Path provenance](./loading.md#path-provenance)
-contract as a contained canonical root/target pair. That pair must derive a
-normalized UTF-8 project-relative source-document identity with `/` separators
-and no empty, `.` or `..` segments, plus its defining path base. These are
-operational location inputs, not semantic output identity. Relocating both
-paths together without changing that relative identity does not change future
+The Source-document location input derives a normalized UTF-8
+project-relative source-document identity with `/` separators and no empty,
+`.` or `..` segments plus its defining path base under
+[Path provenance](./loading.md#path-provenance). These are operational
+location inputs, not semantic output identity. Relocating the root and target
+together without changing that relative identity does not change
 source-model semantic equality.
 
 Source documents are compared using
@@ -184,30 +168,21 @@ and symlink targets under
 revision defines no canonical serialization, comparison algorithm, or
 conformance tool for either boundary.
 
-When a class is explicitly enabled, a conformance claim MUST identify:
+The strict ordinary example format, deterministic repetition, typed outcomes,
+closed unions, and traceability rules are defined in
+[Conformance examples and fixture format](./conformance.md). Those examples do
+not enable or establish a claim.
 
-- the supported specification version;
-- every claimed conformance class;
-- whether each class is claimed as producer, consumer, or both;
-- whether it covers complete core processing or a named profile; and
-- any **SHOULD** or **SHOULD NOT** deviation.
-
-Fixture structure, producer/consumer separation, deterministic repetition,
-profile scope, reports, blocker handling, and the claim lifecycle are defined
-in [Conformance methodology](./conformance.md).
-
-When the applicable classes are enabled, core conformance includes component
-construction and hash-verifiable source artifacts. Images, tests, publishing,
-and executable custom-source generation are named optional profiles.
-RPM-build is also a named profile. Profile data presence, validation,
+Core processing includes component construction and hash-verifiable source
+artifacts. Images, tests, publishing, executable custom-source generation, and
+RPM build are named optional profiles. Profile data presence, validation,
 preservation, operation selection, and unsupported-operation behavior are
 defined in [Optional profile data and operations](./profiles.md).
 Repository resources are shared optional RPM-build/image profile data; their
 presence does not select either operation.
 
-The forward declarations confer no claim, and undefined future requirements are
-not exclusions. The questions and alternatives themselves remain non-normative
-in [Open decisions](./open-decisions.md).
+The class labels confer no claim. Deferred questions remain non-normative in
+[Open decisions](./open-decisions.md).
 
 ## Non-goals
 
@@ -220,7 +195,11 @@ This specification does not standardize:
 - exact diagnostic wording;
 - a future semantic component-transformation API;
 - final RPM or image reproducibility; or
-- a long-term version compatibility and deprecation policy.
+- a long-term version compatibility and deprecation policy;
+- external-operation replay or publication simulation;
+- portable custom-generator closure;
+- package-manager internals or OpenPGP packet grammar; or
+- a conformance suite, role, lifecycle, or claim protocol.
 
 Existing tool behavior is evidence, not authority. A behavior is normative only
 when this specification states it as a requirement.
@@ -247,9 +226,8 @@ when this specification states it as a requirement.
   diagnostic records and classes, deterministic ordering, and rollback.
 - [Security and authorization](./security.md) defines credential, URI,
   filesystem, archive, sandbox, script, and resource-limit requirements.
-- [Conformance methodology](./conformance.md) defines fixture manifests,
-  positive/negative/resolved/output expectations, profile claim scope, and
-  claim lifecycle.
+- [Conformance examples and fixture format](./conformance.md) defines strict
+  ordinary positive/negative examples and traceability.
 - [Top-level objects](./objects.md) defines the canonical root vocabulary,
   name-keyed maps, common contract notation, and profile activation.
 - [Project](./project.md), [Distros](./distros.md),
@@ -265,10 +243,10 @@ when this specification states it as a requirement.
 - [Excluded and deferred fields](./compatibility.md) records characterized
   tool-specific, deprecated, and intentionally excluded keys.
 
-Environmental inputs, validation, security, operation selection, and
-conformance methodology are defined by this revision. Repository resources are
-shared optional RPM-build/image profile data, long-term version policy remains
-deferred, and no conformance class is enabled. OD-6 and OD-7 are resolved:
+Environmental inputs, validation, security, operation selection, and ordinary
+fixture schemas are defined by this revision. Repository resources are shared
+optional RPM-build/image profile data, long-term version policy remains
+deferred, and no conformance class is enabled or claimed. OD-6 and OD-7 are resolved:
 tag cardinality is fixed per operation, archive output is the semantic
 extracted-tree result with content-detected compression preserved, and emitted
 archive bytes remain bound by the configured post-overlay hash without a

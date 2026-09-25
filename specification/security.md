@@ -173,7 +173,7 @@ contains every applicable non-negative limit:
 - archive and filesystem entry count;
 - individual regular-file bytes;
 - normalized path UTF-8 bytes;
-- redirects and request/publication attempts, with attempts exactly `1` in
+- redirects and artifact-fetch request attempts, with attempts exactly `1` in
   specification revision `0.1`;
 - child process count;
 - memory bytes; and

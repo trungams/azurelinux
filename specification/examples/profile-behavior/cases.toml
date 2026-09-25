@@ -145,35 +145,3 @@ operation-supported = true
 data-valid = true
 isolation-supported = true
 expected = "execute"
-
-[[publication-cases]]
-name = "nontransactional package failure reports partial effect"
-transaction-capability = false
-request-attempts = 1
-remote-outcomes = ["accepted", "transport-unknown", "accepted"]
-expected-ledger = ["accepted", "transport-unknown", "not-attempted"]
-expected-attempt-counts = [1, 1, 0]
-expected-partial-remote-effect = "confirmed-and-possible"
-rollback-claimed = false
-
-[[publication-cases]]
-name = "confirmed transaction abort removes accepted effects"
-transaction-capability = true
-request-attempts = 1
-remote-outcomes = ["accepted", "rejected"]
-abort-confirmed = true
-expected-ledger = ["rolled-back", "rejected"]
-expected-attempt-counts = [1, 1]
-expected-partial-remote-effect = "none"
-rollback-claimed = true
-
-[[publication-cases]]
-name = "ambiguous idempotent result still stops after one attempt"
-transaction-capability = false
-idempotent-replay = true
-request-attempts = 1
-remote-outcomes = ["transport-unknown"]
-expected-ledger = ["transport-unknown"]
-expected-attempt-counts = [1]
-expected-partial-remote-effect = "possible"
-rollback-claimed = false

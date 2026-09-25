@@ -71,11 +71,11 @@ profile operation identifier.
 | Operation identifier | Required explicit operation inputs | Deterministic boundary in this revision | Excluded result |
 | --- | --- | --- | --- |
 | `rpm-build` | Exact resolved component, materialized tree identity, target distro/version, target architecture, complete RPM macro context, selected repository references, immutable repository/package manifest including every required repository GPG-key binding, immutable toolchain manifest, evaluation instant, network context, resource limits, and any required credential references. | Capability selection, input validation, repository expansion, GPG-key byte verification before repository use, macro-context construction, and structured success/error reporting. | Final RPM/SRPM bytes, build logs, timestamps, and build reproducibility are not conformance outputs. |
-| `publish-packages` | Exact ordered artifact identities and digests, evaluated publishing routes, destination identities and capabilities, network context, resource limits, route-scoped credential references, and publication idempotency identities. | Complete preflight, exact attempt order, request/idempotency association, receipt ledger, and explicit partial-remote-effect reporting. Remote all-or-none behavior exists only with an explicit destination transaction capability. | Remote retention, replication timing, repository metadata bytes, and package build reproducibility. |
+| `publish-packages` | Exact ordered artifact identities and digests, evaluated publishing routes, destination identities, network context, resource limits, and route-scoped credential references. | Capability selection, complete input/security preflight, preservation of the requested artifact/route order, and a typed success or error result from the selected implementation. | Publication wire protocol, retries, replay, receipts, remote transaction semantics, retention, replication timing, repository metadata bytes, and package build reproducibility. |
 | `image-build` | Exact image identity, target distro/version, one architecture listed by the image, selected repository references, immutable component/artifact and repository/package manifests including every required repository GPG-key binding, immutable toolchain manifest, evaluation instant, network context, and resource limits. | Capability selection, reference/resource expansion, GPG-key byte verification before repository use, input validation, and structured success/error reporting. | Final image bytes and image reproducibility. |
-| `publish-image` | Exact image artifact identity and digest, exact ordered channels, destination identity and capabilities, network context, resource limits, route-scoped credential references, and publication idempotency identities. | Complete preflight, exact attempt order, request/idempotency association, receipt ledger, and explicit partial-remote-effect reporting. Remote all-or-none behavior exists only with an explicit destination transaction capability. | Remote retention, replication timing, and final image reproducibility. |
+| `publish-image` | Exact image artifact identity and digest, exact ordered channels, destination identity, network context, resource limits, and route-scoped credential references. | Capability selection, complete input/security preflight, preservation of the requested channel order, and a typed success or error result from the selected implementation. | Publication wire protocol, retries, replay, receipts, remote transaction semantics, retention, replication timing, and final image reproducibility. |
 | `test` | Exact test or group selection, resolved component or image identity, required capabilities, architecture when the selected runner needs one, immutable runner/toolchain manifest, network context, resource limits, and permitted credential references. | Reference expansion, capability matching, runner selection, and structured invocation/result classification. | Test timing, performance measurements, external service state, and a universal test-result byte format. |
-| `custom-source-generate` | Exact `custom` source entry, snapshotted script, target architecture, evaluation instant, declared input artifact bytes, declared mock-package names, implementation-specific isolation availability, and resource limits. | Declared-input/package availability, isolated execution, semantic output-tree validation, archive/hash boundary, and exact accepted artifact digest defined in [Sources](./sources.md#custom-source-generation-profile). | Portable execution-root or package-payload closure, kernel-observation proofs, final RPM/image bytes, and portable archive-producer conformance. |
+| `custom-source-generate` | Exact `custom` source entry, snapshotted script, target architecture, evaluation instant, declared input artifact bytes, declared mock-package names, implementation-specific isolation availability, and resource limits. | Declared-input/package availability, isolated execution, semantic output-tree validation, archive/hash boundary, and exact accepted artifact digest defined in [Sources](./sources.md#custom-source-generation-profile). | Portable execution-root or package-payload closure, kernel-observation proofs, final RPM/image bytes, and portable archive-byte conformance. |
 
 An operation MUST NOT begin a network request, load a credential, create a
 build root, execute a child process, or mutate a destination until all
@@ -91,69 +91,32 @@ does not weaken certificate-chain or hostname verification.
 Selecting `rpm-build` or `image-build` may select exact repository resource
 references. Resource-data presence alone does not activate either operation.
 
-## Remote publication attempts
+## Publishing boundary
 
-`publish-packages` and `publish-image` bind one immutable ordered publication
-plan before the first remote side effect. Every item contains:
+Revision `0.1` standardizes profile-data resolution, selected-operation
+identifiers, explicit input/security preflight, and the order supplied to the
+selected publishing implementation. It does not standardize a publication wire
+protocol, request/response transcript, replay behavior, retry algorithm,
+receipt format, idempotency protocol, remote transaction protocol, rollback
+proof, or transport simulator.
 
-- its zero-based ordinal;
-- exact artifact identity and digest;
-- exact route or image channel and destination identity;
-- the route-scoped credential reference, if any;
-- the destination capability record; and
-- a semantic idempotency identity equal to the tuple `(operation identifier,
-  destination identity, route or channel, artifact identity, artifact digest)`.
+A publishing error is terminal for the selected operation and produces no
+success result. Remote systems may nevertheless have effects that this
+specification cannot observe or reverse. A processor MUST NOT describe those
+effects as atomically rolled back under this specification. Implementations
+may expose additional operational reports, but those reports are outside the
+portable result boundary and cannot contain credential values.
 
-The destination capability record states whether it supports one atomic
-transaction covering the complete ordered plan. Capability absence means
-unsupported, not an inferred default. A semantic idempotency identity remains
-part of the request and receipt evidence, but specification revision `0.1`
-never uses it to authorize another attempt.
+## Status and output exclusions
 
-All items, credentials, request bodies, limits, and destination capabilities
-are validated at `V-OPERATION` before any request. The one resource-limit
-field `request-attempts` MUST equal `1`. Each plan item is therefore attempted
-at most once in increasing ordinal order, and its receipt record has attempt
-count `1`; an unattempted later item has count `0`. Processing stops after the
-first result other than confirmed acceptance. Later items are recorded as
-`not-attempted`. An ambiguous transport result is final even when the
-destination supports idempotent replay. No retry request, delayed replay, or
-second transaction submission is conforming in revision `0.1`.
+No conformance class is enabled or claimed. The operation-selection contract
+does not create a core or profile claim.
 
-The credential-free receipt ledger has one record per plan item in ordinal
-order. Each record contains the item identities, attempt count, idempotency
-identity, and exactly one outcome:
-
-- `not-attempted`;
-- `accepted`, with a non-secret destination receipt identity;
-- `rejected`, with the typed authorization, policy, or destination error;
-- `transport-unknown`, when the processor cannot determine whether the remote
-  side effect occurred; or
-- `rolled-back`, with a transaction receipt proving that a previously accepted
-  item is no longer effective.
-
-The failed operation additionally reports `partial-remote-effect` as `none`,
-`confirmed`, `possible`, or `confirmed-and-possible`. An accepted item outside
-a successfully aborted transaction is confirmed; `transport-unknown` is
-possible. The processor MUST NOT report remote rollback merely because the
-local request failed.
-
-When the selected operation supplies an explicit complete-plan transaction
-capability, the processor begins that transaction before the first item and
-commits only after every item is accepted. On failure it requests abort.
-`partial-remote-effect = none` and `rolled-back` outcomes are permitted only
-when a destination receipt confirms that abort or rollback removed every
-effect. An unsupported, failed, or ambiguous abort is reported using the same
-partial-effect rules; it is not converted into local atomicity.
-
-## Claims and outputs
-
-All conformance classes remain forward-declared and non-claimable. This
-operation-selection contract closes behavioral ambiguity without enabling a
-core or profile claim.
-
-When claims are eventually enabled, a profile claim is attached to an enabled
-class and operation; it is not a standalone declaration that a tool "supports"
-the profile. The claim records every explicit input above and excludes results
-not named as deterministic boundaries. The lifecycle and fixture requirements
-are defined in [Conformance methodology](./conformance.md#profile-claim-scope).
+The explicit input and deterministic-boundary rows above are normative, while
+every excluded result remains outside revision `0.1`. The ordinary fixture
+format intentionally exposes no selected-profile operation transport.
+The tracked [profile-behavior fixture](./examples/profile-behavior/README.md)
+is instead a closed set of representative validation and preflight scenarios:
+its operation and outcome select exact fixture-only key/type sets, and
+unknown, missing, wrong-type, cross-operation, or cross-scenario fields are
+errors.

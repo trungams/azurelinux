@@ -623,7 +623,7 @@ implementation-specific isolation availability, default-deny network behavior,
 semantic output validation, undeclared input rejection, and configured
 output-hash behavior.
 
-The profile remains non-claimable under the current class lifecycle. This
-contract prevents hidden ambient inputs and divergent accepted bytes, but it
-does not define a canonical archive encoder or claim final RPM, image, or
-cross-tool archive-byte reproducibility.
+No conformance class is enabled or claimed for this profile. This contract
+prevents hidden ambient inputs and divergent accepted bytes, but it does not
+define a canonical archive encoder or claim final RPM, image, or cross-tool
+archive-byte reproducibility.

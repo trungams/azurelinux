@@ -1004,10 +1004,9 @@ The [overlay fixture directory](./examples/overlay-operations/README.md)
 contains representative positive and negative semantic assertions for every
 operation family, every enum value, archive safety and conflict cases,
 post-overlay hash association, and atomic publication. These assertions are not
-an exhaustive conformance suite.
+an exhaustive validation corpus.
 
-All conformance classes remain forward-declared and non-claimable because no
-class suite is enabled. Implementations MUST NOT describe current-tool
+No conformance class is enabled or claimed. Implementations MUST NOT describe current-tool
 compatibility, a passing representative fixture, or a configured post-overlay
 hash as proof of a canonical encoder or cross-tool archive-byte
 reproducibility.

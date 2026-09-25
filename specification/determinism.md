@@ -141,11 +141,10 @@ is consumed by the network context for certificate and credential validity.
 A network-context file, trust record, or request MUST NOT contain another
 evaluation-instant value.
 
-Conformance encodes the network context with the closed version-1 schema in
-[Conformance methodology](./conformance.md#version-1-network-context-file).
-Operational interfaces MUST supply the same values and invariants even when
-their transport is not TOML. Proxy `none` forbids proxy discovery; a proxy
-origin is canonicalized by the one Sources authority/origin grammar.
+Operational interfaces MUST supply these values and invariants. Proxy `none`
+forbids proxy discovery; a proxy origin is canonicalized by the one Sources
+authority/origin grammar. The ordinary fixture format does not define a
+portable network-context document.
 
 DNS results, route selection, live server state, retry timing, and packet
 ordering are `external-failure` influences, not values in the environmental
@@ -153,13 +152,14 @@ record. They may cause the typed acquisition failure defined by the owning
 chapter, but they MUST NOT change accepted bytes or select a different source
 except for the exact lookaside `404`/`410` transition defined by Sources.
 After the single attempt reaches any typed outcome, processing stops and
-reports that outcome. A processor MUST NOT retry it even when a destination or
-server advertises idempotency.
+reports that outcome. A processor MUST NOT retry it.
 
-Revision `0.1` does not define portable live-network or replay evidence.
+Revision `0.1` does not define portable live-network or replay evidence,
+external-operation transcripts, deterministic network adapters, or transport
+simulation.
 Ordinary acquisition fixtures may exercise declared request construction,
 redirect policy, typed outcomes, and digest verification without standardizing
-an external-operation transcript.
+an external-operation protocol.
 
 Credential values and forwarding policy are governed by
 [Security](./security.md#credentials-and-sensitive-values).
@@ -196,7 +196,7 @@ diagnostic fields.
 Every operation that parses untrusted remote data or executes a profile
 process receives explicit resource limits before access: maximum input bytes,
 maximum expanded bytes, maximum entry count, maximum individual file bytes,
-maximum path bytes, maximum redirects, exactly one request/publication
+maximum path bytes, maximum redirects, exactly one artifact-fetch request
 attempt, maximum process count, maximum memory bytes, and maximum execution
 milliseconds as applicable. Limits constrain whether an operation can
 complete; they never truncate an otherwise required result. Reaching a limit

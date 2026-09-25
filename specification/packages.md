@@ -92,17 +92,15 @@ for that artifact; it does not invent a channel. Publication is selected only
 by `publish-packages` with an exact ordered artifact list. The publication
 plan retains that input order after removing no-route artifacts; it does not
 sort by package name, channel, or destination. Each remaining item binds its
-evaluated route, destination capability, network context, resource limits,
-route-scoped opaque credential reference, and semantic idempotency identity under
+evaluated route, destination identity, network context, resource limits, and
+route-scoped opaque credential reference under
 [Profiles](./profiles.md#selected-operation-contracts) and
 [Security](./security.md#credentials-and-sensitive-values).
 
-Remote publication then follows the exact single-attempt fail-stop,
-receipt-ledger, transaction-capability, and partial-effect rules in
-[Remote publication attempts](./profiles.md#remote-publication-attempts).
-Without an explicit complete-plan destination transaction, an earlier accepted
-package may remain remotely effective when a later package fails; the failed
-operation MUST report that effect and MUST NOT claim rollback.
+Revision `0.1` does not standardize the remote publication protocol, replay,
+retry, receipt, transaction, or rollback behavior. The selected implementation
+returns a typed success or error after the required preflight. An error does not
+imply that a remote system reversed any effect.
 
 Remote retention, replication timing, repository metadata bytes, and the
 package build bytes themselves are outside the deterministic output boundary
