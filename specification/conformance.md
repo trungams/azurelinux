@@ -33,6 +33,33 @@ Resolved-model or Materialized-tree success case. The latter two names remain
 specification boundaries whose contracts are normative even though this
 fixture does not exercise them.
 
+## Conformance boundaries
+
+| Conformance class | Specification revision | Status | Input boundary | Observable boundary | Required phase identifiers and chapters |
+| --- | --- | --- | --- | --- | --- |
+| **Source-document** | `0.1` | Not enabled or claimed | One UTF-8 root document or included fragment, its root/fragment role, canonical project root, canonical document target, and applicable field contracts | A validated source model or structured diagnostics | [`SD-BYTES`, `SD-CONTROLS`, and `SD-MODEL`](./resolution.md#processing-and-validation-order); [Document format](./document.md), [Document semantic equality](./document.md#semantic-equality), [Document loading and composition](./loading.md), [Path provenance](./loading.md#path-provenance), and [Validation](./validation.md) |
+| **Loading/composed-model** | `0.1` | Not enabled or claimed | A project root and root document whose reached documents satisfy the source-document requirements | Ordered unique document evaluations, repeated-reach provenance, and one atomic composed model, or structured diagnostics | [`LD-ROOT`, `SD-BYTES`, `SD-CONTROLS`, `SD-MODEL`, `LD-INCLUDES`, `CM-COMPOSE`, and `CM-VALIDATE`](./resolution.md#processing-and-validation-order); [Document loading and composition](./loading.md), [Resolution](./resolution.md), [composed-model equality](./resolution.md#composed-model), [Determinism](./determinism.md), and [Validation](./validation.md) |
+| **Resolved-model** | `0.1` | Not enabled or claimed | A valid composed model, exact target distro/version input, environmental-input record, and declared resolution inputs | One behaviorally defined typed resolved model with relocatable provenance, or structured diagnostics | [`RM-TARGET`, `RM-EFFECTIVE`, `RM-REFERENCES`, `RM-VALIDATE`, and `RM-SOURCE-ID`](./resolution.md#processing-and-validation-order); [Resolution](./resolution.md), [resolved-model behavioral contract](./resolution.md#resolved-model-behavioral-contract), [Determinism](./determinism.md), and [Validation](./validation.md) |
+| **Materialized-tree** | `0.1` | Not enabled or claimed | A valid resolved model, declared acquisition/transformation inputs, environmental-input record, security context, and resource limits | A build-ready materialized dist-git tree with exact behavioral identity and semantic provenance, or structured diagnostics | [`MT-MATERIALIZE`](./resolution.md#processing-and-validation-order); [Sources](./sources.md), [Overlay transformations](./overlays.md), [Materialized artifacts](./artifacts.md), [behavioral tree identity](./artifacts.md#behavioral-tree-identity), [Determinism](./determinism.md), [Validation](./validation.md), and [Security](./security.md) |
+
+The Source-document location input derives a normalized UTF-8
+project-relative source-document identity with `/` separators and no empty,
+`.` or `..` segments plus its defining path base under
+[Path provenance](./loading.md#path-provenance). These are operational
+location inputs, not semantic output identity. Relocating the root and target
+together without changing that relative identity does not change source-model
+semantic equality.
+
+Source documents are compared using
+[TOML semantic equality](./document.md#semantic-equality).
+[Composed-model equality](./resolution.md#composed-model) is owned by
+Resolution. Resolved models use the
+[resolved-model behavioral contract](./resolution.md#resolved-model-behavioral-contract),
+and materialized trees use
+[behavioral tree identity](./artifacts.md#behavioral-tree-identity). These
+contracts define behavioral equality without a canonical serialization,
+comparison stream, comparison algorithm, or conformance tool.
+
 ## Fixture package
 
 A fixture package is a project-contained directory with one `manifest.toml`

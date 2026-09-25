@@ -40,6 +40,14 @@ The **composed model** is the atomic output of
 configuration and leaf provenance, but it has not yet applied effective-value
 defaults or inheritance and has not resolved references or source selectors.
 
+Two composed models are equal only when their complete recursively typed value
+trees are equal under [TOML semantic equality](./document.md#semantic-equality)
+and their provenance is equal using normalized project-relative
+source-document identities and defining path bases. Operational absolute
+checkout paths and absolute project-root paths never participate in this
+equality. Revision `0.1` defines no canonical serialization, comparison stream,
+comparison algorithm, or conformance tool for composed models.
+
 ### Resolved model
 
 The **resolved model** is the typed, self-consistent result after:
