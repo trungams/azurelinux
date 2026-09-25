@@ -1,0 +1,53 @@
+[[cases]]
+name = "explicit target selects its provider"
+target = { name = "fedora", version = "43" }
+declared-versions = ["fedora/43", "centos/10"]
+provider-upstream-distro = "absent"
+component-upstream-distro = "absent"
+project-default-distro = "absent"
+expected-provider = "fedora/43"
+
+[[cases]]
+name = "provider source reference cannot reselect target"
+target = { name = "fedora", version = "43" }
+declared-versions = ["fedora/43", "centos/10"]
+provider-upstream-distro = { name = "centos", version = "10" }
+component-upstream-distro = "absent"
+project-default-distro = "absent"
+expected-provider = "fedora/43"
+
+[[cases]]
+name = "component source reference cannot reselect target"
+target = { name = "fedora", version = "43" }
+declared-versions = ["fedora/43", "centos/10"]
+provider-upstream-distro = "absent"
+component-upstream-distro = { name = "centos", version = "10" }
+project-default-distro = "absent"
+expected-provider = "fedora/43"
+
+[[cases]]
+name = "project source fallback cannot select target"
+target = { name = "fedora", version = "43" }
+declared-versions = ["fedora/43", "centos/10"]
+provider-upstream-distro = "absent"
+component-upstream-distro = "absent"
+project-default-distro = { name = "centos", version = "10" }
+expected-provider = "fedora/43"
+
+[[cases]]
+name = "missing target is an error"
+target = "absent"
+declared-versions = ["fedora/43"]
+provider-upstream-distro = "absent"
+component-upstream-distro = { name = "fedora", version = "43" }
+project-default-distro = { name = "fedora", version = "43" }
+expected-provider = "error"
+
+[[cases]]
+name = "unknown target version is an error"
+target = { name = "fedora", version = "44" }
+declared-versions = ["fedora/43", "centos/10"]
+provider-upstream-distro = "absent"
+component-upstream-distro = "absent"
+project-default-distro = "absent"
+expected-provider = "error"

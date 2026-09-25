@@ -1,0 +1,131 @@
+[[valid]]
+name = "ordinary nested path"
+base = "configuration"
+path = "components/example.spec"
+expected = "configuration/components/example.spec"
+
+[[valid]]
+name = "structural dot segments normalize"
+base = "configuration/components"
+path = "./nested/../example.spec"
+expected = "configuration/components/example.spec"
+
+[[valid]]
+name = "parent segments remain contained"
+base = "configuration/nested"
+path = "../../keys/release.gpg"
+expected = "keys/release.gpg"
+
+[[valid]]
+name = "non-ASCII spelling is retained"
+base = "."
+path = "données/naïve.spec"
+expected = "données/naïve.spec"
+
+[[invalid]]
+name = "empty value"
+path = ""
+error = "empty"
+
+[[invalid]]
+name = "POSIX rooted"
+path = "/etc/passwd"
+error = "rooted"
+
+[[invalid]]
+name = "UNC-like"
+path = "\\\\server\\share"
+error = "backslash"
+
+[[invalid]]
+name = "drive relative"
+path = "C:child.spec"
+error = "drive"
+
+[[invalid]]
+name = "drive qualified"
+path = "C:/child.spec"
+error = "drive"
+
+[[invalid]]
+name = "URI-like"
+path = "https://example.invalid/file"
+error = "URI"
+
+[[invalid]]
+name = "backslash separator"
+path = "pkg\\example.spec"
+error = "backslash"
+
+[[invalid]]
+name = "empty segment"
+path = "pkg//example.spec"
+error = "empty segment"
+
+[[invalid]]
+name = "control character"
+path = "pkg/\u001fexample.spec"
+error = "control"
+
+[[invalid]]
+name = "lexical escape"
+base = "configuration"
+path = "../../outside"
+error = "escape"
+
+[[pattern-valid]]
+pattern = "SPECS/**/*.spec"
+
+[[pattern-valid]]
+pattern = "./tests/**/test_?.py"
+
+[[pattern-invalid]]
+pattern = "SPECS/ab**cd.spec"
+error = "embedded globstar"
+
+[[pattern-invalid]]
+pattern = "tests/***/test.py"
+error = "star run"
+
+[[filesystem]]
+name = "regular file target"
+base = "base"
+path = "file.txt"
+target-kind = "regular-file"
+expected = "base/file.txt"
+
+[[filesystem]]
+name = "directory target"
+base = "base"
+path = "dir"
+target-kind = "directory"
+expected = "base/dir"
+
+[[filesystem]]
+name = "wrong target kind"
+base = "base"
+path = "dir"
+target-kind = "regular-file"
+error = "wrong target kind"
+
+[[filesystem]]
+name = "contained symlink canonicalizes semantic form"
+base = "base"
+path = "link-file"
+target-kind = "regular-file"
+expected = "base/file.txt"
+
+[[filesystem]]
+name = "symlink escape is rejected"
+base = "base"
+path = "link-out"
+target-kind = "regular-file"
+error = "canonical escape"
+
+[[filesystem-invalid-name]]
+name = "unrelated invalid UTF-8 sibling is fatal"
+base = "base"
+path = "target.spec"
+target-content = "valid target\n"
+invalid-sibling-hex = "ff756e72656c61746564"
+error = "invalid UTF-8 entry"

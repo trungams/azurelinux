@@ -1,23 +1,79 @@
 [[case]]
 category = "duplicate-literals"
-parents = ["azldev.toml", "azldev.toml"]
-entries = ["common.toml", "common.toml"]
-canonical = ["common.toml", "common.toml"]
+root = "azldev.toml"
+nodes = [
+  { canonical = "azldev.toml", body = [], edges = [
+    { entry = "common.toml", canonical = "common.toml" },
+    { entry = "common.toml", canonical = "common.toml" },
+  ] },
+  { canonical = "common.toml", body = ["shared-body"], edges = [
+    { entry = "leaf.toml", canonical = "leaf.toml" },
+  ] },
+  { canonical = "leaf.toml", body = ["observable-descendant"], edges = [] },
+]
+expected-reach-order = ["common.toml", "leaf.toml", "common.toml"]
+expected-body-order = ["shared-body", "observable-descendant"]
+expected-contributions = ["shared-body", "observable-descendant"]
 
 [[case]]
 category = "literal-glob-overlap"
-parents = ["azldev.toml", "azldev.toml"]
-entries = ["common.toml", "c*.toml"]
-canonical = ["common.toml", "common.toml"]
+root = "azldev.toml"
+nodes = [
+  { canonical = "azldev.toml", body = [], edges = [
+    { entry = "common.toml", canonical = "common.toml" },
+    { entry = "c*.toml", canonical = "common.toml" },
+  ] },
+  { canonical = "common.toml", body = ["shared-body"], edges = [
+    { entry = "leaf.toml", canonical = "leaf.toml" },
+  ] },
+  { canonical = "leaf.toml", body = ["observable-descendant"], edges = [] },
+]
+expected-reach-order = ["common.toml", "leaf.toml", "common.toml"]
+expected-body-order = ["shared-body", "observable-descendant"]
+expected-contributions = ["shared-body", "observable-descendant"]
 
 [[case]]
 category = "multiple-parents"
-parents = ["left.toml", "right.toml"]
-entries = ["common.toml", "common.toml"]
-canonical = ["common.toml", "common.toml"]
+root = "azldev.toml"
+nodes = [
+  { canonical = "azldev.toml", body = [], edges = [
+    { entry = "left.toml", canonical = "left.toml" },
+    { entry = "right.toml", canonical = "right.toml" },
+  ] },
+  { canonical = "left.toml", body = [], edges = [
+    { entry = "common.toml", canonical = "common.toml" },
+  ] },
+  { canonical = "right.toml", body = [], edges = [
+    { entry = "common.toml", canonical = "common.toml" },
+  ] },
+  { canonical = "common.toml", body = ["shared-body"], edges = [
+    { entry = "leaf.toml", canonical = "leaf.toml" },
+  ] },
+  { canonical = "leaf.toml", body = ["observable-descendant"], edges = [] },
+]
+expected-reach-order = [
+  "left.toml",
+  "common.toml",
+  "leaf.toml",
+  "right.toml",
+  "common.toml",
+]
+expected-body-order = ["shared-body", "observable-descendant"]
+expected-contributions = ["shared-body", "observable-descendant"]
 
 [[case]]
 category = "symlink-aliases"
-parents = ["azldev.toml", "azldev.toml"]
-entries = ["common.toml", "alias.toml"]
-canonical = ["common.toml", "common.toml"]
+root = "azldev.toml"
+nodes = [
+  { canonical = "azldev.toml", body = [], edges = [
+    { entry = "common.toml", canonical = "common.toml" },
+    { entry = "alias.toml", canonical = "common.toml" },
+  ] },
+  { canonical = "common.toml", body = ["shared-body"], edges = [
+    { entry = "leaf.toml", canonical = "leaf.toml" },
+  ] },
+  { canonical = "leaf.toml", body = ["observable-descendant"], edges = [] },
+]
+expected-reach-order = ["common.toml", "leaf.toml", "common.toml"]
+expected-body-order = ["shared-body", "observable-descendant"]
+expected-contributions = ["shared-body", "observable-descendant"]

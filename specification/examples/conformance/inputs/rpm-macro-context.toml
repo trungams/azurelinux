@@ -1,0 +1,13 @@
+format-version = 1
+document-kind = "rpm-macro-context"
+architecture = "x86_64"
+target-distro = "azurelinux"
+target-version = "3.0"
+undefined = []
+undefines = []
+
+[base]
+_target_cpu = "x86_64"
+_vendor = "azurelinux"
+
+[defines]

@@ -1,0 +1,15 @@
+spec-version = "0.1"
+
+[project]
+description = "Conformance class-input fixture"
+default-distro = { name = "azurelinux", version = "3.0", snapshot = 2026-09-24T00:00:00Z }
+
+[distros.azurelinux]
+description = "Azure Linux"
+dist-git-base-uri = "https://src.example.invalid/rpms/$name.git"
+lookaside-base-uri = "https://src.example.invalid/lookaside/$name/$filename/$hashtype/$hash/$filename"
+
+[distros.azurelinux.versions."3.0"]
+description = "Azure Linux 3.0"
+release-ver = "3.0"
+dist-git-branch = "3.0"

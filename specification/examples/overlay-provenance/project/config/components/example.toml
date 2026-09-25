@@ -1,0 +1,2 @@
+[components.example]
+overlay-files = ["../../overlays/operations.toml"]

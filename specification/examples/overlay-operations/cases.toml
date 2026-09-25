@@ -1,0 +1,549 @@
+[[cases]]
+id = "spec-add-tag-main-success"
+family = "spec-tag"
+operation = { type = "spec-add-tag", tag = "Vendor", value = "Azure Linux" }
+input-lines = ["Name: example", "Version: 1", "", "%description", "Example"]
+expected-lines = ["Name: example", "Version: 1", "", "Vendor: Azure Linux", "%description", "Example"]
+outcome = "success"
+
+[[cases]]
+id = "spec-insert-tag-family-success"
+family = "spec-tag"
+operation = { type = "spec-insert-tag", tag = "Source99", value = "extra.tar.gz" }
+input-lines = ["Name: example", "Source0: source.tar.gz", "BuildRequires: gcc", "", "%description", "Example"]
+expected-lines = ["Name: example", "Source0: source.tar.gz", "Source99: extra.tar.gz", "BuildRequires: gcc", "", "%description", "Example"]
+outcome = "success"
+
+[[cases]]
+id = "spec-set-tag-existing-success"
+family = "spec-tag"
+operation = { type = "spec-set-tag", tag = "Version", value = "2" }
+input-lines = ["Name: example", "Version: 1"]
+expected-lines = ["Name: example", "Version: 2"]
+outcome = "success"
+
+[[cases]]
+id = "spec-update-tag-success"
+family = "spec-tag"
+operation = { type = "spec-update-tag", tag = "Release", value = "2" }
+input-lines = ["Name: example", "Release: 1"]
+expected-lines = ["Name: example", "Release: 2"]
+outcome = "success"
+
+[[cases]]
+id = "spec-remove-tag-all-success"
+family = "spec-tag"
+operation = { type = "spec-remove-tag", tag = "BuildRequires" }
+input-lines = ["Name: example", "BuildRequires: gcc", "BuildRequires: make", "Version: 1"]
+expected-lines = ["Name: example", "Version: 1"]
+outcome = "success"
+
+[[cases]]
+id = "spec-prepend-lines-section-success"
+family = "spec-lines"
+operation = { type = "spec-prepend-lines", section = "%build", lines = ["set -eu"] }
+input-lines = ["Name: example", "", "%build", "make"]
+expected-lines = ["Name: example", "", "%build", "set -eu", "make"]
+outcome = "success"
+
+[[cases]]
+id = "spec-append-lines-whole-success"
+family = "spec-lines"
+operation = { type = "spec-append-lines", lines = ["# downstream"] }
+input-lines = ["Name: example"]
+expected-lines = ["Name: example", "# downstream"]
+outcome = "success"
+
+[[cases]]
+id = "spec-search-replace-line-success"
+family = "spec-text"
+operation = { type = "spec-search-replace", section = "%build", regex = "old", replacement = "new" }
+input-lines = ["Name: example", "", "%build", "run old old"]
+expected-lines = ["Name: example", "", "%build", "run new new"]
+outcome = "success"
+
+[[cases]]
+id = "spec-remove-section-success"
+family = "spec-structure"
+operation = { type = "spec-remove-section", section = "%check" }
+input-lines = ["Name: example", "", "%build", "make", "", "%check", "make test", "", "%changelog"]
+expected-lines = ["Name: example", "", "%build", "make", "", "%changelog"]
+outcome = "success"
+
+[[cases]]
+id = "spec-remove-subpackage-success"
+family = "spec-structure"
+operation = { type = "spec-remove-subpackage", package = "devel" }
+input-lines = ["Name: example", "", "%package devel", "Summary: Development", "", "%description devel", "Development", "", "%files devel", "/usr/include/example.h", "", "%files", "/usr/bin/example"]
+expected-lines = ["Name: example", "", "%files", "/usr/bin/example"]
+outcome = "success"
+
+[[cases]]
+id = "patch-add-patchlist-success"
+family = "patch"
+operation = { type = "patch-add", source = "patches/fix.patch", file = "fix.patch" }
+source-hex = "70617463682062797465730a"
+input-lines = ["Name: example", "", "%patchlist", "existing.patch", "", "%build", "make"]
+input-files = []
+expected-lines = ["Name: example", "", "%patchlist", "existing.patch", "fix.patch", "", "%build", "make"]
+expected-files = [{ path = "fix.patch", mode = "0644", content-hex = "70617463682062797465730a" }]
+outcome = "success"
+
+[[cases]]
+id = "patch-remove-agreement-success"
+family = "patch"
+operation = { type = "patch-remove", file = "CVE-*.patch" }
+input-lines = ["Name: example", "Patch0: CVE-1.patch", "Patch1: keep.patch"]
+input-files = [
+  { path = "CVE-1.patch", mode = "0644", content-hex = "31" },
+  { path = "keep.patch", mode = "0644", content-hex = "32" },
+]
+expected-lines = ["Name: example", "Patch1: keep.patch"]
+expected-files = [{ path = "keep.patch", mode = "0644", content-hex = "32" }]
+outcome = "success"
+
+[[cases]]
+id = "file-prepend-lines-success"
+family = "loose-file"
+operation = { type = "file-prepend-lines", file = "*.conf", lines = ["# generated"] }
+input-files = [{ path = "app.conf", mode = "0644", content-hex = "6b65793d76616c75650a" }]
+expected-files = [{ path = "app.conf", mode = "0644", content-hex = "232067656e6572617465640a6b65793d76616c75650a" }]
+outcome = "success"
+
+[[cases]]
+id = "file-search-replace-success"
+family = "file-text"
+operation = { type = "file-search-replace", file = "**/*.conf", regex = "false", replacement = "true" }
+input-files = [{ path = "config/app.conf", mode = "0644", content-hex = "44454255473d66616c73650a" }]
+expected-files = [{ path = "config/app.conf", mode = "0644", content-hex = "44454255473d747275650a" }]
+outcome = "success"
+
+[[cases]]
+id = "file-add-success"
+family = "loose-file"
+operation = { type = "file-add", file = "scripts/tool", source = "payload/tool" }
+source-hex = "23212f62696e2f73680a"
+source-executable = true
+input-files = [{ path = "scripts/.keep", mode = "0644", content-hex = "" }]
+expected-files = [
+  { path = "scripts/.keep", mode = "0644", content-hex = "" },
+  { path = "scripts/tool", mode = "0755", content-hex = "23212f62696e2f73680a" },
+]
+outcome = "success"
+
+[[cases]]
+id = "file-remove-symlink-success"
+family = "loose-file"
+operation = { type = "file-remove", file = "obsolete*" }
+input-files = [
+  { path = "obsolete.txt", mode = "0644", content-hex = "78" },
+  { path = "obsolete-link", type = "symlink", target = "keep.txt" },
+  { path = "keep.txt", mode = "0644", content-hex = "79" },
+]
+expected-files = [{ path = "keep.txt", mode = "0644", content-hex = "79" }]
+outcome = "success"
+
+[[cases]]
+id = "file-rename-success"
+family = "loose-file"
+operation = { type = "file-rename", file = "docs/old.txt", replacement = "new.txt" }
+input-files = [{ path = "docs/old.txt", mode = "0644", content-hex = "646f63730a" }]
+expected-files = [{ path = "docs/new.txt", mode = "0644", content-hex = "646f63730a" }]
+outcome = "success"
+
+[[representation]]
+id = "nested-conditionals-are-directives"
+input-lines = [
+  "Name: example",
+  "%if 0",
+  "%ifarch x86_64",
+  "Source0: source.tar.gz",
+  "%elifnarch aarch64",
+  "Source1: alternate.tar.gz",
+  "%else",
+  "Source2: fallback.tar.gz",
+  "%endif",
+  "%endif",
+  "%description",
+  "Example",
+]
+expected-kinds = [
+  "tag",
+  "conditional-open",
+  "conditional-open",
+  "tag",
+  "conditional-branch",
+  "tag",
+  "conditional-branch",
+  "tag",
+  "conditional-close",
+  "conditional-close",
+  "section-header",
+  "ordinary",
+]
+expected-conditional-pairs = [[2, 8], [1, 9]]
+
+[[representation]]
+id = "percent-directive-is-not-section"
+input-lines = [
+  "Name: example",
+  "%global buildflag 1",
+  "%ifos linux",
+  "Release: 1",
+  "%endif",
+  "%prep",
+  "%autosetup -p1",
+]
+expected-kinds = [
+  "tag",
+  "macro-definition",
+  "conditional-open",
+  "tag",
+  "conditional-close",
+  "section-header",
+  "ordinary",
+]
+expected-sections = ["%prep"]
+
+[[regression]]
+id = "spec-insert-tag-nested-conditionals-success"
+family = "spec-tag"
+operation = { type = "spec-insert-tag", tag = "Source99", value = "extra.tar.gz" }
+input-lines = [
+  "Name: example",
+  "%if 0",
+  "%ifarch x86_64",
+  "Source0: source.tar.gz",
+  "%endif",
+  "%endif",
+  "Version: 1",
+  "%description",
+  "Example",
+]
+expected-lines = [
+  "Name: example",
+  "%if 0",
+  "%ifarch x86_64",
+  "Source0: source.tar.gz",
+  "%endif",
+  "%endif",
+  "Source99: extra.tar.gz",
+  "Version: 1",
+  "%description",
+  "Example",
+]
+outcome = "success"
+
+[[regression]]
+id = "patch-add-no-existing-tags-success"
+family = "patch"
+operation = { type = "patch-add", source = "patches/fix.patch", file = "fix.patch" }
+source-hex = "6669780a"
+input-lines = ["Name: example", "Version: 1", "%description", "Example"]
+input-files = []
+expected-lines = ["Name: example", "Version: 1", "Patch0: fix.patch", "%description", "Example"]
+expected-files = [{ path = "fix.patch", mode = "0644", content-hex = "6669780a" }]
+expected-slot = 0
+outcome = "success"
+
+[[regression]]
+id = "patch-add-mixed-bare-numbered-success"
+family = "patch"
+operation = { type = "patch-add", source = "patches/new.patch", file = "new.patch" }
+source-hex = "6e65770a"
+input-lines = [
+  "Name: example",
+  "Patch: bare-a.patch",
+  "Patch2: explicit.patch",
+  "Patch: bare-b.patch",
+  "Version: 1",
+  "%description",
+  "Example",
+]
+input-files = []
+expected-lines = [
+  "Name: example",
+  "Patch: bare-a.patch",
+  "Patch2: explicit.patch",
+  "Patch: bare-b.patch",
+  "Patch3: new.patch",
+  "Version: 1",
+  "%description",
+  "Example",
+]
+expected-bare-slots = [0, 1]
+expected-slot = 3
+expected-files = [{ path = "new.patch", mode = "0644", content-hex = "6e65770a" }]
+outcome = "success"
+
+[[regression]]
+id = "patch-add-subpackage-success"
+family = "patch"
+operation = { type = "patch-add", package = "devel", source = "patches/devel.patch", file = "devel.patch" }
+source-hex = "646576656c0a"
+input-lines = [
+  "Name: example",
+  "%package devel",
+  "Summary: Development files",
+  "%description devel",
+  "Development files",
+]
+input-files = []
+expected-lines = [
+  "Name: example",
+  "%package devel",
+  "Summary: Development files",
+  "Patch0: devel.patch",
+  "%description devel",
+  "Development files",
+]
+expected-slot = 0
+expected-files = [{ path = "devel.patch", mode = "0644", content-hex = "646576656c0a" }]
+outcome = "success"
+
+[[regression]]
+id = "uppercase-section-identity-success"
+family = "spec-lines"
+operation = { type = "spec-prepend-lines", section = "%build", lines = ["set -eu"] }
+input-lines = ["Name: example", "%BUILD", "make"]
+expected-lines = ["Name: example", "%BUILD", "set -eu", "make"]
+outcome = "success"
+
+[[regression]]
+id = "spec-remove-subpackage-mixed-selector-spellings-success"
+family = "spec-structure"
+operation = { type = "spec-remove-subpackage", package = "devel" }
+input-lines = [
+  "Name: example",
+  "%package -n devel",
+  "Summary: Development",
+  "%description devel",
+  "Development",
+  "%files -n devel",
+  "/usr/include/example.h",
+  "%post devel",
+  "echo installed",
+  "%files",
+  "/usr/bin/example",
+]
+expected-lines = [
+  "Name: example",
+  "%files",
+  "/usr/bin/example",
+]
+outcome = "success"
+
+[[regression]]
+id = "file-search-replace-lf-replacement-success"
+family = "file-text"
+operation = { type = "file-search-replace", file = "*.conf", regex = "=", replacement = "=\ncontinued=" }
+input-files = [{ path = "app.conf", mode = "0644", content-hex = "6b65793d76616c75650a" }]
+expected-files = [{ path = "app.conf", mode = "0644", content-hex = "6b65793d0a636f6e74696e7565643d76616c75650a" }]
+outcome = "success"
+
+[[sequence]]
+id = "reparse-created-subpackage-success"
+input-lines = ["Name: example", "%description", "Example"]
+operations = [
+  { type = "spec-append-lines", lines = ["%package devel", "Summary: Development"] },
+  { type = "spec-add-tag", package = "devel", tag = "Vendor", value = "Azure Linux" },
+]
+expected-lines = [
+  "Name: example",
+  "%description",
+  "Example",
+  "%package devel",
+  "Summary: Development",
+  "Vendor: Azure Linux",
+]
+outcome = "success"
+
+[[sequence-negative]]
+id = "reparse-removed-subpackage-observed-error"
+input-lines = [
+  "Name: example",
+  "%package devel",
+  "Summary: Development",
+  "%description devel",
+  "Development",
+  "%files",
+  "/usr/bin/example",
+]
+operations = [
+  { type = "spec-remove-subpackage", package = "devel" },
+  { type = "spec-add-tag", package = "devel", tag = "Vendor", value = "Azure Linux" },
+]
+expected-preserved-lines = [
+  "Name: example",
+  "%package devel",
+  "Summary: Development",
+  "%description devel",
+  "Development",
+  "%files",
+  "/usr/bin/example",
+]
+outcome = "error"
+failure-category = "selection"
+error = "later operation observes removed preamble and rolls back"
+
+[[sequence-negative]]
+id = "intermediate-structural-invalidity-rollback"
+input-lines = ["Name: example", "%description", "Example"]
+operations = [
+  { type = "spec-append-lines", lines = ["%if 1"] },
+  { type = "spec-add-tag", tag = "Vendor", value = "Azure Linux" },
+]
+expected-preserved-lines = ["Name: example", "%description", "Example"]
+outcome = "error"
+failure-category = "conditional-structure"
+error = "invalid intermediate state rolls back"
+
+[[sequence-negative]]
+id = "final-grammar-validation-rollback"
+input-lines = ["Name: example", "%description", "Example"]
+operations = [
+  { type = "spec-add-tag", tag = "Vendor", value = "Azure Linux" },
+  { type = "spec-append-lines", lines = ["%package"] },
+]
+expected-preserved-lines = ["Name: example", "%description", "Example"]
+outcome = "error"
+failure-category = "rpm-grammar"
+error = "invalid final operation state rolls back"
+
+[[negative]]
+id = "spec-add-tag-existing-tag-error"
+family = "spec-tag"
+operation = { type = "spec-add-tag", tag = "Vendor", value = "Azure Linux" }
+input-lines = ["Name: example", "vendor: Existing"]
+outcome = "error"
+failure-category = "cardinality"
+error = "existing matching tag"
+
+[[negative]]
+id = "spec-set-tag-multiple-error"
+family = "spec-tag"
+operation = { type = "spec-set-tag", tag = "Requires", value = "new" }
+input-lines = ["Requires: one", "Requires: two"]
+outcome = "error"
+failure-category = "cardinality"
+error = "multiple matching tags"
+
+[[negative]]
+id = "spec-lines-missing-section-error"
+family = "spec-lines"
+operation = { type = "spec-prepend-lines", section = "%check", lines = ["exit 0"] }
+input-lines = ["Name: example", "%build", "make"]
+outcome = "error"
+failure-category = "selection"
+error = "no matching section"
+
+[[negative]]
+id = "spec-text-no-change-error"
+family = "spec-text"
+operation = { type = "spec-search-replace", regex = "missing", replacement = "new" }
+input-lines = ["Name: example"]
+outcome = "error"
+failure-category = "no-change"
+error = "no changed line"
+
+[[negative]]
+id = "spec-structure-conditional-span-error"
+family = "spec-structure"
+operation = { type = "spec-remove-section", section = "%files", package = "foo" }
+input-lines = ["%if cond", "%files foo", "/a", "%else", "%files bar", "/b", "%endif"]
+outcome = "error"
+failure-category = "conditional-structure"
+error = "conditional branch spans section"
+
+[[negative]]
+id = "patch-remove-disagreement-error"
+family = "patch"
+operation = { type = "patch-remove", file = "*.patch" }
+input-lines = ["Name: example", "Patch0: missing.patch"]
+input-files = [{ path = "other.patch", mode = "0644", content-hex = "78" }]
+outcome = "error"
+failure-category = "namespace-agreement"
+error = "reference and file sets differ"
+
+[[negative]]
+id = "loose-file-destination-collision-error"
+family = "loose-file"
+operation = { type = "file-add", file = "new.txt", source = "payload/new.txt" }
+source-hex = "6e6577"
+input-files = [{ path = "new.txt", mode = "0644", content-hex = "6f6c64" }]
+outcome = "error"
+failure-category = "destination-conflict"
+error = "destination exists"
+
+[[negative]]
+id = "file-text-no-change-error"
+family = "file-text"
+operation = { type = "file-search-replace", file = "*.conf", regex = "missing", replacement = "new" }
+input-files = [{ path = "app.conf", mode = "0644", content-hex = "6b65793d76616c75650a" }]
+outcome = "error"
+failure-category = "no-change"
+error = "no changed file"
+
+[[negative]]
+id = "file-text-crlf-normalized-before-match-error"
+family = "file-text"
+operation = { type = "file-search-replace", file = "*.conf", regex = "\\r", replacement = "" }
+input-files = [{ path = "app.conf", mode = "0644", content-hex = "6b65793d76616c75650d0a" }]
+expected-preserved-content-hex = "6b65793d76616c75650d0a"
+outcome = "error"
+failure-category = "no-change"
+error = "CRLF normalized before matching"
+
+[[negative]]
+id = "spec-replacement-bare-cr-error"
+family = "spec-text"
+operation = { type = "spec-search-replace", regex = "example", replacement = "\r" }
+input-lines = ["Name: example"]
+outcome = "error"
+failure-category = "text-line-ending"
+error = "replacement cannot introduce bare CR"
+
+[[negative]]
+id = "duplicate-package-preamble-error"
+family = "spec-tag"
+operation = { type = "spec-add-tag", package = "devel", tag = "Vendor", value = "Azure Linux" }
+input-lines = [
+  "Name: example",
+  "%package devel",
+  "Summary: Development",
+  "%package -n devel",
+  "Summary: Duplicate",
+]
+outcome = "error"
+failure-category = "rpm-model"
+error = "duplicate package preamble selector identity"
+
+[[negative]]
+id = "patch-add-explicit-slot-collision-error"
+family = "patch"
+operation = { type = "patch-add", source = "patches/new.patch", file = "new.patch" }
+input-lines = ["Name: example", "Patch0: one.patch", "Patch00: two.patch"]
+input-files = []
+outcome = "error"
+failure-category = "patch-numbering"
+error = "duplicate patch slot"
+
+[[negative]]
+id = "patch-add-slot-overflow-error"
+family = "patch"
+operation = { type = "patch-add", source = "patches/new.patch", file = "new.patch" }
+input-lines = ["Name: example", "Patch2147483647: last.patch"]
+input-files = []
+outcome = "error"
+failure-category = "patch-numbering"
+error = "patch slot overflow"
+
+[[negative]]
+id = "patch-add-invalid-suffix-error"
+family = "patch"
+operation = { type = "patch-add", source = "patches/new.patch", file = "new.patch" }
+input-lines = ["Name: example", "PatchNext: old.patch"]
+input-files = []
+outcome = "error"
+failure-category = "patch-numbering"
+error = "invalid Patch suffix"

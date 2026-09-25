@@ -1,0 +1,128 @@
+spec-version = "0.1"
+
+[project]
+description = "Slice 2 example"
+default-distro = { name = "fedora", version = "43", snapshot = "2026-09-01T00:00:00Z" }
+default-author-email = "builder@example.invalid"
+
+[distros.fedora]
+description = "Fedora Linux"
+dist-git-base-uri = "https://src.example.invalid/rpms/$name.git"
+lookaside-base-uri = "https://src.example.invalid/lookaside/$name/$filename/$hashtype/$hash/$filename"
+
+[distros.fedora.versions."43"]
+description = "Fedora 43"
+release-ver = "43"
+dist-git-branch = "f43"
+mock-config = "profiles/fedora-43.cfg"
+inputs.rpm-build = [{ set = "fedora-43" }]
+inputs.image-build = [{ set = "fedora-43" }]
+
+[resources.rpm-repo-set-templates.fedora]
+description = "Fedora repository layout"
+subrepos = [
+  { name = "everything", subpath = "Everything/$basearch/os", kind = "binary" },
+  { name = "source", subpath = "Everything/source/tree", kind = "source" },
+]
+
+[resources.rpm-repo-sets.fedora-43]
+template = "fedora"
+base-uri = "https://mirror.example.invalid/fedora/43/"
+gpg-key = "keys/fedora-43.gpg"
+subrepos = ["everything", "source"]
+
+[default-component-config.release]
+calculation = "auto"
+
+[component-groups.base]
+description = "Base components"
+components = ["hello"]
+
+[component-groups.base.default-component-config.build]
+emit-upstream-provenance = true
+
+[components.hello.spec]
+type = "upstream"
+upstream-distro = { name = "fedora", version = "43", snapshot = "2026-09-01T00:00:00Z" }
+upstream-name = "hello"
+upstream-commit = "0123456789abcdef0123456789abcdef01234567"
+
+[[components.hello.source-files]]
+filename = "vendor.tar.gz"
+hash-type = "SHA256"
+hash = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+origin = { type = "download", uri = "https://sources.example.invalid/vendor.tar.gz" }
+
+[components.hello.build]
+with = ["feature"]
+defines = { downstream = "1" }
+
+[components.hello.build.check]
+skip = false
+
+[[components.hello.overlays]]
+type = "spec-add-tag"
+description = "Record downstream source"
+tag = "Vendor"
+value = "Azure Linux"
+
+[components.hello.overlays.metadata]
+category = "azl-branding-policy"
+upstream-status = "inapplicable"
+bugs = [{ url = "https://bugs.example.invalid/123" }]
+
+[components.hello.publish]
+rpm-channel = "rpm-base"
+srpm-channel = "rpm-source"
+debuginfo-channel = "rpm-debuginfo"
+
+[components.hello.packages.hello-devel.publish]
+rpm-channel = "rpm-devel"
+
+[components.hello.tests]
+tests = [{ group = "basic" }]
+
+[default-package-config.publish]
+rpm-channel = "rpm-base"
+debuginfo-channel = "rpm-debuginfo"
+
+[package-groups.development]
+description = "Development packages"
+packages = ["hello-devel"]
+
+[package-groups.development.default-package-config.publish]
+rpm-channel = "rpm-devel"
+
+[tests.smoke]
+type = "pytest"
+description = "Basic smoke test"
+kind = "functional"
+required-capabilities = ["systemd"]
+
+[tests.smoke.pytest]
+working-dir = "tests/smoke"
+test-paths = ["test_hello.py"]
+
+[test-groups.basic]
+description = "Basic validation"
+tests = [{ name = "smoke" }]
+
+[images.minimal]
+description = "Minimal VM image"
+architectures = ["x86_64", "aarch64"]
+
+[images.minimal.definition]
+type = "kiwi"
+path = "images/minimal.kiwi"
+profile = "Default"
+
+[images.minimal.capabilities]
+machine-bootable = true
+systemd = true
+runtime-package-management = true
+
+[images.minimal.tests]
+tests = [{ group = "basic" }]
+
+[images.minimal.publish]
+channels = ["vhd"]

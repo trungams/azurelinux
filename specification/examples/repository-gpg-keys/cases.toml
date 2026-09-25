@@ -1,0 +1,132 @@
+format-version = 1
+repository-input-manifest = "repository-input.manifest.toml"
+repository-input-manifest-sha256 = "86d1ba6bfff0821ab5b40e972a18235368f89aafb6ac3ed0b5646e6230fceed3"
+
+[[cases]]
+name = "remote key redirect is verified before repository use"
+operation = "rpm-build"
+repository = "fixture-remote"
+gpg-key = "https://KEYS.example.invalid:443/repository.gpg"
+source = "remote"
+canonical-uri = "https://keys.example.invalid/repository.gpg"
+sha256 = "1ef851f452bffe3090ca569b8aa10813d3cec356e90e6e1462306bce1c0e3f15"
+shared-fetch-case = "remote repository key redirect uses shared state machine"
+expected = "binding-ready"
+key-acceptance-owner = "selected-package-manager"
+repository-accessed = false
+
+[[cases]]
+name = "remote key replacement fails before repository use"
+operation = "rpm-build"
+repository = "fixture-remote"
+gpg-key = "https://KEYS.example.invalid:443/repository.gpg"
+source = "remote"
+canonical-uri = "https://keys.example.invalid/repository.gpg"
+sha256 = "1ef851f452bffe3090ca569b8aa10813d3cec356e90e6e1462306bce1c0e3f15"
+shared-fetch-case = "remote repository key replacement fails digest"
+expected = "integrity-failure"
+repository-accessed = false
+
+[[cases]]
+name = "local project key is snapshotted with provenance"
+operation = "image-build"
+repository = "fixture-local"
+gpg-key = "keys/repository.gpg"
+source = "local"
+defining-document = "project:azldev.toml"
+portable-path = "keys/repository.gpg"
+sha256 = "1ef851f452bffe3090ca569b8aa10813d3cec356e90e6e1462306bce1c0e3f15"
+snapshot-before-repository-access = true
+snapshot-sha256-verified = true
+expected = "binding-ready"
+key-acceptance-owner = "selected-package-manager"
+repository-accessed = false
+
+[[diagnostic-cases]]
+name = "missing selected repository binding"
+defect = "missing"
+operation = "rpm-build"
+repository = "fixture-remote"
+selected-repositories = ["fixture-remote", "fixture-local"]
+expected-class = "unsupported-operation"
+expected-validation-phase = "V-OPERATION"
+expected-processing-phase = "rpm-build"
+expected-requirement = "REPO-GPG-BINDING-MISSING"
+repository-accessed = false
+
+[[diagnostic-cases]]
+name = "duplicate repository binding"
+defect = "duplicate"
+operation = "rpm-build"
+repository = "fixture-remote"
+selected-repositories = ["fixture-remote", "fixture-local"]
+expected-class = "conflict"
+expected-validation-phase = "V-OPERATION"
+expected-processing-phase = "rpm-build"
+expected-requirement = "REPO-GPG-BINDING-DUPLICATE"
+repository-accessed = false
+
+[[diagnostic-cases]]
+name = "binding for unselected repository"
+defect = "unselected"
+operation = "image-build"
+repository = "fixture-extra"
+selected-repositories = ["fixture-local"]
+expected-class = "integrity"
+expected-validation-phase = "V-OPERATION"
+expected-processing-phase = "image-build"
+expected-requirement = "REPO-GPG-BINDING-UNSELECTED"
+repository-accessed = false
+
+[[diagnostic-cases]]
+name = "binding locator mismatch"
+defect = "locator-mismatch"
+operation = "rpm-build"
+repository = "fixture-remote"
+selected-repositories = ["fixture-remote", "fixture-local"]
+effective-locator = "https://keys.example.invalid/other.gpg"
+expected-class = "integrity"
+expected-validation-phase = "V-OPERATION"
+expected-processing-phase = "rpm-build"
+expected-requirement = "REPO-GPG-BINDING-LOCATOR"
+repository-accessed = false
+
+[[diagnostic-cases]]
+name = "malformed key bytes"
+defect = "malformed-key-bytes"
+operation = "image-build"
+repository = "fixture-local"
+selected-repositories = ["fixture-local"]
+binding-sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+bytes-hex = ""
+expected-class = "integrity"
+expected-validation-phase = "V-ACQUIRE"
+expected-processing-phase = "image-build"
+expected-requirement = "REPO-GPG-KEY-FORMAT"
+repository-accessed = false
+
+[[diagnostic-cases]]
+name = "key digest mismatch"
+defect = "digest-mismatch"
+operation = "rpm-build"
+repository = "fixture-remote"
+selected-repositories = ["fixture-remote"]
+binding-sha256 = "1ef851f452bffe3090ca569b8aa10813d3cec356e90e6e1462306bce1c0e3f15"
+bytes-hex = "666978747572652d6f70656e7067702d6b65792d76320a"
+expected-class = "integrity"
+expected-validation-phase = "V-ACQUIRE"
+expected-processing-phase = "rpm-build"
+expected-requirement = "REPO-GPG-KEY-DIGEST"
+repository-accessed = false
+
+[[diagnostic-cases]]
+name = "repository signature fails selected package-manager verification"
+defect = "signature-failure"
+operation = "rpm-build"
+repository = "fixture-remote"
+selected-repositories = ["fixture-remote"]
+expected-class = "integrity"
+expected-validation-phase = "V-ACQUIRE"
+expected-processing-phase = "rpm-build"
+expected-requirement = "REPO-GPG-SIGNATURE"
+repository-accessed = false

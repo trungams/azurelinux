@@ -1,0 +1,146 @@
+[[cases]]
+id = "offline-declared-input-success"
+architecture = "x86_64"
+evaluation-instant = "2026-09-24T00:00:00Z"
+declared-mock-packages = ["go", "git"]
+available-mock-packages = ["go", "git"]
+declared-inputs = ["telegraf.tar.gz"]
+available-inputs = ["telegraf.tar.gz"]
+isolation-supported = true
+network = "deny"
+attempted-network = false
+script-read = "telegraf.tar.gz"
+output-kind = "archive-tree"
+output-entry-count = 3
+semantic-output-valid = true
+output-filename = "vendor.tar.gz"
+output-hash-type = "SHA512"
+output-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+actual-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+expected = "accept"
+
+[[cases]]
+id = "ambient-network-does-not-enable-access"
+architecture = "x86_64"
+evaluation-instant = "2026-09-24T00:00:00Z"
+declared-mock-packages = []
+available-mock-packages = []
+declared-inputs = []
+available-inputs = []
+isolation-supported = true
+network = "deny"
+attempted-network = true
+script-read = ""
+output-kind = "archive-tree"
+output-entry-count = 1
+semantic-output-valid = true
+output-filename = "vendor.tar.gz"
+output-hash-type = "SHA512"
+output-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+actual-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+expected = "security-policy"
+
+[[cases]]
+id = "missing-declared-mock-package"
+architecture = "x86_64"
+evaluation-instant = "2026-09-24T00:00:00Z"
+declared-mock-packages = ["go", "git"]
+available-mock-packages = ["go"]
+declared-inputs = []
+available-inputs = []
+isolation-supported = true
+network = "deny"
+attempted-network = false
+script-read = ""
+output-kind = "archive-tree"
+output-entry-count = 1
+semantic-output-valid = true
+output-filename = "vendor.tar.gz"
+output-hash-type = "SHA512"
+output-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+actual-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+expected = "unsupported-operation"
+
+[[cases]]
+id = "undeclared-input-is-not-exposed"
+architecture = "x86_64"
+evaluation-instant = "2026-09-24T00:00:00Z"
+declared-mock-packages = []
+available-mock-packages = []
+declared-inputs = ["declared.tar.gz"]
+available-inputs = ["declared.tar.gz", "ambient.tar.gz"]
+isolation-supported = true
+network = "deny"
+attempted-network = false
+script-read = "ambient.tar.gz"
+output-kind = "archive-tree"
+output-entry-count = 1
+semantic-output-valid = true
+output-filename = "vendor.tar.gz"
+output-hash-type = "SHA512"
+output-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+actual-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+expected = "security-policy"
+
+[[cases]]
+id = "configured-output-hash-mismatch"
+architecture = "x86_64"
+evaluation-instant = "2026-09-24T00:00:00Z"
+declared-mock-packages = []
+available-mock-packages = []
+declared-inputs = []
+available-inputs = []
+isolation-supported = true
+network = "deny"
+attempted-network = false
+script-read = ""
+output-kind = "archive-tree"
+output-entry-count = 1
+semantic-output-valid = true
+output-filename = "vendor.tar.gz"
+output-hash-type = "SHA512"
+output-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+actual-hash = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+expected = "integrity"
+
+[[cases]]
+id = "invalid-semantic-output"
+architecture = "x86_64"
+evaluation-instant = "2026-09-24T00:00:00Z"
+declared-mock-packages = []
+available-mock-packages = []
+declared-inputs = []
+available-inputs = []
+isolation-supported = true
+network = "deny"
+attempted-network = false
+script-read = ""
+output-kind = "archive-tree"
+output-entry-count = 0
+semantic-output-valid = false
+output-filename = "vendor.tar.gz"
+output-hash-type = "SHA512"
+output-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+actual-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+expected = "validation-error"
+
+[[cases]]
+id = "implementation-isolation-unavailable"
+architecture = "x86_64"
+evaluation-instant = "2026-09-24T00:00:00Z"
+declared-mock-packages = []
+available-mock-packages = []
+declared-inputs = []
+available-inputs = []
+isolation-supported = false
+network = "deny"
+attempted-network = false
+script-read = ""
+output-kind = "archive-tree"
+output-entry-count = 1
+semantic-output-valid = true
+output-filename = "vendor.tar.gz"
+output-hash-type = "SHA512"
+output-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+actual-hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+expected = "unsupported-operation"

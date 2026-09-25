@@ -1,0 +1,10 @@
+format-version = 1
+document-kind = "toolchain-manifest"
+manifest-id = "rpm-toolchain-v1"
+architecture = "x86_64"
+
+[[entries]]
+path = "/usr/bin/rpmbuild"
+type = "file"
+mode = "0755"
+sha256 = "2222222222222222222222222222222222222222222222222222222222222222"

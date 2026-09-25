@@ -1,0 +1,450 @@
+[[cases]]
+name = "upstream manifest hit"
+artifact = "upstream-manifest"
+component = "upstream"
+outcome = "hit"
+digest-matches = true
+expected = "accept"
+
+[[cases]]
+name = "upstream manifest missing is terminal"
+artifact = "upstream-manifest"
+component = "upstream"
+outcome = "not-found"
+expected = "error"
+
+[[cases]]
+name = "configured upstream miss falls back"
+artifact = "configured-download"
+component = "upstream"
+outcome = "not-found"
+disable-origins = false
+expected = "origin"
+
+[[cases]]
+name = "configured upstream miss with origins disabled"
+artifact = "configured-download"
+component = "upstream"
+outcome = "not-found"
+disable-origins = true
+expected = "error"
+
+[[cases]]
+name = "authorization failure is terminal"
+artifact = "configured-download"
+component = "upstream"
+outcome = "authorization-failure"
+disable-origins = false
+expected = "error"
+
+[[cases]]
+name = "TLS failure is terminal"
+artifact = "configured-download"
+component = "upstream"
+outcome = "tls-failure"
+disable-origins = false
+expected = "error"
+
+[[cases]]
+name = "transport failure is terminal"
+artifact = "configured-download"
+component = "upstream"
+outcome = "transport-failure"
+disable-origins = false
+expected = "error"
+
+[[cases]]
+name = "malformed response is terminal"
+artifact = "configured-download"
+component = "upstream"
+outcome = "malformed-response"
+disable-origins = false
+expected = "error"
+
+[[cases]]
+name = "integrity failure is terminal"
+artifact = "configured-download"
+component = "upstream"
+outcome = "integrity-failure"
+disable-origins = false
+expected = "error"
+
+[[cases]]
+name = "local configured download skips lookaside"
+artifact = "configured-download"
+component = "local"
+outcome = "not-attempted"
+expected = "origin"
+
+[[selection-cases]]
+name = "lookaside miss permits successful origin"
+lookaside-outcome = "not-found"
+disable-origins = false
+origin-outcome = "hit"
+expected = "accept"
+
+[[selection-cases]]
+name = "origin not-found is terminal"
+lookaside-outcome = "not-found"
+disable-origins = false
+origin-outcome = "not-found"
+expected = "error"
+
+[[selection-cases]]
+name = "origin transport failure is terminal"
+lookaside-outcome = "not-found"
+disable-origins = false
+origin-outcome = "transport-failure"
+expected = "error"
+
+[[selection-cases]]
+name = "lookaside transport failure forbids origin"
+lookaside-outcome = "transport-failure"
+disable-origins = false
+origin-outcome = "hit"
+expected = "error"
+
+[[http-cases]]
+name = "direct complete 200 is a hit"
+start-uri = "https://lookaside.example.invalid/objects/a"
+responses = [{ status = 200, body-complete = true }]
+expected = "hit"
+expected-final-uri = "https://lookaside.example.invalid/objects/a"
+
+[[http-cases]]
+name = "relative redirect resolves before final not-found"
+start-uri = "https://lookaside.example.invalid/objects/pkg/source"
+responses = [
+  { status = 302, location = "../missing" },
+  { status = 404 },
+]
+expected = "not-found"
+expected-final-uri = "https://lookaside.example.invalid/objects/missing"
+
+[[http-cases]]
+name = "absolute HTTPS redirect can reach a hit"
+start-uri = "https://lookaside.example.invalid/objects/a"
+responses = [
+  { status = 308, location = "https://cdn.example.invalid/object/a" },
+  { status = 200, body-complete = true },
+]
+expected = "hit"
+expected-final-uri = "https://cdn.example.invalid/object/a"
+
+[[http-cases]]
+name = "ten redirects are permitted"
+start-uri = "https://lookaside.example.invalid/start"
+redirect-count = 10
+final-status = 200
+expected = "hit"
+
+[[http-cases]]
+name = "eleventh redirect exceeds hop cap"
+start-uri = "https://lookaside.example.invalid/start"
+redirect-count = 11
+final-status = 200
+expected = "transport-failure"
+
+[[http-cases]]
+name = "redirect loop is transport failure"
+start-uri = "https://lookaside.example.invalid/a"
+responses = [
+  { status = 301, location = "/b" },
+  { status = 302, location = "/a" },
+]
+expected = "transport-failure"
+
+[[http-cases]]
+name = "authority alias is one redirect-loop identity"
+start-uri = "https://EXAMPLE.invalid:443/a"
+responses = [
+  { status = 302, location = "https://example.invalid/a" },
+]
+expected = "transport-failure"
+
+[[http-cases]]
+name = "missing Location is malformed"
+start-uri = "https://lookaside.example.invalid/a"
+responses = [{ status = 302 }]
+expected = "malformed-response"
+
+[[http-cases]]
+name = "duplicate Location is malformed"
+start-uri = "https://lookaside.example.invalid/a"
+responses = [{ status = 307, locations = ["/b", "/c"] }]
+expected = "malformed-response"
+
+[[http-cases]]
+name = "malformed Location is malformed response"
+start-uri = "https://lookaside.example.invalid/a"
+responses = [{ status = 302, location = "https://[invalid" }]
+expected = "malformed-response"
+
+[[http-cases]]
+name = "non-HTTPS redirect is transport failure"
+start-uri = "https://lookaside.example.invalid/a"
+responses = [{ status = 302, location = "http://lookaside.example.invalid/b" }]
+expected = "transport-failure"
+
+[[http-cases]]
+name = "authorization status is classified"
+start-uri = "https://lookaside.example.invalid/a"
+responses = [{ status = 403 }]
+expected = "authorization-failure"
+
+[[http-cases]]
+name = "gone status is not-found"
+start-uri = "https://lookaside.example.invalid/a"
+responses = [{ status = 410 }]
+expected = "not-found"
+
+[[http-cases]]
+name = "other success status is transport failure"
+start-uri = "https://lookaside.example.invalid/a"
+responses = [{ status = 204, body-complete = true }]
+expected = "transport-failure"
+
+[[http-cases]]
+name = "unrecognized redirect is transport failure"
+start-uri = "https://lookaside.example.invalid/a"
+responses = [{ status = 304, location = "/b" }]
+expected = "transport-failure"
+
+[[http-cases]]
+name = "server error is transport failure"
+start-uri = "https://lookaside.example.invalid/a"
+responses = [{ status = 500 }]
+expected = "transport-failure"
+
+[[http-cases]]
+name = "incomplete 200 response is malformed"
+start-uri = "https://lookaside.example.invalid/a"
+responses = [{ status = 200, body-complete = false }]
+expected = "malformed-response"
+
+[[shared-fetch-cases]]
+name = "lookaside hashes exact representation octets"
+request-kind = "lookaside"
+covers = ["shared-state", "bytes"]
+start-uri = "https://lookaside.example.invalid/objects/a"
+hash-type = "SHA256"
+hash = "f6f13ead9c228297211b44bf931167bba3794675ab97487dd3c767523faed326"
+requests = [
+  { http-version = "HTTP/1.1", method = "GET", uri = "https://lookaside.example.invalid/objects/a", request-target = "/objects/a", host = "lookaside.example.invalid", tls-server-name = "lookaside.example.invalid", tls-peer-name = "lookaside.example.invalid", body-hex = "", trailers = [], headers = [{ name = "Accept", value = "*/*" }, { name = "Accept-Encoding", value = "identity" }] },
+]
+responses = [
+  { status = 200, body-complete = true, body-hex = "6c6f6f6b61736964652d6279746573" },
+]
+expected = "hit"
+
+[[shared-fetch-cases]]
+name = "origin uses redirects and explicit identity coding"
+request-kind = "origin"
+covers = ["shared-state", "bytes"]
+start-uri = "https://origin.example.invalid/files/a"
+hash-type = "SHA256"
+hash = "5f75732a438ad56f5fb59b3dee7d1af8e6722575107f2ee06028230d5af40b8a"
+requests = [
+  { http-version = "HTTP/1.1", method = "GET", uri = "https://origin.example.invalid/files/a", request-target = "/files/a", host = "origin.example.invalid", tls-server-name = "origin.example.invalid", tls-peer-name = "origin.example.invalid", body-hex = "", trailers = [], headers = [{ name = "Accept", value = "*/*" }, { name = "Accept-Encoding", value = "identity" }] },
+  { http-version = "HTTP/1.1", method = "GET", uri = "https://origin.example.invalid/objects/a", request-target = "/objects/a", host = "origin.example.invalid", tls-server-name = "origin.example.invalid", tls-peer-name = "origin.example.invalid", body-hex = "", trailers = [], headers = [{ name = "Accept", value = "*/*" }, { name = "Accept-Encoding", value = "identity" }] },
+]
+responses = [
+  { status = 302, location = "../objects/a" },
+  { status = 200, body-complete = true, content-encoding = "\tIdEnTiTy ", body-hex = "6f726967696e2d6279746573" },
+]
+expected = "hit"
+expected-final-uri = "https://origin.example.invalid/objects/a"
+
+[[shared-fetch-cases]]
+name = "encoded successful response is malformed"
+request-kind = "lookaside"
+covers = ["bytes"]
+start-uri = "https://lookaside.example.invalid/objects/coded"
+hash-type = "SHA256"
+hash = "9b2ba9dbe130210c7287de8c84716dcc403cedde02af15872758e3d5baf94e38"
+requests = [
+  { http-version = "HTTP/1.1", method = "GET", uri = "https://lookaside.example.invalid/objects/coded", request-target = "/objects/coded", host = "lookaside.example.invalid", tls-server-name = "lookaside.example.invalid", tls-peer-name = "lookaside.example.invalid", body-hex = "", trailers = [], headers = [{ name = "Accept", value = "*/*" }, { name = "Accept-Encoding", value = "identity" }] },
+]
+responses = [
+  { status = 200, body-complete = true, content-encoding = "gzip", body-hex = "636f6465642d626f6479" },
+]
+expected = "malformed-response"
+
+[[shared-fetch-cases]]
+name = "ambiguous identity coding is malformed"
+request-kind = "origin"
+covers = ["bytes"]
+start-uri = "https://origin.example.invalid/files/a"
+hash-type = "SHA256"
+hash = "5f75732a438ad56f5fb59b3dee7d1af8e6722575107f2ee06028230d5af40b8a"
+requests = [
+  { http-version = "HTTP/1.1", method = "GET", uri = "https://origin.example.invalid/files/a", request-target = "/files/a", host = "origin.example.invalid", tls-server-name = "origin.example.invalid", tls-peer-name = "origin.example.invalid", body-hex = "", trailers = [], headers = [{ name = "Accept", value = "*/*" }, { name = "Accept-Encoding", value = "identity" }] },
+]
+responses = [
+  { status = 200, body-complete = true, content-encodings = ["identity", "identity"], body-hex = "6f726967696e2d6279746573" },
+]
+expected = "malformed-response"
+
+[[shared-fetch-cases]]
+name = "premature EOF after valid success headers is malformed"
+request-kind = "origin"
+covers = ["bytes", "premature-eof"]
+start-uri = "https://origin.example.invalid/files/a"
+hash-type = "SHA256"
+hash = "5f75732a438ad56f5fb59b3dee7d1af8e6722575107f2ee06028230d5af40b8a"
+requests = [
+  { http-version = "HTTP/1.1", method = "GET", uri = "https://origin.example.invalid/files/a", request-target = "/files/a", host = "origin.example.invalid", tls-server-name = "origin.example.invalid", tls-peer-name = "origin.example.invalid", body-hex = "", trailers = [], headers = [{ name = "Accept", value = "*/*" }, { name = "Accept-Encoding", value = "identity" }] },
+]
+responses = [
+  { status = 200, body-complete = false, body-hex = "6f726967696e" },
+]
+expected = "malformed-response"
+
+[[shared-fetch-cases]]
+name = "cross-origin redirect reconstructs request without authorization"
+request-kind = "lookaside"
+covers = ["shared-state", "request-contract"]
+start-uri = "https://lookaside.example.invalid/private/a"
+credential-reference = "credential-ref:lookaside"
+credential-origin = "https://lookaside.example.invalid"
+hash-type = "SHA256"
+hash = "537458d51902f95dad749119118cbe8841a3f81d53ab4c1c53e94d96a13a547f"
+requests = [
+  { http-version = "HTTP/1.1", method = "GET", uri = "https://lookaside.example.invalid/private/a", request-target = "/private/a", host = "lookaside.example.invalid", tls-server-name = "lookaside.example.invalid", tls-peer-name = "lookaside.example.invalid", body-hex = "", trailers = [], headers = [{ name = "Accept", value = "*/*" }, { name = "Accept-Encoding", value = "identity" }, { name = "Authorization", credential-reference = "credential-ref:lookaside" }] },
+  { http-version = "HTTP/1.1", method = "GET", uri = "https://cdn.example.invalid/public/a", request-target = "/public/a", host = "cdn.example.invalid", tls-server-name = "cdn.example.invalid", tls-peer-name = "cdn.example.invalid", body-hex = "", trailers = [], headers = [{ name = "Accept", value = "*/*" }, { name = "Accept-Encoding", value = "identity" }] },
+]
+responses = [
+  { status = 302, location = "https://cdn.example.invalid/public/a" },
+  { status = 200, body-complete = true, body-hex = "63726f73732d6f726967696e2d6279746573" },
+]
+expected = "hit"
+expected-final-uri = "https://cdn.example.invalid/public/a"
+
+[[shared-fetch-cases]]
+name = "authority aliases retain same-origin credential scope"
+request-kind = "origin"
+covers = ["request-contract", "authority"]
+start-uri = "https://EXAMPLE.invalid:443/a"
+credential-reference = "credential-ref:origin"
+credential-origin = "https://example.invalid"
+hash-type = "SHA256"
+hash = "fa9d5c585af1c864c3e06e81271d1db3625f71f9ea6db438a0506758e97a0bad"
+requests = [
+  { http-version = "HTTP/1.1", method = "GET", uri = "https://example.invalid/a", request-target = "/a", host = "example.invalid", tls-server-name = "example.invalid", tls-peer-name = "example.invalid", body-hex = "", trailers = [], headers = [{ name = "Accept", value = "*/*" }, { name = "Accept-Encoding", value = "identity" }, { name = "Authorization", credential-reference = "credential-ref:origin" }] },
+  { http-version = "HTTP/1.1", method = "GET", uri = "https://example.invalid/b", request-target = "/b", host = "example.invalid", tls-server-name = "example.invalid", tls-peer-name = "example.invalid", body-hex = "", trailers = [], headers = [{ name = "Accept", value = "*/*" }, { name = "Accept-Encoding", value = "identity" }, { name = "Authorization", credential-reference = "credential-ref:origin" }] },
+]
+responses = [
+  { status = 302, location = "https://example.invalid:443/b" },
+  { status = 200, body-complete = true, body-hex = "617574686f726974792d616c6961732d6279746573" },
+]
+expected = "hit"
+expected-final-uri = "https://example.invalid/b"
+
+[[shared-fetch-cases]]
+name = "remote repository key redirect uses shared state machine"
+request-kind = "repository-gpg-key"
+covers = ["repository-key", "request-contract", "bytes"]
+start-uri = "https://KEYS.example.invalid:443/repository.gpg"
+hash-type = "SHA256"
+hash = "1ef851f452bffe3090ca569b8aa10813d3cec356e90e6e1462306bce1c0e3f15"
+requests = [
+  { http-version = "HTTP/1.1", method = "GET", uri = "https://keys.example.invalid/repository.gpg", request-target = "/repository.gpg", host = "keys.example.invalid", tls-server-name = "keys.example.invalid", tls-peer-name = "keys.example.invalid", body-hex = "", trailers = [], headers = [{ name = "Accept", value = "*/*" }, { name = "Accept-Encoding", value = "identity" }] },
+  { http-version = "HTTP/1.1", method = "GET", uri = "https://cdn.keys.example.invalid/releases/repository.gpg", request-target = "/releases/repository.gpg", host = "cdn.keys.example.invalid", tls-server-name = "cdn.keys.example.invalid", tls-peer-name = "cdn.keys.example.invalid", body-hex = "", trailers = [], headers = [{ name = "Accept", value = "*/*" }, { name = "Accept-Encoding", value = "identity" }] },
+]
+responses = [
+  { status = 302, location = "https://cdn.keys.example.invalid:443/releases/repository.gpg" },
+  { status = 200, body-complete = true, body-hex = "666978747572652d6f70656e7067702d6b65792d76310a" },
+]
+expected = "hit"
+expected-final-uri = "https://cdn.keys.example.invalid/releases/repository.gpg"
+
+[[shared-fetch-cases]]
+name = "remote repository key replacement fails digest"
+request-kind = "repository-gpg-key"
+covers = ["repository-key", "bytes"]
+start-uri = "https://keys.example.invalid/repository.gpg"
+hash-type = "SHA256"
+hash = "1ef851f452bffe3090ca569b8aa10813d3cec356e90e6e1462306bce1c0e3f15"
+requests = [
+  { http-version = "HTTP/1.1", method = "GET", uri = "https://keys.example.invalid/repository.gpg", request-target = "/repository.gpg", host = "keys.example.invalid", tls-server-name = "keys.example.invalid", tls-peer-name = "keys.example.invalid", body-hex = "", trailers = [], headers = [{ name = "Accept", value = "*/*" }, { name = "Accept-Encoding", value = "identity" }] },
+]
+responses = [
+  { status = 200, body-complete = true, body-hex = "666978747572652d6f70656e7067702d6b65792d76320a" },
+]
+expected = "integrity-failure"
+expected-final-uri = "https://keys.example.invalid/repository.gpg"
+
+[[authority-cases]]
+name = "DNS case and default port canonicalize"
+uri = "https://EXAMPLE.invalid:443/a?b=1"
+expected = "valid"
+canonical-origin = "https://example.invalid"
+canonical-uri = "https://example.invalid/a?b=1"
+host = "example.invalid"
+tls-server-name = "example.invalid"
+tls-peer-name = "example.invalid"
+
+[[authority-cases]]
+name = "IDNA A-label is retained in lowercase ASCII"
+uri = "https://XN--BCHER-KVA.example/a"
+expected = "valid"
+canonical-origin = "https://xn--bcher-kva.example"
+canonical-uri = "https://xn--bcher-kva.example/a"
+host = "xn--bcher-kva.example"
+tls-server-name = "xn--bcher-kva.example"
+tls-peer-name = "xn--bcher-kva.example"
+
+[[authority-cases]]
+name = "IPv6 text and default port canonicalize"
+uri = "https://[2001:0DB8:0:0:0:0:0:1]:443/a"
+expected = "valid"
+canonical-origin = "https://[2001:db8::1]"
+canonical-uri = "https://[2001:db8::1]/a"
+host = "[2001:db8::1]"
+tls-server-name = ""
+tls-peer-name = "2001:db8::1"
+
+[[authority-cases]]
+name = "nondefault port remains in authority"
+uri = "https://example.invalid:8443/a"
+expected = "valid"
+canonical-origin = "https://example.invalid:8443"
+canonical-uri = "https://example.invalid:8443/a"
+host = "example.invalid:8443"
+tls-server-name = "example.invalid"
+tls-peer-name = "example.invalid"
+
+[[authority-cases]]
+name = "percent-encoded reg-name is forbidden"
+uri = "https://%65xample.invalid/a"
+expected = "invalid"
+
+[[authority-cases]]
+name = "Unicode IDN U-label is forbidden"
+uri = "https://bücher.example/a"
+expected = "invalid"
+
+[[authority-cases]]
+name = "A-label decoding only to disallowed control code points is forbidden"
+uri = "https://xn--abc.example/a"
+expected = "invalid"
+
+[[authority-cases]]
+name = "minimal A-label decoding to a disallowed control code point is forbidden"
+uri = "https://xn--a.example/a"
+expected = "invalid"
+
+[[authority-cases]]
+name = "IPv4 leading zero is forbidden"
+uri = "https://192.168.001.1/a"
+expected = "invalid"
+
+[[request-contract-cases]]
+name = "every ambient or unspecified end-to-end header is rejected"
+ambient-header-names = ["cookie", "cookie2", "authorization", "referer", "origin", "range", "if-match", "if-none-match", "if-modified-since", "if-unmodified-since", "user-agent", "accept-language", "accept-charset", "x-ambient"]
+expected = "security-policy"
+
+[[request-contract-cases]]
+name = "empty ambient request state is permitted"
+ambient-header-names = []
+expected = "ready"

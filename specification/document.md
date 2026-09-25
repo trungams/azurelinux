@@ -95,9 +95,10 @@ mechanism.
 
 Only the exact root-table paths `spec-version` and `includes` are fully defined
 as document controls in this slice. Canonical object-field spellings become
-normative in their owning field chapters. The retained object-field pages are
-explicitly provisional until that work is complete; an implementation MUST NOT
-infer aliases from their earlier underscore-based prose.
+normative in their owning field chapters. The complete canonical root
+vocabulary is defined in [Top-level object model](./objects.md). An
+implementation MUST NOT infer aliases from historical underscore- or
+camel-case spellings.
 
 An implementation may retain exact key spellings and typed TOML values for
 not-yet-defined object fields as preparatory internal representation. That

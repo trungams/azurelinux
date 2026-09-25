@@ -1,0 +1,18 @@
+[fixture]
+id = "ambient-locale-time-independence"
+paths = ["pkg/İ.spec", "pkg/I.spec", "pkg/ı.spec", "pkg/i.spec"]
+declared-instant = "2026-09-24T12:34:56-07:00"
+expected-utc = "2026-09-24T19:34:56Z"
+expected-path-order = ["pkg/I.spec", "pkg/i.spec", "pkg/İ.spec", "pkg/ı.spec"]
+
+[[runs]]
+id = "turkish-kiritimati-future-clock"
+ambient-locale = "tr_TR.UTF-8"
+ambient-timezone = "Pacific/Kiritimati"
+ambient-wall-clock = "2042-01-02T03:04:05Z"
+
+[[runs]]
+id = "c-los-angeles-past-clock"
+ambient-locale = "C"
+ambient-timezone = "America/Los_Angeles"
+ambient-wall-clock = "2001-02-03T04:05:06Z"

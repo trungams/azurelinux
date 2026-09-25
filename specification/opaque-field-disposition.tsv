@@ -1,0 +1,53 @@
+path	status	disposition	contract	migration
+tests.<key>.pytest.working-dir	canonical	test-profile	tests.md#pytest-fields	-
+tests.<key>.pytest.test-paths	canonical	test-profile	tests.md#pytest-fields	-
+tests.<key>.pytest.test-paths[]	canonical	test-profile	tests.md#pytest-fields	-
+tests.<key>.pytest.extra-args	canonical	test-profile	tests.md#pytest-fields	-
+tests.<key>.pytest.extra-args[]	canonical	test-profile	tests.md#pytest-fields	-
+tests.<key>.pytest.install	canonical	test-profile	tests.md#pytest-fields	-
+tests.<key>.lisa.source	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.source.git-url	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.source.ref	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria[]	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria.name	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria.area	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria.category	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria.priority	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria.priority[]	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria.tags	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria.tags[]	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria.testcase-name	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria.testcase-names	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria.testcase-names[]	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria[].name	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria[].area	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria[].category	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria[].priority	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria[].priority[]	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria[].tags	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria[].tags[]	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria[].testcase-name	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria[].testcase-names	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.criteria[].testcase-names[]	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.name	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.testcase-name	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.testcase-names	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.testcase-names[]	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.pip-pre-install	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.pip-pre-install[]	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.pip-extras	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.pip-extras[]	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.extra-args	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.lisa.extra-args[]	canonical	test-profile	tests.md#lisa-fields	-
+tests.<key>.tmt.plan	canonical	test-profile	tests.md#tmt-fields	-
+tests.<key>.tmt.source	canonical	test-profile	tests.md#tmt-fields	-
+tests.<key>.tmt.source.git-url	canonical	test-profile	tests.md#tmt-fields	-
+tests.<key>.tmt.source.ref	canonical	test-profile	tests.md#tmt-fields	-
+tests.<key>.lisa.test-cases	replaced	excluded/noncanonical-spelling	compatibility.md#excluded-deferred-and-compatibility-fields	rename to tests.<key>.lisa.testcase-names
+tests.<key>.lisa.test-cases[]	replaced	excluded/noncanonical-spelling	compatibility.md#excluded-deferred-and-compatibility-fields	rename to tests.<key>.lisa.testcase-names[]
+tests.<key>.lisa.test-suites	replaced	excluded/noncanonical-spelling	compatibility.md#excluded-deferred-and-compatibility-fields	use criteria or a canonical shorthand selector
+tests.<key>.lisa.test-suites[]	replaced	excluded/noncanonical-spelling	compatibility.md#excluded-deferred-and-compatibility-fields	use criteria or a canonical shorthand selector
+tests.<key>.lisa.framework	replaced	excluded/noncanonical-spelling	compatibility.md#excluded-deferred-and-compatibility-fields	rename to tests.<key>.lisa.source
+tests.<key>.lisa.framework.git-url	replaced	excluded/noncanonical-spelling	compatibility.md#excluded-deferred-and-compatibility-fields	move unchanged under tests.<key>.lisa.source
+tests.<key>.lisa.framework.ref	replaced	excluded/noncanonical-spelling	compatibility.md#excluded-deferred-and-compatibility-fields	move unchanged under tests.<key>.lisa.source

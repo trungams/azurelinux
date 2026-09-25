@@ -1,0 +1,12 @@
+format-version = 1
+document-kind = "resource-limits"
+input-bytes = 1048576
+expanded-bytes = 4194304
+entry-count = 1024
+file-bytes = 1048576
+path-bytes = 4096
+redirects = 10
+request-attempts = 1
+process-count = 8
+memory-bytes = 536870912
+execution-milliseconds = 300000

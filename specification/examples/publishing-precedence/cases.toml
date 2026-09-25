@@ -1,0 +1,107 @@
+produced = [
+  { name = "foo-libs", class = "ordinary", owner = "foo" },
+  { name = "foo-libs-debuginfo", class = "debuginfo", owner = "foo" },
+  { name = "foo-debugsource", class = "debugsource", owner = "foo" },
+  { name = "foo", class = "source", owner = "foo" },
+]
+
+groups = [
+  { name = "runtime", packages = ["foo-libs"] },
+  { name = "sources", packages = ["foo-debugsource"] },
+]
+
+exact-package-identities = ["foo-libs", "foo-debugsource"]
+
+[layers.project]
+rpm-channel = "project-rpm"
+debuginfo-channel = "project-debug"
+
+[layers.component]
+rpm-channel = "component-rpm"
+debuginfo-channel = "component-debug"
+srpm-channel = "component-source"
+
+[layers.package-group]
+rpm-channel = "group-rpm"
+debuginfo-channel = "group-debug"
+
+[layers.exact-package]
+rpm-channel = "exact-rpm"
+debuginfo-channel = "exact-debug"
+
+[expected]
+ordinary = "exact-rpm"
+debuginfo = "exact-debug"
+debugsource = "exact-debug"
+srpm = "component-source"
+
+[expected-without-exact]
+ordinary = "group-rpm"
+debuginfo = "group-debug"
+debugsource = "group-debug"
+srpm = "component-source"
+
+[[resolver]]
+name = "ordinary uses exact produced name"
+produced-name = "foo-libs"
+class = "ordinary"
+owning-component = "foo"
+expected-lookup = "foo-libs"
+expected-channel-leaf = "rpm-channel"
+
+[[resolver]]
+name = "debuginfo uses supplied ordinary identity"
+produced-name = "foo-libs-debuginfo"
+class = "debuginfo"
+owning-component = "foo"
+corresponding-ordinary = "foo-libs"
+expected-lookup = "foo-libs"
+expected-channel-leaf = "debuginfo-channel"
+
+[[resolver]]
+name = "debugsource uses exact produced name"
+produced-name = "foo-debugsource"
+class = "debugsource"
+owning-component = "foo"
+expected-lookup = "foo-debugsource"
+expected-channel-leaf = "debuginfo-channel"
+
+[[resolver]]
+name = "source uses component layer only"
+produced-name = "foo"
+class = "source"
+owning-component = "foo"
+expected-lookup = "none"
+expected-channel-leaf = "srpm-channel"
+
+[[invalid]]
+name = "binary package belongs to multiple package groups"
+groups = ["group-a", "group-b"]
+error = "multiple membership"
+
+[[invalid-resolver]]
+name = "missing owning component"
+produced-name = "foo-libs"
+class = "ordinary"
+owning-component = "missing"
+error = "missing produced package"
+
+[[invalid-resolver]]
+name = "missing corresponding ordinary identity"
+produced-name = "foo-libs-debuginfo"
+class = "debuginfo"
+owning-component = "foo"
+corresponding-ordinary = "missing"
+error = "missing corresponding ordinary"
+
+[[invalid-resolver]]
+name = "ambiguous corresponding ordinary identity"
+produced-name = "foo-libs-debuginfo"
+class = "debuginfo"
+owning-component = "foo"
+corresponding-ordinary = "foo-duplicate"
+additional-produced = [
+  { name = "foo-duplicate", class = "ordinary", owner = "foo" },
+  { name = "foo-duplicate", class = "ordinary", owner = "foo" },
+]
+error = "ambiguous corresponding ordinary"

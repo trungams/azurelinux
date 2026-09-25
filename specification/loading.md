@@ -22,11 +22,11 @@ points, or use another locale-dependent decoding. U+FFFD is an ordinary scalar
 only when that scalar is present in the original host name.
 
 If any entry returned by a directory enumeration cannot be converted under
-this rule, that root discovery or include expansion is an error. The processor
-MUST NOT ignore the entry as unmatchable. This deliberately means that an
-otherwise unrelated undecodable name in a directory that must be completely
-enumerated makes the operation fail rather than making its result
-host-API-dependent.
+this rule, that root discovery, literal-segment lookup, or pattern expansion is
+an error. The processor MUST NOT ignore the entry as unmatchable. This
+deliberately means that an otherwise unrelated undecodable name in a directory
+that must be completely enumerated makes the operation fail rather than making
+its result host-API-dependent.
 
 After conversion, every directory enumeration and glob candidate set MUST
 exclude entries whose complete name is `.` or `..`, whether or not the host API
@@ -102,6 +102,108 @@ Two byte-identical project trees loaded from different checkout roots have
 equal source provenance when their source-document identities and defining path
 bases are equal. Converting a path for host operations MUST NOT replace or
 discard that relocatable semantic provenance.
+
+## Portable relative model paths
+
+Every ordinary path-valued model field that cites this section uses the same
+host-independent grammar. The owning field supplies only its path base and
+target-kind requirement, such as regular file, executable regular file, or
+directory.
+
+```text
+model-path = model-segment ("/" model-segment)*
+model-segment = model-character+
+```
+
+A `model-character` is one Unicode scalar value other than U+0000, `/`, `\`,
+`:`, a C0 control U+0001 through U+001F, or U+007F. `/` is the only separator.
+The decoded value MUST be non-empty and cannot contain an empty segment, so a
+leading `/`, trailing `/`, or `//` is an error. A backslash is neither a
+separator nor a filename character and is always an error.
+
+Before segment processing, a processor MUST explicitly reject POSIX-rooted
+forms, strings beginning with `\` including UNC-like forms, an ASCII letter
+followed by `:` including drive-relative and drive-qualified forms, and a
+URI-like prefix matching `[A-Za-z][A-Za-z0-9+.-]*:`. The general prohibition on
+`:` also rejects such spellings elsewhere rather than treating them
+host-specifically. These checks are lexical and occur before any host lookup.
+
+A complete segment `.` or `..` is structural navigation, not a host entry
+name. Starting from the field's normalized semantic path base, process
+segments left to right: `.` leaves the current path unchanged, `..` removes
+one existing segment, and another segment appends its exact scalar sequence.
+Attempting `..` when no project-relative segment remains is a lexical
+containment error, even if later segments would return beneath the project
+root. The resulting **normalized lexical form** is `.` for the project root or
+the remaining segments joined by `/`; it contains no empty, `.`, or `..`
+segment.
+
+For a project-file lookup, every ordinary literal segment MUST be selected by
+completely enumerating its containing directory through the
+[host filesystem name adapter](#host-filesystem-name-adapter). The processor
+MUST convert every entry returned by that complete enumeration before
+selection; one unconvertible entry is fatal even when it is unrelated to the
+requested segment. Only after the complete enumeration succeeds may the
+processor select the one entry whose scalar-value sequence exactly equals the
+requested segment. A direct by-name host lookup that avoids observing sibling
+entries is not conforming.
+
+After each selected segment, resolve every traversed symbolic link and require
+every canonicalized prefix and the final target to remain within the canonical
+project root by path-boundary comparison. Structural `.` and `..` perform the
+lexical navigation above rather than entry lookup, but the resulting prefix is
+still canonicalized and checked before the next ordinary segment. The final
+target MUST have the kind required by the owning field. A missing entry, wrong
+target kind, symlink loop, decoding failure in any complete containing-directory
+enumeration, permission failure, I/O failure, or lexical or canonical escape is
+an error.
+
+The **normalized semantic form** of a successful project-file path is the
+canonical target's project-relative scalar-value path with `/` separators, or
+`.` when the target is the project root. It contains no empty, `.`, or `..`
+segment and is compared without Unicode normalization, case folding, locale
+collation, or host-equivalent spelling. The original value, normalized
+semantic form, defining source-document identity, and defining path base remain
+available as provenance. A field interpreted in a later non-project namespace,
+such as a materialized-tree path, uses the same lexical normalization but its
+own chapter defines target lookup and canonical containment.
+
+The [portable path fixture](./examples/portable-paths/README.md) contains exact
+positive normalizations and lexical rejection cases.
+
+### Portable relative-path pattern syntax
+
+A field declared as a relative path pattern extends the model-path grammar
+with the `*`, `?`, and `character-class` tokens and same-category ASCII range
+rules from [Include-entry and glob grammar](#include-entry-and-glob-grammar).
+A complete segment spelled exactly `**` is additionally allowed and matches
+zero or more complete directory segments. `**` inside another segment and any
+run of three or more `*` are errors. Complete literal `.` and `..` segments
+remain structural navigation and are normalized by the model-path rules before
+any namespace lookup.
+
+This section defines namespace-neutral lexical syntax and normalization only.
+It does not select a filesystem namespace, require that a target currently
+exist, enumerate a tree, follow or reject a symbolic link, or define canonical
+containment. An owning field that operates in the project tree MUST also import
+the traversal contract below. A field in another namespace imports this
+lexical contract alone until that namespace's owning chapter defines lookup.
+This lexical contract does not impose a filename suffix.
+
+### Project-tree pattern traversal
+
+For an owning field that imports this section, pattern traversal starts from
+the field's project-tree path base. It uses the host filesystem name adapter,
+never follows a symbolic link as a directory, excludes `.` and `..`
+pseudoentries, enforces lexical and canonical project-root containment at every
+step, and sorts each successful match set by normalized semantic path UTF-8
+bytes. Every directory used for a literal segment or pattern match is
+completely enumerated, and an unconvertible entry makes the complete expansion
+an error. Failures are typed errors and never partial matches.
+
+The owning field defines the accepted final target kind and whether a
+successful zero-match result is allowed. Project-tree traversal does not
+impose a filename suffix.
 
 ## The `includes` directive
 
@@ -271,17 +373,19 @@ processed in declaration order.
 
 ## Traversal order
 
-For an include graph without a repeated canonical-document reach, the
-composition sequence is constructed as follows:
+The composition sequence is constructed as follows:
 
 ```text
 reach(candidate, expected-role):
     canonicalize the candidate and enforce project-root containment
     if its canonical identity is in the active chain: report a cycle
-    if its canonical identity was reached before: classify a repeated reach
+    if its canonical identity was evaluated before:
+        record the incoming reach as additional provenance
+        reuse the cached source model and return
     otherwise mark it reached and active
     perform byte, expected-role, document-control, and source-model validation
-    record the newly reached document body
+    cache the validated source model
+    record its body once at this first depth-first position
     for include entry in declaration order:
         expand the entry
         sort matches by normalized project-relative path
@@ -299,9 +403,10 @@ a fragment would also find the forbidden root-table `spec-version`.
 
 A previously reached target is classified under
 [Cycles and repeated reaches](#cycles-and-repeated-reaches) without
-revalidating it as a new source document. This ordering does not decide whether
-that already validated source model will eventually contribute once or once
-per reach under OD-1.
+revalidating it as a new source document, traversing its includes again, or
+adding its body to the composition sequence again. The processor reuses the
+cached validated source model and records the additional incoming reach only
+as provenance.
 
 The including document body precedes every body reached from its `includes`
 array. Each include subtree is completed depth-first before the next match or
@@ -330,17 +435,18 @@ recursion chain. It is not a cycle. This category includes:
 A processor MUST distinguish an active-chain cycle from every repeated reach
 and MUST NOT diagnose a repeated reach as cyclic.
 
-**Future class prerequisite (normative):** If a later revision enables
-Loading/composed-model or a later class before OD-1 is closed, that class's
-claim boundary MUST exclude every input containing a repeated
-canonical-document reach. An implementation MAY expose experimental behavior
-only if it reports that the input is outside the enabled conformance claim and
-identifies the behavior selected. No conformance class is currently claimable.
+Each canonical document MUST be evaluated exactly once, at its first
+deterministic depth-first traversal position. That evaluation includes byte
+loading, source-document validation, one composition contribution, and one
+depth-first traversal of its outgoing includes. Every later non-active-chain
+reach MUST reuse that cached source model, MUST NOT contribute the document
+body or its outgoing include subtree again, and MUST add the incoming parent,
+include entry, matched spelling, and canonical target identity to the
+document's reach provenance.
 
-**Open question (non-normative):**
-[OD-1](./open-decisions.md#od-1-repeated-canonical-document-evaluation) will
-choose whether a repeated document contributes once by canonical identity or
-once per reach. This revision does not choose either behavior.
+The first reach remains the supplier position for every value contributed by
+the document. Later reach provenance records graph connectivity only and do
+not change value precedence, array order, diagnostics ownership, or path bases.
 
 ## Composition sequence
 
@@ -386,11 +492,12 @@ stating the exception explicitly. The exception MUST define:
 - the meaning of an explicit empty value; and
 - provenance of the resulting value.
 
-Ordered overlay-operation sequences are an approved append-composed category
-whose exact field paths and clearing behavior will be defined with the overlay
-contracts. For an append-composed array, earlier elements precede later
-elements and relative order within each source array is retained. No other
-array is append-composed unless its field contract says so.
+`ComponentConfig.overlays` is the defined append-composed exception. Its exact
+integration and clearing behavior are specified in
+[Overlay integration](./overlays.md#overlay-sequences-and-files). For an
+append-composed array, earlier elements precede later elements and relative
+order within each source array is retained. No other array is append-composed
+unless its field contract says so.
 
 An implementation MUST NOT infer append behavior from current tool behavior,
 from an array's element type, or from physical key order.
@@ -410,8 +517,9 @@ contain identically named keys at non-control paths.
 
 The tracked [loading fixture](./examples/loading/README.md) uses only
 document-control keys. It demonstrates recursive path bases, depth-first
-traversal, lexical glob ordering, and a missing optional glob without depending
-on the object-field contracts completed in later slices.
+traversal, lexical glob ordering, and a missing optional glob. It is a
+loading-only metasyntactic fixture rather than a conforming object-model
+document.
 
 Additional metasyntactic fixtures cover the
 [include lexical grammar](./examples/include-lexical/README.md),

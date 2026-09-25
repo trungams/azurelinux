@@ -1,0 +1,7 @@
+format-version = 1
+document-kind = "resolved-model"
+output-class = "Resolved-model"
+input-kind = "composed-model"
+input = "input:inputs/composed-model.toml"
+target-distro = "azurelinux"
+target-version = "3.0"

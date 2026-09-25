@@ -1,0 +1,140 @@
+[[valid]]
+name = "representative recursive model URI"
+base-uri = "https://mirror.example.invalid/fedora/43/"
+subpath = "Everything/$basearch/os"
+basearch = "x86_64"
+releasever = "43"
+expected = "https://mirror.example.invalid/fedora/43/Everything/x86_64/os"
+
+[[valid]]
+name = "placeholder values remain one encoded segment"
+base-uri = "https://mirror.example.invalid/root/"
+subpath = "repos/$releasever/$basearch"
+basearch = "x86_64/debug"
+releasever = "43 preview"
+expected = "https://mirror.example.invalid/root/repos/43%20preview/x86_64%2Fdebug"
+
+[[invalid]]
+name = "base URI lacks directory slash"
+base-uri = "https://mirror.example.invalid/fedora/43"
+subpath = "Everything/$basearch/os"
+basearch = "x86_64"
+releasever = "43"
+error = "noncanonical base URI"
+
+[[invalid]]
+name = "unknown placeholder remains"
+base-uri = "https://mirror.example.invalid/fedora/43/"
+subpath = "Everything/$arch/os"
+basearch = "x86_64"
+releasever = "43"
+error = "unknown placeholder"
+
+[[invalid]]
+name = "subpath traversal"
+base-uri = "https://mirror.example.invalid/fedora/43/"
+subpath = "../escape"
+basearch = "x86_64"
+releasever = "43"
+error = "invalid segment"
+
+[[invalid]]
+name = "lowercase percent escape in base URI"
+base-uri = "https://mirror.example.invalid/fedora/%c3%a9/"
+subpath = "Everything"
+basearch = "x86_64"
+releasever = "43"
+error = "noncanonical base URI"
+
+[[invalid]]
+name = "unreserved byte is unnecessarily escaped"
+base-uri = "https://mirror.example.invalid/fedora/%7E/"
+subpath = "Everything"
+basearch = "x86_64"
+releasever = "43"
+error = "noncanonical base URI"
+
+[[template-valid]]
+name = "direct path and query values encode reserved bytes"
+kind = "direct"
+template = "https://mirror.example.invalid/repos/$releasever/$basearch/$$repo?label=$releasever"
+basearch = "x86_64+v2"
+releasever = "43/preview"
+expected = "https://mirror.example.invalid/repos/43%2Fpreview/x86_64%2Bv2/%24repo?label=43%2Fpreview"
+
+[[template-valid]]
+name = "direct simultaneous substitution does not rescan values"
+kind = "direct"
+template = "https://mirror.example.invalid/$releasever/$basearch"
+basearch = "aarch64"
+releasever = "$basearch/é"
+expected = "https://mirror.example.invalid/%24basearch%2F%C3%A9/aarch64"
+
+[[template-valid]]
+name = "direct metalink retains canonical existing escape"
+kind = "direct"
+template = "https://meta.example.invalid/list/%2B?release=$releasever&arch=$basearch"
+basearch = "x86_64/debug"
+releasever = "43 preview"
+expected = "https://meta.example.invalid/list/%2B?release=43%20preview&arch=x86_64%2Fdebug"
+
+[[template-valid]]
+name = "legacy uses the same release substitution"
+kind = "legacy"
+template = "https://legacy.example.invalid/os/$releasever/$$repo"
+basearch = "s390x"
+releasever = "43/preview"
+expected = "https://legacy.example.invalid/os/43%2Fpreview/%24repo"
+
+[[template-invalid]]
+name = "unknown direct placeholder"
+kind = "direct"
+template = "https://mirror.example.invalid/$arch/os"
+basearch = "x86_64"
+releasever = "43"
+error = "unknown placeholder"
+
+[[template-invalid]]
+name = "legacy forbids basearch"
+kind = "legacy"
+template = "https://legacy.example.invalid/$basearch/os"
+releasever = "43"
+error = "forbidden placeholder"
+
+[[template-invalid]]
+name = "placeholder in authority"
+kind = "direct"
+template = "https://$basearch.example.invalid/os"
+basearch = "x86_64"
+releasever = "43"
+error = "path or query"
+
+[[template-invalid]]
+name = "lowercase existing escape"
+kind = "direct"
+template = "https://mirror.example.invalid/%2b/$releasever"
+basearch = "x86_64"
+releasever = "43"
+error = "percent escape"
+
+[[template-invalid]]
+name = "escaped unreserved byte"
+kind = "direct"
+template = "https://mirror.example.invalid/%7E/$releasever"
+basearch = "x86_64"
+releasever = "43"
+error = "percent escape"
+
+[[template-operation]]
+name = "selected direct operation without basearch is unsupported"
+kind = "direct"
+template = "https://mirror.example.invalid/$releasever/$basearch/os"
+releasever = "43"
+expected = "unsupported-operation"
+
+[[template-operation]]
+name = "selected direct operation without unused basearch is unsupported"
+kind = "direct"
+template = "https://mirror.example.invalid/$releasever/os"
+releasever = "43"
+expected = "unsupported-operation"

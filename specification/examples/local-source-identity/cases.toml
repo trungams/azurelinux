@@ -1,0 +1,66 @@
+root = "components/naïve"
+expected = "sha256:57732d25eddb56e2b21a43a4ffbc694bb7a5e50a375d8818255e39add967f0e7"
+
+[[entries]]
+path = "empty"
+type = "file"
+executable = false
+content-hex = ""
+
+[[entries]]
+path = "link"
+type = "symlink"
+target = "run.sh"
+
+[[entries]]
+path = "pkg.spec"
+type = "file"
+executable = false
+content-hex = "4e616d653a20706b670a"
+
+[[entries]]
+path = "run.sh"
+type = "file"
+executable = true
+content-hex = "23212f62696e2f73680a"
+
+[[entries]]
+path = "données.txt"
+type = "file"
+executable = false
+content-hex = "636166c3a90a"
+
+[[invalid]]
+name = "entry path escapes the traversal root"
+path = "../escape"
+type = "file"
+error = "invalid path"
+
+[[invalid]]
+name = "unsupported filesystem type"
+path = "pipe"
+type = "fifo"
+error = "unsupported type"
+
+[[invalid]]
+name = "symlink target escapes the traversal root"
+path = "outside"
+type = "symlink"
+target = "../../outside"
+error = "escaping symlink"
+
+[[invalid]]
+name = "duplicate entry path"
+paths = ["same", "same"]
+type = "duplicate"
+error = "duplicate path"
+
+[[empty-directory-identity]]
+name = "baseline tree has no empty directories"
+directories = []
+expected = "sha256:57732d25eddb56e2b21a43a4ffbc694bb7a5e50a375d8818255e39add967f0e7"
+
+[[empty-directory-identity]]
+name = "adding empty directories preserves version-1 identity"
+directories = ["empty-dir", "nested/also-empty"]
+expected = "sha256:57732d25eddb56e2b21a43a4ffbc694bb7a5e50a375d8818255e39add967f0e7"

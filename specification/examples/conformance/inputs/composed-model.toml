@@ -1,0 +1,6 @@
+format-version = 1
+document-kind = "composed-model"
+output-class = "Loading/composed-model"
+project-root = "input:inputs/project-root.manifest.toml"
+root-document = "input:inputs/document-target.toml"
+ordered-document-reaches = ["input:inputs/document-target.toml"]

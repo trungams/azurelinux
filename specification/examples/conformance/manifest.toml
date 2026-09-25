@@ -1,0 +1,271 @@
+format-version = 1
+fixture-id = "slice4-format-example"
+spec-version = "0.1"
+description = "Representative non-claimable conformance fixture manifest"
+claimable = false
+blocked-by = ["S3-R4-001", "S3-R4-002", "OD-7"]
+suite-id = "slice4-draft-example"
+suite-version = "0"
+suite-classes = ["Source-document", "Loading/composed-model", "Resolved-model", "Materialized-tree"]
+
+[[inputs]]
+path = "inputs/source-root.toml"
+sha256 = "931847fba4ce0d176dd3c63f2ed83f14c0297b5b9f2d24ef4df02683738745d7"
+
+[[inputs]]
+path = "inputs/document-target.toml"
+sha256 = "62733c56a8b526e167c17fbc67697cc252f797a3515188e5206b0a9d54794ea9"
+
+[[inputs]]
+path = "inputs/project-root.manifest.toml"
+sha256 = "28ece6cc46c24c44a1492c7b6112e8c4c6117ea15110fc9c1a0f5a7231777286"
+
+[[inputs]]
+path = "inputs/composed-model.toml"
+sha256 = "6018638579d9b4433cd162b43234afa4fa349d58d819b613f69bcf90a4beaea9"
+
+[[inputs]]
+path = "inputs/resolved-model.toml"
+sha256 = "99259ca97c855925e3eb45fa950d0dc29c55b402687643b9c0b323902f954f0e"
+
+[[inputs]]
+path = "inputs/prior-class-output.toml"
+sha256 = "2689d3c7368f1987d9b5600666fe62bcbc3ffe83fcaf57cf7d69d6a999d51460"
+
+[[inputs]]
+path = "inputs/acquisition-inputs.toml"
+sha256 = "877479ce48581175da3394b44b53aaf55074eb86fb84e27c7b52f5c2b65982dd"
+
+[[inputs]]
+path = "inputs/transformation-inputs.toml"
+sha256 = "5606a34586d213a38c94d708219f998ed8a3a0e02da46ebaac35e5bdde8d5d0e"
+
+[[inputs]]
+path = "inputs/network-context.toml"
+sha256 = "89731b5a6f510bb7db8aaf60b75669cd3ac170d7c087132af68a63059ca258b9"
+
+[[inputs]]
+path = "inputs/trust-material.bin"
+sha256 = "fa82291ea485905ffdc5188460e3a4d2f222b08ccd60acae77180dbb043be790"
+
+[[inputs]]
+path = "inputs/resource-limits.toml"
+sha256 = "ee31fa921ce7db055220a1cf5699860155cfd0a08df997f16b872a312dc397ed"
+
+[[inputs]]
+path = "inputs/rpm-macro-context.toml"
+sha256 = "1bcb069fe1d0c2eba0fe6b2db0cd0b6e0287b9ee5372b18bc760169d70ad5d81"
+
+[[inputs]]
+path = "inputs/toolchain.manifest.toml"
+sha256 = "48457061c7e7a679d0575c499f0f1e90344ec95d4ba34c630e7839ea14427b76"
+
+[[inputs]]
+path = "inputs/package.manifest.toml"
+sha256 = "5cce4b8d61b69168d3f5feccaea76b3872331185d251a6985d86ffc169a20d52"
+
+[[inputs]]
+path = "expected/materialized.manifest"
+sha256 = "3e4859a525d6593ab868cd1d6cf1fa3b9a9bb8cb0301c82c8908e39e70c3b538"
+
+[[cases]]
+id = "ambient-projection-positive"
+kind = "positive"
+class = "Source-document"
+role = "producer"
+profile = "core"
+claimable = false
+blocked-by = []
+operation = "none"
+environment = {}
+expected-outcome = "success"
+
+[cases.case-input]
+class = "Source-document"
+document-role = "root"
+project-root = "input:inputs/project-root.manifest.toml"
+document-target = "input:inputs/document-target.toml"
+document-bytes = "input:inputs/source-root.toml"
+
+[[cases.environment-assertions]]
+row-id = "ENV-LOCALE"
+expectation = "fixed-rule"
+
+[[cases.environment-assertions]]
+row-id = "ENV-TIMEZONE"
+expectation = "fixed-rule"
+
+[[cases.environment-assertions]]
+row-id = "ENV-AMBIENT-WALL-CLOCK"
+expectation = "prohibited-unobserved"
+
+[[cases.environment-assertions]]
+row-id = "ENV-HOST-ARCHITECTURE"
+expectation = "prohibited-unobserved"
+
+[[cases.environment-assertions]]
+row-id = "ENV-UMASK"
+expectation = "fixed-rule"
+
+[[cases.expected-positive]]
+requirement = "determinism.md#locale-timezone-and-wall-clock"
+subject = "ambient-locale-time-independence"
+fact = "identical-projection"
+
+[[cases]]
+id = "loading-root-positive"
+kind = "positive"
+class = "Loading/composed-model"
+role = "producer"
+profile = "core"
+claimable = false
+blocked-by = []
+operation = "none"
+environment = {}
+expected-outcome = "success"
+
+[cases.case-input]
+class = "Loading/composed-model"
+project-root = "input:inputs/project-root.manifest.toml"
+root-document = "input:inputs/document-target.toml"
+
+[[cases.expected-positive]]
+requirement = "loading.md#root-discovery-and-project-root"
+subject = "fixture-project:azldev.toml"
+fact = "root-document-bound"
+
+[[cases]]
+id = "missing-rpm-architecture-negative"
+kind = "negative"
+class = "Resolved-model"
+role = "producer"
+profile = "rpm-build"
+claimable = false
+blocked-by = []
+operation = "rpm-build"
+expected-outcome = "error"
+
+[cases.case-input]
+class = "Resolved-model"
+model-input-kind = "composed-model"
+model-input = "input:inputs/composed-model.toml"
+environment-binding = "case-environment"
+
+[cases.environment]
+target-distro = "azurelinux"
+target-version = "3.0"
+evaluation-instant = 2026-09-24T00:00:00Z
+network-context = "input:inputs/network-context.toml"
+resource-limits = "input:inputs/resource-limits.toml"
+credential-references = ["credential-ref:lookaside"]
+rpm-macro-context = "input:inputs/rpm-macro-context.toml"
+toolchain-manifest = "input:inputs/toolchain.manifest.toml"
+package-manifest = "input:inputs/package.manifest.toml"
+
+[[cases.expected-diagnostics]]
+class = "unsupported-operation"
+validation-phase = "V-OPERATION"
+processing-phase = "rpm-build"
+requirement = "ENV-TARGET-ARCHITECTURE"
+subject = "environment.architecture"
+
+[[cases]]
+id = "resolved-target-leaf"
+kind = "resolved"
+class = "Resolved-model"
+role = "both"
+profile = "core"
+claimable = false
+blocked-by = []
+operation = "none"
+expected-outcome = "success"
+
+[cases.case-input]
+class = "Resolved-model"
+model-input-kind = "prior-class-output"
+model-input = "input:inputs/prior-class-output.toml"
+environment-binding = "case-environment"
+
+[cases.environment]
+target-distro = "azurelinux"
+target-version = "3.0"
+
+[[cases.environment-assertions]]
+row-id = "ENV-TARGET-DISTRO-VERSION"
+expectation = "explicit-bound"
+
+[[cases.expected-resolved]]
+path = "evaluation.target-distro"
+toml-type = "string"
+value-assignment = 'value = "azurelinux"'
+supplier = "operation-input"
+effective-object = "evaluation"
+
+[[cases.expected-resolved]]
+path = "evaluation.target-version"
+toml-type = "string"
+value-assignment = 'value = "3.0"'
+supplier = "operation-input"
+effective-object = "evaluation"
+
+[[cases]]
+id = "materialized-output-blocked"
+kind = "output"
+class = "Materialized-tree"
+role = "both"
+profile = "core"
+claimable = false
+blocked-by = ["S3-R4-001", "S3-R4-002", "OD-7"]
+operation = "none"
+processing-boundary = "MT-MATERIALIZE"
+expected-output-manifest = "input:expected/materialized.manifest"
+expected-outcome = "success"
+
+[cases.case-input]
+class = "Materialized-tree"
+model-input-kind = "resolved-model"
+model-input = "input:inputs/resolved-model.toml"
+environment-binding = "case-environment"
+acquisition-inputs = ["input:inputs/acquisition-inputs.toml"]
+transformation-inputs = ["input:inputs/transformation-inputs.toml"]
+
+[cases.environment]
+resource-limits = "input:inputs/resource-limits.toml"
+
+[[cases.environment-assertions]]
+row-id = "ENV-TARGET-ARCHITECTURE"
+expectation = "not-applicable"
+
+[[cases.expected-outputs]]
+path = "example.spec"
+type = "file"
+mode = "0644"
+sha256 = "496ad7e89943012959061d8c93752efeaa9dda20506ca785a78ccefc0cde775f"
+
+[[cases.expected-outputs]]
+path = "source.tar.gz"
+type = "file"
+mode = "0644"
+sha256 = "0c982986710a026635603031674053ca851fc0e3ea760094a34f59b84f7f6da6"
+
+[[cases.expected-outputs]]
+path = "sources"
+type = "file"
+mode = "0644"
+sha256 = "365b544d73ef0e89ef1d7de67bd5d29850fef951708acbc8a81e19c614dcadf1"
+
+[[cases.expected-outputs]]
+path = "scripts"
+type = "directory"
+mode = "0755"
+
+[[cases.expected-outputs]]
+path = "scripts/tool"
+type = "file"
+mode = "0755"
+sha256 = "a8076d3d28d21e02012b20eaf7dbf75409a6277134439025f282e368e3305abf"
+
+[[cases.expected-outputs]]
+path = "current"
+type = "symlink"
+target = "scripts/tool"

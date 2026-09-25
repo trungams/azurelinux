@@ -1,177 +1,177 @@
 [Return to index](./index.md)
 
-# Open decisions
+# Decision status and open decisions
 
 > **Non-normative review material.** This chapter records alternatives,
-> observable consequences, evidence, and recommendations. It does not define
+> resolutions, observable consequences, evidence, and recommendations. It does not define
 > `MUST`, `SHOULD`, or `MAY` requirements, even when those words appear while
 > describing another chapter. Normative chapters link here to make an
-> unresolved product decision visible.
+> unresolved product decision or the history of a resolved decision visible.
 
 ## OD-1: Repeated canonical-document evaluation
 
-**Question:** When one canonical fragment is reached a second or later time
-outside the active recursion chain, does its body contribute once by canonical
-identity or once per reach?
+**Status: resolved on 2026-09-24.**
 
-**Alternative A - once by canonical identity**
+Each canonical document is evaluated once at its first deterministic
+depth-first traversal position. Later non-cycle reaches reuse the cached
+validated source model, do not add another composition contribution or traverse
+the document's outgoing includes again, and add only incoming-reach
+provenance.
 
-- Prevents duplicate contribution from an accidentally repeated include.
-- Makes results depend on the first traversal position unless the graph is
-  linearized independently of traversal.
-- Requires a rule for which incoming edge supplies diagnostics and traversal
-  context.
-
-**Alternative B - once per reach**
-
-- Resembles textual inclusion and makes every declared or expanded reach
-  observable.
-- Can duplicate append-composed operation sequences.
-- Makes adding a second path to a shared defaults fragment change results even
-  when the fragment itself is unchanged.
-
-**Evidence:** The characterized azldev loader rejects a second visit when the
-lexically normalized absolute-path string is the same, including duplicate
-literals, overlapping matches that produce the same spelling, and non-cyclic
-multiple-parent sharing. It does not canonicalize symbolic links before using
-that string as identity, so rejection of two symlink aliases depends on their
-path spellings and is not guaranteed. The baseline draft recurses per include
-entry but does not identify the repeated-reach category.
-
-**Recommendation:** Prefer once-by-canonical-identity evaluation, with the
-node's contribution placed at its first deterministic traversal position and
-later incoming edges recorded only as provenance. This minimizes accidental
-duplicate operations. A fixture must still test whether first-position behavior
-is acceptable before this becomes normative.
+This prevents duplicate append-composed operations while retaining every graph
+edge for diagnostics. The normative rule and fixture are in
+[Loading](./loading.md#cycles-and-repeated-reaches).
 
 ## OD-2: Inheritance layer precedence
 
-**Question:** How do distro defaults, project defaults, component-group
-defaults, and direct component values produce one effective component?
+**Status: resolved on 2026-09-24.**
 
-**Alternative A - fixed layer order with structural merge**
+The fixed low-to-high order is selected distro-version defaults, top-level
+project defaults, the component-group aggregate, then direct component
+configuration. Each boundary uses typed composition and the explicit
+field-level exceptions defined by the owning chapter.
 
-- Gives every layer a documented precedence.
-- Supports partial defaults.
-- Requires field-specific exceptions for append-composed sequences and clear
-  operations.
-
-**Alternative B - first-present field lookup**
-
-- Is easy to explain for scalars.
-- Cannot naturally compose nested tables or ordered operations.
-- Matches the baseline prose but not the characterized implementation.
-
-**Alternative C - reject overlapping definitions across layers**
-
-- Avoids hidden precedence.
-- Makes reusable partial defaults substantially less useful.
-
-**Evidence:** For explicitly configured memberships, current azldev structurally
-merges distro defaults, project defaults, lexically ordered group defaults, and
-direct component values. A component discovered by multiple groups can instead
-receive map-iteration-dependent effective config, as recorded in
-[OD-3](#od-3-multiple-component-groups). The baseline draft describes
-first-present lookup with no inherited merge. The approved general composition
-direction uses recursive tables, scalar replacement, and array replacement
-unless a field explicitly opts into another rule.
-
-**Recommendation:** Use a fixed layer order with the same typed merge vocabulary
-as document composition, while defining each inheritance exception at the field
-contract. The actual layer order must be accepted together with the
-multiple-group decision rather than inferred from current azldev.
+This preserves reusable partial defaults while making direct configuration the
+highest-precedence source. The normative rule is in
+[Resolution](./resolution.md#component-inheritance-order).
 
 ## OD-3: Multiple component groups
 
-**Question:** When a component belongs to multiple groups, how are group
-defaults ordered and how are conflicts handled?
+**Status: resolved on 2026-09-25.**
 
-**Alternative A - lexical group-name order**
+Revision `0.1` defines neither lexical-name precedence nor a priority field.
+Several groups may contribute append-composed arrays or demonstrably disjoint
+table/map leaves. Repeated non-append leaves are destructive overlap errors,
+including equal values.
 
-- Is deterministic for explicit memberships.
-- Makes renaming a group change component behavior.
-- Matches part of current azldev but is not stable for all discovered
-  components.
-
-**Alternative B - explicit group priority**
-
-- Makes ordering intentional and reviewable.
-- Adds a field and requires tie behavior.
-
-**Alternative C - reject conflicting contributions**
-
-- Prevents hidden precedence and rename sensitivity.
-- Requires a precise definition of conflict and may reject useful composition
-  of disjoint fields.
-
-**Evidence:** Current explicit membership sorts group names lexically, while a
-component discovered by multiple groups can receive map-iteration-dependent
-effective config. The baseline draft also relies on lexical names.
-
-**Recommendation:** Require an explicit priority for ordered group composition,
-preserve declaration-independent ordering, and reject conflicting contributions
-at equal priority while allowing disjoint fields. This requires field and
-conflict definitions in Slice 2 before it can become normative.
+Group names are sorted by UTF-8 bytes only to construct the sequence of
+append-composed array elements; that ordering cannot select a winning scalar,
+replacing array, or map leaf. Explicit group priorities are deferred until a
+later revision has concrete use cases.
 
 ## OD-4: Canonical resolved-model serialization
 
-**Question:** What byte representation is used for exact resolved-model fixture
-comparison?
+**Status: resolved on 2026-09-25.**
 
-**Alternative A - canonical TOML**
+Revision `0.1` defines behavioral typed-object and materialized-tree identity,
+not canonical JSON, canonical TOML, another byte serialization, a semantic
+comparison algorithm, or a conformance tool. Resolved behavior covers typed
+values, object and reference identities, array order, immutable source
+identities, and semantic provenance. Materialized-tree behavior covers exact
+paths, entry types, file bytes, executable state, and symbolic-link targets.
 
-- Is familiar to document authors.
-- Poorly represents provenance and distinctions between explicit and
-  synthesized values.
-
-**Alternative B - schema-defined canonical JSON**
-
-- Has broad tooling support and straightforward object-key ordering.
-- Requires explicit encodings for TOML date/time types, path provenance, and
-  numeric constraints.
-
-**Alternative C - semantic comparison only**
-
-- Avoids a serialization design.
-- Makes portable fixtures and cross-implementation diffing harder.
-
-**Evidence:** The approved scope requires an exact canonical resolved
-representation, but neither the baseline nor current azldev defines one.
-
-**Recommendation:** Define a dedicated canonical JSON representation with
-sorted object keys, preserved array order, explicit tagged TOML temporal
-values, exact integer rules, and structured provenance. Prototype fixtures
-before standardizing it.
+Fixture metadata may select typed leaves or enumerate tree entries for review
+without becoming a standardized encoding.
 
 ## OD-5: Final core and profile assignment
 
-**Question:** Which characterized fields are required core and which belong to
-named optional profiles?
+**Status: resolved on 2026-09-24.**
 
-**Alternatives:** Put every current field in core; place independently optional
-domains in profiles; or exclude tool-specific behavior from the portable
-contract.
+Core covers document loading and composition, resolution, components, source
+acquisition, overlays, and materialized dist-git production. RPM build, images,
+tests, publishing, and executable custom-source generation are optional
+profiles. Repository resources are shared optional data for RPM-build and
+image operations. Their presence requires validation and preservation but does
+not select an operation. Tool configuration is tool-specific and outside the
+portable source-document vocabulary.
 
-**Evidence:** The field inventory identifies component construction and its
-required sources as core candidates, with images, tests, publishing, and
-executable custom-source generation independently optional. Resource inputs
-cross several workflows and need final assignment during the object-model
-slice.
+## OD-6: Overlay match cardinality
 
-**Recommendation:** Keep component construction and hash-verifiable source
-artifacts in core. Use named profiles for images, tests, publishing, and
-executable source generation. Decide resource ownership from the complete
-Slice 2 field contracts rather than from current file layout.
+**Question:** What should happen when operations intended to identify one RPM
+tag encounter duplicate matching tag lines?
 
-## Decisions assigned to later slices
+**Affected operations:** `spec-add-tag`, `spec-set-tag`, and
+`spec-update-tag`.
 
-The following approved questions remain open and are intentionally not resolved
-by Slice 1:
+**Alternative A - singleton-safe errors**
+
+- `spec-add-tag` succeeds only with zero matches.
+- `spec-set-tag` adds on zero, updates on one, and errors on several.
+- `spec-update-tag` requires exactly one.
+- Prevents silently treating malformed or conditionally duplicated singleton
+  tags as one arbitrary target.
+
+**Alternative B - all-match behavior**
+
+- `spec-add-tag` may append another instance.
+- Set/update may change every matching line.
+- Supports legitimate repeatable tags but can unexpectedly rewrite duplicate
+  singleton tags.
+
+**Alternative C - first-match behavior**
+
+- Set/update changes the first parsed match only.
+- Depends on source order and leaves other duplicates untouched.
+
+**Evidence:** Current documentation says `spec-add-tag` fails when the tag
+exists, while current runtime `AddTag` appends indiscriminately. Set/update
+comments describe the first instance, while the visitor currently continues
+and appears to update every matching instance. Repeatable tag families also
+make one global policy risky.
+
+**Recommendation and current containment:** Prefer explicit per-operation or
+per-tag multiplicity in a future semantic model. For the current low-level API,
+retain the normative provisional singleton-safe errors in
+[Overlay transformations](./overlays.md#spec-tag-operations). They make the
+present result deterministic without pretending the product decision is
+closed. `spec-insert-tag` and `spec-remove-tag` already define deliberate
+multi-instance behavior and are not gated by this question.
+
+## OD-7: Canonical transformed-archive bytes
+
+**Question:** Which exact tar headers, metadata, padding, compression
+parameters, and encoder versions produce portable byte-identical transformed
+archives?
+
+**Alternative A - one fully specified portable encoder**
+
+- Defines tar header format, field encodings, metadata, entry order, padding,
+  and compressor parameters for every supported compression.
+- Makes transformed archives independently reproducible.
+- Requires compatibility commitments for xz and zstd bitstreams or embedded
+  reference vectors.
+
+**Alternative B - semantic archive tree plus configured byte hash**
+
+- Defines one extracted-tree result and accepts an encoding only when its exact
+  bytes match the declared post-overlay hash.
+- Prevents incompatible successful output for one declaration.
+- Does not let a new implementation derive the expected bytes without a
+  compatible encoder.
+
+**Alternative C - restrict transformed archives**
+
+- Prohibits archive transformation until one canonical encoder is published,
+  or supports only a smaller format such as uncompressed tar.
+- Maximizes portability but drops current gzip/xz/zstd use cases.
+
+**Evidence:** Current azldev sorts entries, pins timestamps and ownership,
+normalizes gzip headers, and preserves content-detected compression. Exact xz
+and zstd bytes still depend on library behavior, and source archives can
+contain metadata or format variations without a published portable
+normalization contract.
+
+**Recommendation and current containment:** Retain Alternative B for this
+revision: the overlay chapter defines the semantic archive result and requires
+the configured post-overlay hash as the byte-level success gate. Portable
+transformed-archive byte claims and the Materialized-tree class remain
+prohibited. Before enabling them, publish one canonical encoder contract and
+cross-implementation vectors, or deliberately narrow supported formats.
+
+## Decisions assigned to later work
+
+The following approved questions remain open and are intentionally assigned to
+later work:
 
 | Decision | Owning slice |
 | --- | --- |
-| Environmental-input classification and defaults | Slice 4 |
-| Per-overlay match cardinality where evidence conflicts | Slice 3 |
-| Canonical transformed-archive bytes | Slice 3 |
-| Long-term version compatibility and deprecation | Later revision / Slice 4 placeholder |
+| Overlay match-cardinality closure (OD-6) | Human/product review |
+| Canonical transformed-archive bytes (OD-7) | Human/product review |
+| Long-term version compatibility and deprecation | Later revision |
 | Future semantic component-transformation model | Future specification revision |
+
+Environmental-input classification and defaults are no longer an open product
+decision. [Determinism](./determinism.md) and the tracked environmental-input
+matrix classify architecture, locale, timezone, wall clock, process
+environment, RPM macros, network context, toolchains, credentials, and
+resource limits.

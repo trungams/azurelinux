@@ -1,0 +1,2 @@
+spec-version = "0.1"
+includes = ["config/components/example.toml"]

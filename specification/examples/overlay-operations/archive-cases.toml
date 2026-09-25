@@ -1,0 +1,420 @@
+[[group-order]]
+name = "first archive occurrence orders groups"
+declared = [
+  { index = 0, archive = "b.tar.gz", type = "file-remove" },
+  { index = 1, archive = "a.tar.xz", type = "file-search-replace" },
+  { index = 2, archive = "b.tar.gz", type = "file-search-replace" },
+]
+expected-groups = [
+  { archive = "b.tar.gz", operation-indexes = [0, 2] },
+  { archive = "a.tar.xz", operation-indexes = [1] },
+]
+
+[[semantic-success]]
+name = "single wrapper directory selects inner root"
+archive = "pkg.tar.gz"
+entries = [
+  { path = "pkg-1.0", type = "directory", mode = "0755" },
+  { path = "pkg-1.0/remove.txt", type = "file", mode = "0644", content-hex = "78" },
+  { path = "pkg-1.0/config.txt", type = "file", mode = "0644", content-hex = "6f6c640a" },
+  { path = "pkg-1.0/dir/link", type = "symlink", target = "../config.txt" },
+]
+operations = [
+  { type = "file-remove", file = "remove.txt" },
+  { type = "file-search-replace", file = "config.txt", regex = "old", replacement = "new" },
+]
+expected-entries = [
+  { path = "pkg-1.0", type = "directory", mode = "0755", directory-origin = "explicit" },
+  { path = "pkg-1.0/config.txt", type = "file", mode = "0644", content-hex = "6e65770a" },
+  { path = "pkg-1.0/dir", type = "directory", mode = "0755", directory-origin = "synthesized-required" },
+  { path = "pkg-1.0/dir/link", type = "symlink", target = "../config.txt" },
+]
+
+[[semantic-success]]
+name = "missing directory headers synthesize required ancestors"
+archive = "pkg.tar"
+entries = [
+  { path = "pkg-2.0/sub/file.txt", type = "file", mode = "0644", content-hex = "646174610a" },
+]
+operations = []
+expected-extraction-root = "pkg-2.0"
+expected-entries = [
+  { path = "pkg-2.0", type = "directory", mode = "0755", directory-origin = "synthesized-required" },
+  { path = "pkg-2.0/sub", type = "directory", mode = "0755", directory-origin = "synthesized-required" },
+  { path = "pkg-2.0/sub/file.txt", type = "file", mode = "0644", content-hex = "646174610a" },
+]
+
+[[semantic-success]]
+name = "explicit empty directory remains distinct"
+archive = "pkg.tar"
+entries = [
+  { path = "pkg-3.0", type = "directory", mode = "0755" },
+  { path = "pkg-3.0/empty", type = "directory", mode = "0755" },
+  { path = "pkg-3.0/remove.txt", type = "file", mode = "0644", content-hex = "78" },
+]
+operations = [
+  { type = "file-remove", file = "remove.txt" },
+]
+expected-extraction-root = "pkg-3.0"
+expected-entries = [
+  { path = "pkg-3.0", type = "directory", mode = "0755", directory-origin = "explicit" },
+  { path = "pkg-3.0/empty", type = "directory", mode = "0755", directory-origin = "explicit" },
+]
+
+[[semantic-success]]
+name = "removing only descendant drops synthesized directory chain"
+archive = "pkg.tar"
+entries = [
+  { path = "pkg-4.0/sub/remove.txt", type = "file", mode = "0644", content-hex = "78" },
+]
+operations = [
+  { type = "file-remove", file = "sub/remove.txt" },
+]
+expected-extraction-root = "pkg-4.0"
+expected-entries = []
+
+[[metadata-success]]
+name = "per-entry PAX path and size override lower-precedence placeholders"
+records = [
+  { kind = "pax-global", fields = [{ key = "path", value = "global/ignored.txt" }] },
+  { kind = "gnu-long-name", value = "gnu/ignored.txt" },
+  { kind = "pax-local", fields = [
+    { key = "path", value = "pkg/effective.txt" },
+    { key = "size", value = "3" },
+  ] },
+  { kind = "entry", path = "/invalid-placeholder", type = "file", size = 99, mode = "0644", content-hex = "616263" },
+]
+expected-entries = [
+  { path = "pkg/effective.txt", type = "file", size = 3, mode = "0644", content-hex = "616263" },
+]
+
+[[metadata-success]]
+name = "per-entry PAX link overrides GNU global and base links"
+records = [
+  { kind = "pax-global", fields = [{ key = "linkpath", value = "/global-invalid" }] },
+  { kind = "gnu-long-link", value = "../../gnu-invalid" },
+  { kind = "pax-local", fields = [{ key = "linkpath", value = "../target" }] },
+  { kind = "entry", path = "pkg/dir/link", type = "symlink", target = "C:/base-invalid", size = 0 },
+]
+expected-entries = [
+  { path = "pkg/dir/link", type = "symlink", target = "../target", size = 0 },
+]
+
+[[metadata-invalid]]
+name = "duplicate per-entry PAX assignment conflicts"
+records = [
+  { kind = "pax-local", fields = [{ key = "path", value = "pkg/one" }] },
+  { kind = "pax-local", fields = [{ key = "path", value = "pkg/two" }] },
+  { kind = "entry", path = "placeholder", type = "file", size = 1, content-hex = "78" },
+]
+failure-category = "tar-metadata"
+error = "duplicate per-entry path assignment"
+
+[[metadata-invalid]]
+name = "metadata-derived path escapes"
+records = [
+  { kind = "pax-local", fields = [{ key = "path", value = "../escape" }] },
+  { kind = "entry", path = "placeholder", type = "file", size = 1, content-hex = "78" },
+]
+failure-category = "tar-metadata"
+error = "escaping effective metadata path"
+
+[[metadata-invalid]]
+name = "metadata-derived link escapes"
+records = [
+  { kind = "pax-local", fields = [{ key = "linkpath", value = "../../outside" }] },
+  { kind = "entry", path = "dir/link", type = "symlink", target = "inside", size = 0 },
+]
+failure-category = "tar-metadata"
+error = "escaping effective metadata link"
+
+[[metadata-invalid]]
+name = "metadata type effect is unsupported"
+records = [
+  { kind = "pax-local", fields = [{ key = "type", value = "symlink" }] },
+  { kind = "entry", path = "file", type = "file", size = 1, content-hex = "78" },
+]
+failure-category = "tar-metadata"
+error = "unsupported metadata key"
+
+[[raw-byte-success]]
+name = "USTAR prefix and name compose before UTF-8 path validation"
+compression = "tar"
+bytes-deflate-base64 = "eNpLy8xJ1SupKGGgITAAAjMTEzANBOg0EJgisYHihsbmZsYMCgYMdAClxSWJRUDri/Lz8QYCIXl0zxVkp+sXlyYxDHKQkliSyMUwCkbBKBgFo2CkAQCexRns"
+expected-entries = [
+  { path = "pkg/sub/file.txt", type = "file", size = 5, mode = "0644", content-hex = "646174610a" },
+]
+
+[[raw-byte-success]]
+name = "any executable bit classifies a regular file executable"
+compression = "tar"
+bytes-deflate-base64 = "eNpLyszTL8nPz2GgITAAAkMDAzBtgEkDJY0QbJC4oZGJiSGDggEDHUBpcUliEdD6ovz8EnzqCMmje26IAGVF/SRgEijO4GIYBaNgFIyCUTCCAAAsshgu"
+expected-entries = [
+  { path = "bin/tool", type = "file", size = 10, mode = "0755", content-hex = "23212f62696e2f73680a" },
+]
+
+[[raw-byte-success]]
+name = "GNU long name and link strip exactly one terminal NUL"
+compression = "tar"
+bytes-deflate-base64 = "eNrtlU0KwjAQRucoOUEySf+27u0lgg1tMTQlRqm3t0VQqLRujCidt8mQBIZheHxccLErXVeXbXeEOOCdpRNRJc96upcJ5gishC9wPgXtx/beubD27937fLg/4WL8Vdhx/6LXoeFhCEBsiN7qg2mcrYyP1mPyIU/TZf9Rzv1XUgJD8j86Aymwafgv5L9UL/mfZcD25H/8/XMxzl8biv1tUrVe2HjqP9QoimIl/2e1TFEpYKqtO+dNRf4TBEF8nhv1KGa7"
+expected-entries = [
+  { path = "very/long/path.txt", type = "file", size = 1, mode = "0644", content-hex = "78" },
+  { path = "dir/link", type = "symlink", size = 0, target = "../target" },
+]
+
+[[raw-pax-success]]
+name = "raw global and per-entry PAX precedence accepts opaque non-semantic values"
+compression = "tar"
+bytes-deflate-base64 = "eNrtmFFOgzAYx3nmFL0AUEqBzYTE6IMal2zJ4gEKdKwZlFnKMn31Ep7Pk1g2pwuL0YexzdlfSGh4IdD++v++jsjylpKUisqGDuVSPBl7ByoCjFd3RfsOXS/4HK+eu8jHyACZcQDqShKhXr+Pj9z+uD8CCsGcyGmU5WVMcodlvBQ0teVSmgiCQrKCRryUFrGaoYl8ME1FMiWiojK6Gw+tXs/vW66JEEjKolArKCrn5LGm1tvri2loTpzRCfgPg3DH/yAwwFL7373/wdr/+Sxz6GRCE8kWdKV/H1TsmUZesw/ULP3YBXhdxFRosc+FmFTUYnxBcpZ29Y4f8x97Lf9dHGADQO1/55A40RLo/D9u/mN3J/89X9f/h8DzQM74bFUD2LajrnUnsMkEnfTnjZpy53JQ8mygVsGR8h8i1M5/1OT/vfa/+/lfO8/rrotAjc7/7/wP8W7/j3X/f5D+3/3q/1MmnKYYaA7ztosC9YMyKk03BJuDv6vhzcNYlwbn0v/n3WX/r/xvj1X8u9AA6PrC6TyV/rn/Go3m//IOjTjqYg=="
+expected-entries = [
+  { path = "pkg/effective.txt", type = "file", size = 3, mode = "0644", content-hex = "616263" },
+  { path = "pkg/dir/link", type = "symlink", size = 0, target = "../target" },
+]
+
+[[raw-pax-success]]
+name = "raw empty global values delete semantic and opaque keys"
+compression = "tar"
+bytes-deflate-base64 = "eNrt1cEOgiAYwHHOPIVPoB+I1sV7R1/hs5gdRJvgRm8f1VbNDl3UVX6/C4yxMTb+o0S/03jQvY0h0a3rz2xyEORK3cZgPAKo9Dm/rguZpRsW1WwBg3XYh+OnuOTr5X6EhOiE7ljUTVdhk7RoNBdZtO+MCa+hsNpxRv5X+Q39S/Xef079L2F7z58L+Wiegl+RCq2OnXdznvGxfxCj/sP28P8D9T87TwkQQsgqXQDVo0+e"
+expected-entries = [
+  { path = "base.txt", type = "file", size = 1, mode = "0644", content-hex = "78" },
+]
+
+[[raw-pax-invalid]]
+name = "raw duplicate PAX key conflicts"
+bytes-deflate-base64 = "eNoLSKzwSE1MSS0q1jPQT80rKapkoDowAAIzExMwDQTotIGBMRIbJG5oZGpqwqBQwUAHUFpcklgEtJ4ankT23BABhkYKBYklGbb5ealcMHZJeT4XwygYESApsTiV1nYQzP8Ghmj5H1gkGDIoGIzmf5qDitEsMApGwSgYBSMSAAC+HS4e"
+failure-category = "tar-metadata"
+
+[[raw-pax-invalid]]
+name = "raw PAX record length and LF framing mismatch"
+bytes-deflate-base64 = "eNoLSKzwSE1MSS0q1jPQT80rKapkoDowAAIzExMwDQTotIGBkSGCDRI3NDI1NWFQqGCgAygtLkksAlpPDU8ie26IAEMzhYLEkgzbgux0/bTMnFQuhlEwkkBSYnEqre0gmP8N0PO/gYGxIYOCwWj+pzmoGM0Co2AUjIJRMCIBAPzILCA="
+failure-category = "tar-metadata"
+
+[[raw-pax-invalid]]
+name = "raw hdrcharset cannot authorize invalid UTF-8 opaque value"
+bytes-deflate-base64 = "eNrt1jEOwiAUgGFmT8EFUKCgdeiuk008AS3ELrUJYIKnV+yiqYNLMRret0BYXgj5E2oVdkZpY92SrszZ2yuaHY3WQoxrNF0pLdhz/zhnXBYC4RP6govzysbxc1zy9XJ/gkvcadt2yjrjq/3xQMpSbglbIJCD+hf65+/9y9h/gP6TYxvcDn0fX75qlCY36D4vjXIm9YyP/dNp/+OXAFPoP7kACQAAQJbuqehJng=="
+failure-category = "tar-metadata"
+
+[[raw-pax-invalid]]
+name = "raw effective PAX path escapes"
+bytes-deflate-base64 = "eNoLSKzwSE1MSS0q1jPQT80rKapkoDowAAIzExMwDQTotIGBkRGCDRI3NDI1NWVQqGCgAygtLkksAlpPDU8ie26IAEMLhYLEkgxbPT391OLkxIJULoZRMIJAUmJxKq3tIJj/DQzR8r+BgbEhg4LBaP6nOagYzQKjYBSMglEwIgEAUwcsDw=="
+failure-category = "tar-metadata"
+
+[[raw-pax-invalid]]
+name = "raw effective PAX link escapes"
+bytes-deflate-base64 = "eNoLSKzwSE1MSS0q1jPQT80rKapkoDowAAIzExMwDQTotIGBsRGCDRI3NDI1NWNQqGCgAygtLkksAlpPDU8ie26IACMzhZzMvOyCxJIMWz09fSDKLy0pzkxJ5WIYBSMApGQW6YMSAC3tIJj/0dmGRgZG5gwKRpl5oJQ4mv9HwSgYBaOABgAA0awyYg=="
+failure-category = "tar-metadata"
+
+[[raw-pax-invalid]]
+name = "raw empty per-entry opaque value is rejected"
+bytes-deflate-base64 = "eNoLSKzwSE1MSS0q1jPQT80rKapkoDowAAIzExMwDQTotIGBoQmCDRI3NDI1NWNQqGCgAygtLkksAlpPDU8ie26IAEMjheT83FxgzNtyMYyCEQeSEotTaW0HwfxvYIiW/w0MjA0ZFAxG8z/NQcVoFhgFo2AUjIIRCQAr9CpV"
+failure-category = "tar-metadata"
+
+[[raw-byte-invalid]]
+name = "header checksum mismatch is rejected"
+bytes-deflate-base64 = "eNpLz8xJ1SupKGGgITAAAjMTEzANBOg0EJgisYHihsbmZsYMCgYMdAClxSWJRUDri/Lz8QYCIXl0zxVkp+sXlyYxDHKQkliSyMUwCkbBKBgFo2CkAQCmxRnt"
+failure-category = "tar-checksum"
+
+[[raw-byte-invalid]]
+name = "GNU long name without terminal NUL is rejected"
+bytes-deflate-base64 = "eNrT09fTd/DJz0v3yczLZqANMIAAXLSBgZERgg0SNzQ2MDVnUPBhoAMoLS5JLAJaX5SfX4JPHSF5dM8NEVCWWlSpnwOMf/2CxJIMvZKKEoZRMIJAQU5icmpGfk5KahHN7ADlBzMTE9z538AQPf8bGRoyKBiM5n+ag4rRLDAKRsEoGAUjEgAAHJo02A=="
+failure-category = "tar-metadata"
+
+[[raw-byte-invalid]]
+name = "one zero block is not a complete tar end marker"
+bytes-deflate-base64 = "eNpLy8xJ1SupKGGgITAAAjMTEzANBOg0EJgisYHihsbmZsYMCgYMdAClxSWJRUDri/Lz8QYCIXl0zxVkp+sXlyYxDHKQkliSyMUwCkbBKBiJAADDuRns"
+failure-category = "tar-eof"
+
+[[raw-byte-invalid]]
+name = "decompressed bytes after the two-block marker are rejected"
+bytes-deflate-base64 = "eNpLy8xJ1SupKGGgITAAAjMTEzANBOg0EJgisYHihsbmZsYMCgYMdAClxSWJRUDri/Lz8QYCIXl0zxVkp+sXlyYxDHKQkliSyMUwCkbBKBgFo2DEAQC4sRns"
+failure-category = "tar-eof"
+
+[[raw-byte-success]]
+name = "gzip single frame decodes to exact tar bytes"
+compression = "gzip"
+bytes-deflate-base64 = "eNqT7+ZgAAEmZu0Tftf9T5/xvKq9UiNxgaABA5OxsLABL8uLLY2NikLSKnkZOSlJpxYkHHBgD4iKmRTBsmWfhr18PoPAJPfvdwQYWTunWv7s1IzhWZwg0tMUaMDlJsLAYBbAc44BaAEAbDcfoA=="
+expected-entries = [
+  { path = "pkg/file.txt", type = "file", size = 8, mode = "0644", content-hex = "7061796c6f61640a" },
+]
+
+[[raw-byte-invalid]]
+name = "gzip trailing compressed byte is rejected"
+bytes-deflate-base64 = "eNqT7+ZgAAEmZu0Tftf9T5/xvKq9UiNxgaABA5OxsLABL8uLLY2NikLSKnkZOSlJpxYkHHBgD4iKmRTBsmWfhr18PoPAJPfvdwQYWTunWv7s1IzhWZwg0tMUaMDlJsLAYBbAc44BZAEAi9cfoA=="
+failure-category = "compression-framing"
+
+[[raw-byte-invalid]]
+name = "gzip concatenated members or frames are rejected"
+bytes-deflate-base64 = "eNqT7+ZgAAEmZu0Tftf9T5/xvKq9UiNxgaABA5OxsLABL8uLLY2NikLSKnkZOSlJpxYkHHBgD4iKmRTBsmWfhr18PoPAJPfvdwQYWTunWv7s1IzhWZwg0tMUaMDlJsLAYBbAc44BaIE8XWwBAHKLPz8="
+failure-category = "compression-framing"
+
+[[raw-byte-success]]
+name = "xz single frame decodes to exact tar bytes"
+compression = "xz"
+bytes-deflate-base64 = "eNoBmABn//03elhaAAAE5ta0RgIAIQEWAAAAdC/lo+AH/wBXXQA4GskVnD2VAkYaRBU/fyKDKtR2xMtrkmIB5Pc+ocPWxlntkFC2DJMAg7VMFa0PDDERxs69F7k65ll+3PEmykAzQiKjOpqjZ9SJKAtUSwvJC685d5BznQAAAM1xIBma3l07AAFzgBAAAAC/TByvscRn+wIAAAAABFlai4w5mw=="
+expected-entries = [
+  { path = "pkg/file.txt", type = "file", size = 8, mode = "0644", content-hex = "7061796c6f61640a" },
+]
+
+[[raw-byte-invalid]]
+name = "xz trailing compressed byte is rejected"
+bytes-deflate-base64 = "eNoBmQBm//03elhaAAAE5ta0RgIAIQEWAAAAdC/lo+AH/wBXXQA4GskVnD2VAkYaRBU/fyKDKtR2xMtrkmIB5Pc+ocPWxlntkFC2DJMAg7VMFa0PDDERxs69F7k65ll+3PEmykAzQiKjOpqjZ9SJKAtUSwvJC685d5BznQAAAM1xIBma3l07AAFzgBAAAAC/TByvscRn+wIAAAAABFlaAMUnOZs="
+failure-category = "compression-framing"
+
+[[raw-byte-invalid]]
+name = "xz concatenated members or frames are rejected"
+bytes-deflate-base64 = "eNr7a14VEcXAwPLs2hY3JgZFRjEGBoYS/aeLH7D/ZwiPZbCQOik6x3Yqk5uUi6h9vVKz1pWyI6ezJyUxPvlut/DwtWORbycEbOOZzNC81Ud0LT+PoeCxc3vFd1o9i6y781HtlIOxk9Jiq1mL0690anCHeHOf5F5vWT6heC7QjrOFCpKz7sVaMzAWNwgA+ft9ZNZvPJL+mwnIZmCJjPo7SN0FAEyVczU="
+failure-category = "compression-framing"
+
+[[raw-byte-success]]
+name = "zstd single frame decodes to exact tar bytes"
+compression = "zstd"
+bytes-deflate-base64 = "eNrT2Kr/lyWClZkhhbkgO10/LTMnVa+kooTBAAjMTExAlIGhobGRiSmDgkFpcUliEVCqKD+/pCCxMic/MYVLgOFuo7wD+4IELl+tBLY1LxkSTuxluMBpJNE50+YKh3k3Y8GaGDbfB9xuzsv1ANTfIfI="
+expected-entries = [
+  { path = "pkg/file.txt", type = "file", size = 8, mode = "0644", content-hex = "7061796c6f61640a" },
+]
+
+[[raw-byte-invalid]]
+name = "zstd trailing compressed byte is rejected"
+bytes-deflate-base64 = "eNrT2Kr/lyWClZkhhbkgO10/LTMnVa+kooTBAAjMTExAlIGhobGRiSmDgkFpcUliEVCqKD+/pCCxMic/MYVLgOFuo7wD+4IELl+tBLY1LxkSTuxluMBpJNE50+YKh3k3Y8GaGDbfB9xuzsv1GAD20SHy"
+failure-category = "compression-framing"
+
+[[raw-byte-invalid]]
+name = "zstd concatenated members or frames are rejected"
+bytes-deflate-base64 = "eNrT2Kr/lyWClZkhhbkgO10/LTMnVa+kooTBAAjMTExAlIGhobGRiSmDgkFpcUliEVCqKD+/pCCxMic/MYVLgOFuo7wD+4IELl+tBLY1LxkSTuxluMBpJNE50+YKh3k3Y8GaGDbfB9xuzsv1NOhpGQAeS0Pj"
+failure-category = "compression-framing"
+
+[[association-success]]
+name = "configured post-overlay digest controls success"
+archive = "pkg.tar.gz"
+upstream-record = { hash-type = "MD5", hash = "0123456789abcdef0123456789abcdef" }
+overlay-origin = { filename = "pkg.tar.gz", hash-type = "SHA512", hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", replace-upstream = true, replace-reason = "record transformed bytes" }
+archive-operation-count = 2
+computed-hash-type = "SHA512"
+computed-hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+expected-sources-record = "SHA512 (pkg.tar.gz) = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+outcome = "success"
+
+[[invalid]]
+name = "absolute entry path"
+category = "traversal"
+entries = [{ path = "/escape", type = "file", content-hex = "78" }]
+failure-category = "path-grammar"
+error = "non-relative archive entry"
+
+[[invalid]]
+name = "parent traversal entry path"
+category = "traversal"
+entries = [{ path = "../escape", type = "file", content-hex = "78" }]
+failure-category = "path-grammar"
+error = "dot segment"
+
+[[invalid]]
+name = "entry through symlink ancestor"
+category = "link"
+entries = [
+  { path = "dir", type = "symlink", target = "real" },
+  { path = "dir/file", type = "file", content-hex = "78" },
+]
+failure-category = "symlink-target"
+error = "symlink ancestor"
+
+[[invalid]]
+name = "escaping symlink target"
+category = "link"
+entries = [{ path = "dir/link", type = "symlink", target = "../../outside" }]
+failure-category = "symlink-target"
+error = "escaping symlink target"
+
+[[invalid]]
+name = "empty symlink target"
+category = "link"
+entries = [{ path = "dir/link", type = "symlink", target = "" }]
+failure-category = "symlink-target"
+error = "empty symlink target"
+
+[[invalid]]
+name = "backslash symlink target"
+category = "link"
+entries = [{ path = "dir/link", type = "symlink", target = "..\\outside" }]
+failure-category = "symlink-target"
+error = "backslash symlink target"
+
+[[invalid]]
+name = "drive-prefix symlink target"
+category = "link"
+entries = [{ path = "dir/link", type = "symlink", target = "C:/outside" }]
+failure-category = "symlink-target"
+error = "drive-prefix symlink target"
+
+[[invalid]]
+name = "absolute symlink target"
+category = "link"
+entries = [{ path = "dir/link", type = "symlink", target = "/outside" }]
+failure-category = "symlink-target"
+error = "absolute symlink target"
+
+[[invalid]]
+name = "hardlink entry is unsupported"
+category = "link"
+entries = [
+  { path = "real", type = "file", content-hex = "78" },
+  { path = "hard", type = "hardlink", target = "real" },
+]
+failure-category = "unsupported-type"
+error = "unsupported archive entry type"
+
+[[invalid]]
+name = "duplicate normalized entry"
+category = "duplicate"
+entries = [
+  { path = "dir", type = "directory" },
+  { path = "dir/", type = "directory" },
+]
+failure-category = "duplicate-path"
+error = "duplicate or invalid normalized path"
+
+[[invalid]]
+name = "archive and loose scope conflict"
+category = "conflict"
+archive = "pkg.tar.gz"
+archive-operation = { type = "file-remove", archive = "pkg.tar.gz", file = "inside.txt" }
+loose-operation = { type = "file-remove", file = "*.tar.gz" }
+failure-category = "scope-conflict"
+error = "cross-scope archive conflict"
+
+[[invalid]]
+name = "orphan overlay origin"
+category = "association"
+overlay-origin = { filename = "pkg.tar.gz", hash-type = "SHA256", hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", replace-upstream = true, replace-reason = "stale" }
+archive-operation-count = 0
+failure-category = "origin-association"
+error = "orphan overlay origin"
+
+[[invalid]]
+name = "modified archive missing overlay origin"
+category = "association"
+archive = "pkg.tar.gz"
+archive-operation-count = 1
+overlay-origin = "absent"
+failure-category = "origin-association"
+error = "missing overlay origin"
+
+[[invalid]]
+name = "post-overlay hash mismatch"
+category = "association"
+archive = "pkg.tar.gz"
+overlay-origin = { filename = "pkg.tar.gz", hash-type = "SHA256", hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", replace-upstream = true, replace-reason = "expected transformed bytes" }
+computed-hash-type = "SHA256"
+computed-hash = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+failure-category = "hash-mismatch"
+error = "post-overlay hash mismatch"
+
+[[invalid]]
+name = "late operation failure publishes nothing"
+category = "atomicity"
+initial-published-manifest = "prior.manifest"
+staged-successes = ["archive group", "spec-add-tag", "file-add"]
+failing-operation = "file-search-replace no changed file"
+expected-published-manifest = "prior.manifest"
+failure-category = "atomic-publication"
+error = "no partial publication"

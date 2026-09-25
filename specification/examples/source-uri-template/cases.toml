@@ -1,0 +1,130 @@
+[[valid]]
+name = "dist-git encodes upstream name inside segment"
+kind = "dist-git"
+template = "https://src.example.invalid/rpms/$name.git"
+values = { name = "lib+café$", releasever = "43" }
+expected = "https://src.example.invalid/rpms/lib%2Bcaf%C3%A9%24.git"
+
+[[valid]]
+name = "dist-git retains canonical escape and emits literal dollar"
+kind = "dist-git"
+template = "https://src.example.invalid/releases/$releasever/rpms/$$/$name%2Bmirror.git"
+values = { name = "pkg", releasever = "43 preview" }
+expected = "https://src.example.invalid/releases/43%20preview/rpms/%24/pkg%2Bmirror.git"
+
+[[valid]]
+name = "lookaside preserves hash type case and repeated filename"
+kind = "lookaside"
+template = "https://src.example.invalid/lookaside/$name/$filename/$hashtype/$hash/$filename"
+values = { name = "pkg", releasever = "43", hashtype = "SHA512", hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", filename = "source 100%$.tar.gz" }
+expected = "https://src.example.invalid/lookaside/pkg/source%20100%25%24.tar.gz/SHA512/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/source%20100%25%24.tar.gz"
+
+[[valid]]
+name = "substitution is simultaneous"
+kind = "dist-git"
+template = "https://src.example.invalid/$name"
+values = { name = "$releasever", releasever = "43" }
+expected = "https://src.example.invalid/%24releasever"
+
+[[invalid]]
+name = "legacy pkg placeholder is unknown"
+kind = "dist-git"
+template = "https://src.example.invalid/rpms/$pkg.git"
+values = { name = "pkg", releasever = "43" }
+error = "unknown placeholder"
+
+[[invalid]]
+name = "placeholder in authority"
+kind = "dist-git"
+template = "https://$name.example.invalid/rpms/pkg.git"
+values = { name = "pkg", releasever = "43" }
+error = "path only"
+
+[[invalid]]
+name = "dist-git missing name"
+kind = "dist-git"
+template = "https://src.example.invalid/rpms/static.git"
+values = { name = "pkg", releasever = "43" }
+error = "cardinality"
+
+[[invalid]]
+name = "dist-git repeated name"
+kind = "dist-git"
+template = "https://src.example.invalid/$name/$name.git"
+values = { name = "pkg", releasever = "43" }
+error = "cardinality"
+
+[[invalid]]
+name = "lookaside missing filename"
+kind = "lookaside"
+template = "https://src.example.invalid/$name/$hashtype/$hash"
+values = { name = "pkg", releasever = "43", hashtype = "SHA256", hash = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", filename = "source.tar.gz" }
+error = "cardinality"
+
+[[invalid]]
+name = "releasever repeated"
+kind = "lookaside"
+template = "https://src.example.invalid/$releasever/$releasever/$name/$filename/$hashtype/$hash"
+values = { name = "pkg", releasever = "43", hashtype = "SHA256", hash = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", filename = "source.tar.gz" }
+error = "cardinality"
+
+[[invalid]]
+name = "lowercase existing escape"
+kind = "dist-git"
+template = "https://src.example.invalid/rpms/%2b/$name.git"
+values = { name = "pkg", releasever = "43" }
+error = "percent escape"
+
+[[invalid]]
+name = "unreserved existing escape"
+kind = "dist-git"
+template = "https://src.example.invalid/rpms/%7E/$name.git"
+values = { name = "pkg", releasever = "43" }
+error = "percent escape"
+
+[[invalid]]
+name = "encoded path separator"
+kind = "dist-git"
+template = "https://src.example.invalid/rpms/%2F/$name.git"
+values = { name = "pkg", releasever = "43" }
+error = "percent escape"
+
+[[invalid]]
+name = "name substitution contains slash"
+kind = "dist-git"
+template = "https://src.example.invalid/rpms/$name.git"
+values = { name = "pkg/subpackage", releasever = "43" }
+error = "placeholder value"
+
+[[invalid]]
+name = "release substitution contains backslash"
+kind = "dist-git"
+template = "https://src.example.invalid/releases/$releasever/rpms/$name.git"
+values = { name = "pkg", releasever = "43\\preview" }
+error = "placeholder value"
+
+[[invalid]]
+name = "query is forbidden"
+kind = "dist-git"
+template = "https://src.example.invalid/rpms/$name.git?view=1"
+values = { name = "pkg", releasever = "43" }
+error = "canonical HTTPS URI"
+
+[[invalid]]
+name = "expanded dot segment is invalid"
+kind = "dist-git"
+template = "https://src.example.invalid/repos/$name"
+values = { name = ".", releasever = "43" }
+error = "final URI"
+
+[[separator-domain]]
+name = "slash is rejected by every substitution domain"
+separator = "/"
+tokens = ["name", "releasever", "hashtype", "hash", "filename"]
+error = "placeholder value"
+
+[[separator-domain]]
+name = "backslash is rejected by every substitution domain"
+separator = "\\"
+tokens = ["name", "releasever", "hashtype", "hash", "filename"]
+error = "placeholder value"

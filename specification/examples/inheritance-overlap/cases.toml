@@ -1,0 +1,89 @@
+[[layer-precedence]]
+name = "direct scalar wins fixed low-to-high order"
+field = "release.calculation"
+providers = [
+  { layer = "distro", value = "static" },
+  { layer = "project", value = "autorelease" },
+  { layer = "component-group", value = "auto" },
+  { layer = "direct", value = "manual" },
+]
+expected = "manual"
+
+[[layer-precedence]]
+name = "project scalar wins when higher layers are absent"
+field = "build.check.skip"
+providers = [
+  { layer = "distro", value = false },
+  { layer = "project", value = true },
+]
+expected = true
+
+[[layer-append]]
+name = "append-composed overlays preserve layer order"
+field = "overlays"
+providers = [
+  { layer = "distro", values = ["distro-0"] },
+  { layer = "project", values = ["project-0"] },
+  { layer = "component-group", values = ["group-0", "group-1"] },
+  { layer = "direct", values = ["direct-0"] },
+]
+expected = ["distro-0", "project-0", "group-0", "group-1", "direct-0"]
+
+[[group-cases]]
+name = "empty table contributes no leaf"
+groups = [
+  { name = "alpha", config = { build = {} } },
+  { name = "zeta", config = { build = { check = { skip = false } } } },
+]
+outcome = "success"
+expected-leaves = [
+  { path = "build.check.skip", value = false, suppliers = ["zeta"] },
+]
+
+[[group-cases]]
+name = "equal scalar overlap is destructive"
+groups = [
+  { name = "alpha", config = { build = { check = { skip = false } } } },
+  { name = "zeta", config = { build = { check = { skip = false } } } },
+]
+outcome = "error"
+
+[[group-cases]]
+name = "replacing empty array overlap is destructive"
+groups = [
+  { name = "alpha", config = { overlay-files = [] } },
+  { name = "zeta", config = { overlay-files = [] } },
+]
+outcome = "error"
+
+[[group-cases]]
+name = "append arrays use group-name order without precedence"
+groups = [
+  { name = "zeta", config = { overlays = [
+    { type = "patch-add", source = "patches/zeta-0.patch", file = "zeta-0.patch" },
+  ] } },
+  { name = "alpha", config = { overlays = [
+    { type = "patch-add", source = "patches/alpha-0.patch", file = "alpha-0.patch" },
+    { type = "patch-add", source = "patches/alpha-1.patch", file = "alpha-1.patch" },
+  ] } },
+]
+outcome = "success"
+expected-leaves = [
+  { path = "overlays", value = [
+    { type = "patch-add", source = "patches/alpha-0.patch", file = "alpha-0.patch" },
+    { type = "patch-add", source = "patches/alpha-1.patch", file = "alpha-1.patch" },
+    { type = "patch-add", source = "patches/zeta-0.patch", file = "zeta-0.patch" },
+  ], suppliers = ["alpha", "alpha", "zeta"] },
+]
+
+[[group-cases]]
+name = "disjoint child leaves retain suppliers"
+groups = [
+  { name = "zeta", config = { build = { defines = { feature-b = "2" } } } },
+  { name = "alpha", config = { build = { defines = { feature-a = "1" } } } },
+]
+outcome = "success"
+expected-leaves = [
+  { path = "build.defines.feature-a", value = "1", suppliers = ["alpha"] },
+  { path = "build.defines.feature-b", value = "2", suppliers = ["zeta"] },
+]

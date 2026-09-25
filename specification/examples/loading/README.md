@@ -1,7 +1,7 @@
 # Loading-only fixture
 
-This fixture exercises Slice 1 loading behavior without asserting the
-requiredness or spelling of object fields that belong to Slice 2.
+This fixture exercises loading behavior using only document-control keys. It is
+metasyntactic and is not a complete conforming object-model document.
 
 Start at `azldev.toml`. The expected depth-first document order is:
 

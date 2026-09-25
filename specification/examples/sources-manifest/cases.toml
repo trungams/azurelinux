@@ -1,0 +1,85 @@
+[[valid]]
+name = "missing manifest is an empty artifact sequence"
+missing = true
+expected = []
+
+[[valid]]
+name = "empty manifest is an empty artifact sequence"
+content = ""
+expected = []
+
+[[valid]]
+name = "comments blanks modern and legacy records"
+content = """
+# retained only as source text
+
+SHA512 (source archive.tar.gz) = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+0123456789abcdef0123456789abcdef	legacy.tar.gz
+SHA256 (fix.patch) = bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+"""
+expected = [
+  { filename = "source archive.tar.gz", hash-type = "SHA512", hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+  { filename = "legacy.tar.gz", hash-type = "MD5", hash = "0123456789abcdef0123456789abcdef" },
+  { filename = "fix.patch", hash-type = "SHA256", hash = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+]
+
+[[valid]]
+name = "CRLF and no final newline"
+content = "SHA256 (café.tar.xz) = cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\r\nSHA512 (last.tar.xz) = dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+expected = [
+  { filename = "café.tar.xz", hash-type = "SHA256", hash = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" },
+  { filename = "last.tar.xz", hash-type = "SHA512", hash = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd" },
+]
+
+[[invalid]]
+name = "unsupported modern MD5"
+content = "MD5 (old.tar.gz) = 0123456789abcdef0123456789abcdef\n"
+error = "malformed record"
+
+[[invalid]]
+name = "lowercase algorithm"
+content = "sha256 (bad.tar.gz) = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+error = "malformed record"
+
+[[invalid]]
+name = "uppercase digest"
+content = "SHA256 (bad.tar.gz) = AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n"
+error = "malformed record"
+
+[[invalid]]
+name = "wrong digest length"
+content = "SHA512 (bad.tar.gz) = aaaa\n"
+error = "malformed record"
+
+[[invalid]]
+name = "unsafe filename"
+content = "SHA256 (../bad.tar.gz) = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+error = "invalid filename"
+
+[[invalid]]
+name = "inline comment"
+content = "SHA256 (bad.tar.gz) = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # no\n"
+error = "malformed record"
+
+[[invalid]]
+name = "duplicate filename across forms"
+content = """
+SHA256 (same.tar.gz) = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+0123456789abcdef0123456789abcdef same.tar.gz
+"""
+error = "duplicate filename"
+
+[[invalid]]
+name = "bare carriage return"
+content = "SHA256 (a.tar.gz) = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\rSHA256 (b.tar.gz) = bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n"
+error = "bare CR"
+
+[[invalid]]
+name = "UTF-8 byte order mark"
+content = "\uFEFFSHA256 (bad.tar.gz) = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+error = "byte-order mark"
+
+[[invalid]]
+name = "invalid UTF-8"
+content-hex = "ff0a"
+error = "UTF-8"

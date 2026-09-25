@@ -8,5 +8,5 @@ from identical strings used as names in a nested name-keyed map.
 - `fragment.toml` has root `includes`, no root `spec-version`, and the same
   nested names.
 
-The nested `objects` map is test vocabulary only and does not define a Slice 2
-field.
+The nested `objects` map is test vocabulary only and does not extend the
+canonical source-document fields.

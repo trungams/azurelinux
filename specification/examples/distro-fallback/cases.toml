@@ -1,0 +1,23 @@
+[[cases]]
+name = "absent component table uses project default"
+component-table = "absent"
+project-default = { name = "fedora", version = "43" }
+expected = "project-default"
+
+[[cases]]
+name = "complete component table wins"
+component-table = { name = "centos", version = "10" }
+project-default = { name = "fedora", version = "43" }
+expected = "component"
+
+[[cases]]
+name = "present partial component table is local error"
+component-table = { snapshot = "2026-09-01T00:00:00Z" }
+project-default = { name = "fedora", version = "43" }
+expected = "error"
+
+[[cases]]
+name = "both tables absent is an error"
+component-table = "absent"
+project-default = "absent"
+expected = "error"

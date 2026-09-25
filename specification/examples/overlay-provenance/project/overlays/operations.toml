@@ -1,0 +1,3 @@
+overlays = [
+  { type = "file-add", file = "payload.txt", source = "payload.txt" },
+]

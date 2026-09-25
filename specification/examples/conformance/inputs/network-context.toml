@@ -1,0 +1,9 @@
+format-version = 1
+document-kind = "network-context"
+trust-policy-id = "fixture-trust-v1"
+trust-material = "input:inputs/trust-material.bin"
+trust-material-sha256 = "fa82291ea485905ffdc5188460e3a4d2f222b08ccd60acae77180dbb043be790"
+proxy = "none"
+connect-timeout-ms = 1000
+idle-read-timeout-ms = 1000
+overall-timeout-ms = 5000

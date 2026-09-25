@@ -1,0 +1,298 @@
+[success]
+component = "example"
+input-manifest = "input.manifest"
+expected-manifest = "expected.manifest"
+required-top-level = ["example.spec", "source.tar.gz", "sources"]
+forbidden-generated = [".git", "RENDER_FAILED", "materialization.log"]
+publication = "atomic"
+
+[[upstream-active-spec]]
+name = "component repository and active spec names differ"
+effective-component-name = "downstream-component"
+upstream-name = "upstream-repository"
+repository-name = "upstream-repository"
+upstream-commit = "0123456789abcdef0123456789abcdef01234567"
+entries = [
+  { path = "upstream-repository.spec", type = "file", mode = "0644", content-hex = "4e616d653a20757073747265616d0a" },
+  { path = "other.spec", type = "file", mode = "0644", content-hex = "4e616d653a206f746865720a" },
+  { path = "README", type = "file", mode = "0644", content-hex = "726561646d650a" },
+]
+expected-source-path = "upstream-repository.spec"
+expected-destination = "downstream-component.spec"
+expected-retained-paths = ["README", "downstream-component.spec", "other.spec"]
+expected-provenance-source-path = "upstream-repository.spec"
+
+[[upstream-active-spec-invalid]]
+name = "active spec source is missing"
+effective-component-name = "downstream-component"
+upstream-name = "upstream-repository"
+repository-name = "upstream-repository"
+entries = [
+  { path = "other.spec", type = "file", mode = "0644", content-hex = "4e616d653a206f746865720a" },
+]
+failure-category = "active-spec-selection"
+
+[[upstream-active-spec-invalid]]
+name = "active spec source is ambiguous"
+effective-component-name = "downstream-component"
+upstream-name = "upstream-repository"
+repository-name = "upstream-repository"
+entries = [
+  { path = "upstream-repository.spec", type = "file", mode = "0644", content-hex = "31" },
+  { path = "upstream-repository.spec", type = "file", mode = "0644", content-hex = "32" },
+]
+failure-category = "active-spec-selection"
+
+[[upstream-active-spec-invalid]]
+name = "canonical destination collides"
+effective-component-name = "downstream-component"
+upstream-name = "upstream-repository"
+repository-name = "upstream-repository"
+entries = [
+  { path = "upstream-repository.spec", type = "file", mode = "0644", content-hex = "31" },
+  { path = "downstream-component.spec", type = "file", mode = "0644", content-hex = "32" },
+]
+failure-category = "active-spec-collision"
+
+[[upstream-active-spec-invalid]]
+name = "effective component stem contains separator"
+effective-component-name = "down/stream"
+upstream-name = "upstream-repository"
+repository-name = "upstream-repository"
+entries = []
+failure-category = "active-spec-stem"
+
+[[upstream-active-spec-invalid]]
+name = "upstream stem contains backslash"
+effective-component-name = "downstream-component"
+upstream-name = "up\\stream"
+repository-name = "up\\stream"
+entries = []
+failure-category = "active-spec-stem"
+
+[[upstream-active-spec-invalid]]
+name = "effective component stem is dot"
+effective-component-name = "."
+upstream-name = "upstream-repository"
+repository-name = "upstream-repository"
+entries = []
+failure-category = "active-spec-stem"
+
+[[upstream-active-spec-invalid]]
+name = "upstream stem is dotdot"
+effective-component-name = "downstream-component"
+upstream-name = ".."
+repository-name = ".."
+entries = []
+failure-category = "active-spec-stem"
+
+[[upstream-active-spec-invalid]]
+name = "upstream stem is empty"
+effective-component-name = "downstream-component"
+upstream-name = ""
+repository-name = ""
+entries = []
+failure-category = "active-spec-stem"
+
+[[upstream-active-spec-invalid]]
+name = "effective component stem contains C0 control"
+effective-component-name = "\u0001downstream"
+upstream-name = "upstream-repository"
+repository-name = "upstream-repository"
+entries = []
+failure-category = "active-spec-stem"
+
+[[upstream-active-spec-invalid]]
+name = "upstream stem is URI-like"
+effective-component-name = "downstream-component"
+upstream-name = "https:repository"
+repository-name = "https:repository"
+entries = []
+failure-category = "active-spec-stem"
+
+[[upstream-active-spec-invalid]]
+name = "upstream stem is drive-like"
+effective-component-name = "downstream-component"
+upstream-name = "C:repository"
+repository-name = "C:repository"
+entries = []
+failure-category = "active-spec-stem"
+
+[[upstream-active-spec-invalid]]
+name = "effective component stem has git administrative effect"
+effective-component-name = ".git"
+upstream-name = "upstream-repository"
+repository-name = "upstream-repository"
+entries = []
+failure-category = "active-spec-stem"
+
+[[provenance]]
+path = "example.spec"
+base-origin = "upstream commit:path/example.spec"
+operations = ["spec-add-tag@0"]
+
+[[provenance]]
+path = "source.tar.gz"
+base-origin = "upstream sources record"
+operations = []
+
+[[provenance]]
+path = "sources"
+origin-kind = "derived-sources-aggregate"
+starting-manifest-origin = "upstream commit:path/sources"
+starting-manifest-sha256 = "bdb9e3f8de754217db7f52f22d8e6382aafbab8c56921b93179d4bb0108aa804"
+contributors = ["preserved-record:source.tar.gz"]
+operations = ["manifest-preservation"]
+
+[[symlink-success]]
+name = "contained parent traversal is preserved"
+entry = { path = "links/current", type = "symlink", target = "../scripts/tool" }
+expected-normalized-target = "scripts/tool"
+expected-preserved-target = "../scripts/tool"
+
+[[generated-sources]]
+name = "local multi-artifact manifest has aggregate provenance"
+component-kind = "local"
+origin-kind = "derived-sources-aggregate"
+starting-manifest = "absent"
+artifacts = [
+  { filename = "alpha.tar.gz", hash-type = "SHA256", content-hex = "616c706861", digest = "8ed3f6ad685b959ead7022518e1af76cd816f8e8ec7ccdda1ed4018e8f2223f8" },
+  { filename = "beta.patch", hash-type = "SHA512", content-hex = "62657461", digest = "560c72de72c0a5222d928237f6b105296da059853534b8d01fc23527c1d5d8a4b83d5b1dd3f2210642bd071cc500598d4ebd293973d9f4aeb8ae7336af3a959d" },
+]
+expected-records = [
+  "SHA256 (alpha.tar.gz) = 8ed3f6ad685b959ead7022518e1af76cd816f8e8ec7ccdda1ed4018e8f2223f8",
+  "SHA512 (beta.patch) = 560c72de72c0a5222d928237f6b105296da059853534b8d01fc23527c1d5d8a4b83d5b1dd3f2210642bd071cc500598d4ebd293973d9f4aeb8ae7336af3a959d",
+]
+expected-contributors = ["append:alpha.tar.gz", "append:beta.patch"]
+
+[[configured-source-invalid]]
+name = "closing parenthesis cannot be emitted"
+filename = "bad)name"
+validation-stage = "SD-MODEL"
+failure-category = "source-filename"
+
+[[configured-source-invalid]]
+name = "leading space cannot be emitted"
+filename = " bad"
+validation-stage = "SD-MODEL"
+failure-category = "source-filename"
+
+[[configured-source-invalid]]
+name = "trailing space cannot be emitted"
+filename = "bad "
+validation-stage = "SD-MODEL"
+failure-category = "source-filename"
+
+[[configured-source-invalid]]
+name = "tab cannot be emitted"
+filename = "bad\tname"
+validation-stage = "SD-MODEL"
+failure-category = "source-filename"
+
+[[configured-source-invalid]]
+name = "C0 control cannot be emitted"
+filename = "bad\u0001name"
+validation-stage = "SD-MODEL"
+failure-category = "source-filename"
+
+[[configured-source-invalid]]
+name = "newline cannot be emitted"
+filename = "line\nbreak"
+validation-stage = "SD-MODEL"
+failure-category = "source-filename"
+
+[[configured-source-invalid]]
+name = "slash cannot be emitted"
+filename = "bad/name"
+validation-stage = "SD-MODEL"
+failure-category = "source-filename"
+
+[[configured-source-invalid]]
+name = "backslash cannot be emitted"
+filename = "bad\\name"
+validation-stage = "SD-MODEL"
+failure-category = "source-filename"
+
+[[configured-source-invalid]]
+name = "dot filename cannot be emitted"
+filename = "."
+validation-stage = "SD-MODEL"
+failure-category = "source-filename"
+
+[[configured-source-invalid]]
+name = "dotdot filename cannot be emitted"
+filename = ".."
+validation-stage = "SD-MODEL"
+failure-category = "source-filename"
+
+[[configured-source-invalid]]
+name = "empty filename cannot be emitted"
+filename = ""
+validation-stage = "SD-MODEL"
+failure-category = "source-filename"
+
+[[invalid]]
+name = "hardlink is forbidden"
+entry = { path = "alias", type = "hardlink", target = "example.spec" }
+failure-category = "unsupported-type"
+error = "unsupported entry type"
+
+[[invalid]]
+name = "absolute symlink target is forbidden"
+entry = { path = "outside", type = "symlink", target = "/etc/passwd" }
+failure-category = "symlink-target"
+error = "non-relative symlink target"
+
+[[invalid]]
+name = "tree symlink escapes"
+entry = { path = "dir/outside", type = "symlink", target = "../../outside" }
+failure-category = "symlink-target"
+error = "escaping symlink target"
+
+[[invalid]]
+name = "tree symlink target is empty"
+entry = { path = "dir/outside", type = "symlink", target = "" }
+failure-category = "symlink-target"
+error = "empty symlink target"
+
+[[invalid]]
+name = "tree symlink target uses backslash"
+entry = { path = "dir/outside", type = "symlink", target = "..\\outside" }
+failure-category = "symlink-target"
+error = "backslash symlink target"
+
+[[invalid]]
+name = "tree symlink target uses drive prefix"
+entry = { path = "dir/outside", type = "symlink", target = "C:/outside" }
+failure-category = "symlink-target"
+error = "drive-prefix symlink target"
+
+[[invalid]]
+name = "empty directory is excluded"
+entry = { path = "empty", type = "directory", mode = "0755" }
+descendants = []
+failure-category = "empty-directory"
+error = "empty directory"
+
+[[invalid]]
+name = "implementation marker is forbidden"
+entry = { path = "RENDER_FAILED", type = "file", mode = "0644", content-hex = "6661696c6564" }
+origin = "implementation-generated"
+failure-category = "generated-entry"
+error = "generated marker"
+
+[[invalid]]
+name = "artifact digest and sources record disagree"
+entry = { path = "source.tar.gz", type = "file", mode = "0644", content-hex = "646966666572656e74" }
+sources-record-hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+failure-category = "manifest-integrity"
+error = "stale sources record"
+
+[[invalid]]
+name = "failed staged transform preserves prior publication"
+prior-manifest = "input.manifest"
+staged-manifest = "expected.manifest"
+failure = "post-overlay hash mismatch"
+expected-published-manifest = "input.manifest"
+failure-category = "atomic-publication"
+error = "no partial publication"

@@ -1,0 +1,59 @@
+[[patterns]]
+pattern = "SPECS/**/*.spec"
+paths = ["SPECS/z/zeta.spec", "SPECS/alpha.spec", "SPECS/nested/deeper/beta.spec"]
+expected = ["SPECS/alpha.spec", "SPECS/nested/deeper/beta.spec", "SPECS/z/zeta.spec"]
+
+[[invalid-patterns]]
+pattern = "SPECS/ab**cd/*.spec"
+error = "globstar must be a complete segment"
+
+[[cases]]
+name = "discovered only"
+discoveries = ["pkgs/hello.spec"]
+explicit = "none"
+outcome = "synthesized"
+expected-type = "local"
+expected-path = "pkgs/hello.spec"
+
+[[cases]]
+name = "explicit fields without spec"
+discoveries = ["pkgs/hello.spec"]
+explicit = "absent-spec"
+outcome = "merge-synthesized-spec"
+
+[[cases]]
+name = "identical explicit local source"
+discoveries = ["pkgs/hello.spec"]
+explicit = "identical-local"
+outcome = "retain-explicit-spec"
+
+[[cases]]
+name = "different explicit local source"
+discoveries = ["pkgs/hello.spec"]
+explicit = "different-local"
+outcome = "error"
+
+[[cases]]
+name = "explicit upstream source"
+discoveries = ["pkgs/hello.spec"]
+explicit = "upstream"
+outcome = "error"
+
+[[cases]]
+name = "same canonical discovery is coalesced"
+discoveries = ["pkgs/hello.spec", "pkgs/./hello.spec"]
+canonical-discoveries = ["pkgs/hello.spec"]
+explicit = "none"
+outcome = "synthesized"
+
+[[cases]]
+name = "different paths with same basename collide"
+discoveries = ["pkgs/a/hello.spec", "pkgs/b/hello.spec"]
+explicit = "none"
+outcome = "error"
+
+[[membership]]
+group = "base"
+explicit = ["zeta", "hello"]
+discovered = ["pkgs/alpha.spec", "pkgs/hello.spec", "pkgs/zeta.spec"]
+expected = ["zeta", "hello", "alpha"]

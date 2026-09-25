@@ -1,0 +1,11 @@
+format-version = 1
+document-kind = "acquisition-inputs"
+
+entries = [
+  { path = "example.spec", type = "file", mode = "0644", content-hex = "4e616d653a206578616d706c650a56656e646f723a20417a757265204c696e75780a", sha256 = "496ad7e89943012959061d8c93752efeaa9dda20506ca785a78ccefc0cde775f" },
+  { path = "source.tar.gz", type = "file", mode = "0644", content-hex = "617263686976652d6279746573", sha256 = "0c982986710a026635603031674053ca851fc0e3ea760094a34f59b84f7f6da6" },
+  { path = "sources", type = "file", mode = "0644", content-hex = "5348413235362028736f757263652e7461722e677a29203d20306339383239383637313061303236363335363033303331363734303533636138353166633065336561373630303934613334663539623834663766366436360a", sha256 = "365b544d73ef0e89ef1d7de67bd5d29850fef951708acbc8a81e19c614dcadf1" },
+  { path = "scripts", type = "directory", mode = "0755" },
+  { path = "scripts/tool", type = "file", mode = "0755", content-hex = "23212f62696e2f73680a", sha256 = "a8076d3d28d21e02012b20eaf7dbf75409a6277134439025f282e368e3305abf" },
+  { path = "current", type = "symlink", target = "scripts/tool" },
+]

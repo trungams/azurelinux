@@ -1,0 +1,17 @@
+format-version = 1
+manifest-id = "repository-inputs-v1"
+
+[[key-bindings]]
+repository = "fixture-remote"
+source = "remote"
+locator = "https://KEYS.example.invalid:443/repository.gpg"
+canonical-uri = "https://keys.example.invalid/repository.gpg"
+sha256 = "1ef851f452bffe3090ca569b8aa10813d3cec356e90e6e1462306bce1c0e3f15"
+
+[[key-bindings]]
+repository = "fixture-local"
+source = "local"
+locator = "keys/repository.gpg"
+defining-document = "project:azldev.toml"
+portable-path = "keys/repository.gpg"
+sha256 = "1ef851f452bffe3090ca569b8aa10813d3cec356e90e6e1462306bce1c0e3f15"

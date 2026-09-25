@@ -1,0 +1,4 @@
+[components.example.spec]
+type = "upstream"
+upstream-distro = { name = "example", version = "1" }
+upstream-commit = "2222222222222222222222222222222222222222"

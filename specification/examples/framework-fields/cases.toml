@@ -1,0 +1,55 @@
+[valid.pytest]
+working-dir = "tests/pytest"
+test-paths = ["cases/**/*.py"]
+extra-args = ["-q", "--image={image-path}"]
+install = "pyproject"
+
+[valid.lisa]
+source = { git-url = "https://example.invalid/lisa.git", ref = "0123456789abcdef0123456789abcdef01234567" }
+criteria = [
+  { area = "network", category = "functional", priority = [0, 1], tags = ["smoke"] },
+  { testcase-names = ["case-a", "case-b"] },
+]
+pip-pre-install = ["libvirt-python"]
+pip-extras = ["azure"]
+extra-args = ["--image", "{image-path}"]
+
+[valid.tmt]
+plan = "/plans/smoke"
+source = { git-url = "https://example.invalid/tests.git", ref = "89abcdef0123456789abcdef0123456789abcdef" }
+
+[[invalid]]
+name = "pytest missing test paths"
+framework = "pytest"
+payload = { working-dir = "tests/pytest" }
+error = "test-paths required"
+
+[[invalid]]
+name = "LISA selectors conflict"
+framework = "lisa"
+payload = { name = "one", testcase-name = "two" }
+error = "exactly one table-level selector"
+
+[[invalid]]
+name = "LISA replaced test-cases spelling"
+framework = "lisa"
+payload = { test-cases = ["legacy"] }
+error = "unknown key; use testcase-names"
+
+[[invalid]]
+name = "LISA unsupported criteria key"
+framework = "lisa"
+payload = { criteria = { suite = "legacy" } }
+error = "unknown criteria key"
+
+[[invalid]]
+name = "TMT abbreviated ref"
+framework = "tmt"
+payload = { plan = "/plans/smoke", source = { git-url = "https://example.invalid/tests.git", ref = "abcdef0" } }
+error = "full lowercase commit"
+
+[[invalid]]
+name = "TMT relative plan identity"
+framework = "tmt"
+payload = { plan = "plans/smoke", source = { git-url = "https://example.invalid/tests.git", ref = "89abcdef0123456789abcdef0123456789abcdef" } }
+error = "absolute TMT plan identity beginning with /"

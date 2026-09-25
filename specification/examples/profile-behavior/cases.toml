@@ -1,0 +1,179 @@
+[[cases]]
+name = "shared resource data does not activate an operation"
+data = "resources"
+operation = "none"
+operation-supported = false
+data-valid = true
+expected = "validate-preserve"
+
+[[cases]]
+name = "resources can be selected by rpm build"
+data = "resources"
+operation = "rpm-build"
+operation-supported = true
+data-valid = true
+environment-complete = true
+expected = "execute"
+
+[[cases]]
+name = "core component materialization uses no profile operation"
+data = "core-materialization"
+operation = "none"
+operation-supported = false
+data-valid = true
+expected = "core-process"
+
+[[cases]]
+name = "repository TLS opt-out fails before access"
+data = "resources"
+operation = "rpm-build"
+operation-supported = true
+data-valid = true
+environment-complete = true
+security-preflight = "disable-ssl-verify"
+expected = "security-policy"
+
+[[cases]]
+name = "rpm build missing explicit architecture fails before setup"
+data = "rpm-build"
+operation = "rpm-build"
+operation-supported = true
+data-valid = true
+environment-complete = false
+missing-input = "architecture"
+expected = "unsupported-operation"
+
+[[cases]]
+name = "supported rpm build with complete operation inputs proceeds"
+data = "rpm-build"
+operation = "rpm-build"
+operation-supported = true
+data-valid = true
+environment-complete = true
+expected = "execute"
+
+[[cases]]
+name = "publishing data alone does not publish"
+data = "publishing"
+operation = "none"
+operation-supported = false
+data-valid = true
+expected = "validate-preserve"
+
+[[cases]]
+name = "package publication missing network context fails before credentials"
+data = "publishing"
+operation = "publish-packages"
+operation-supported = true
+data-valid = true
+environment-complete = false
+missing-input = "network-context"
+expected = "unsupported-operation"
+
+[[cases]]
+name = "supported package publication with exact route proceeds"
+data = "publishing"
+operation = "publish-packages"
+operation-supported = true
+data-valid = true
+environment-complete = true
+expected = "execute"
+
+[[cases]]
+name = "image data alone does not build"
+data = "image"
+operation = "none"
+operation-supported = false
+data-valid = true
+expected = "validate-preserve"
+
+[[cases]]
+name = "unsupported selected image operation fails"
+data = "image"
+operation = "image-build"
+operation-supported = false
+data-valid = true
+expected = "unsupported-operation"
+
+[[cases]]
+name = "supported image build with explicit architecture proceeds"
+data = "image"
+operation = "image-build"
+operation-supported = true
+data-valid = true
+environment-complete = true
+expected = "execute"
+
+[[cases]]
+name = "supported image publication is a separate operation"
+data = "image"
+operation = "publish-image"
+operation-supported = true
+data-valid = true
+environment-complete = true
+expected = "execute"
+
+[[cases]]
+name = "invalid unselected profile data still fails validation"
+data = "test"
+operation = "none"
+operation-supported = false
+data-valid = false
+expected = "validation-error"
+
+[[cases]]
+name = "selected supported test operation proceeds"
+data = "test"
+operation = "test"
+operation-supported = true
+data-valid = true
+expected = "execute"
+
+[[cases]]
+name = "unsupported custom generator fails before side effects"
+data = "custom-source-generation"
+operation = "custom-source-generate"
+operation-supported = false
+data-valid = true
+expected = "unsupported-operation"
+
+[[cases]]
+name = "supported custom generator with declared inputs and isolation proceeds"
+data = "custom-source-generation"
+operation = "custom-source-generate"
+operation-supported = true
+data-valid = true
+isolation-supported = true
+expected = "execute"
+
+[[publication-cases]]
+name = "nontransactional package failure reports partial effect"
+transaction-capability = false
+request-attempts = 1
+remote-outcomes = ["accepted", "transport-unknown", "accepted"]
+expected-ledger = ["accepted", "transport-unknown", "not-attempted"]
+expected-attempt-counts = [1, 1, 0]
+expected-partial-remote-effect = "confirmed-and-possible"
+rollback-claimed = false
+
+[[publication-cases]]
+name = "confirmed transaction abort removes accepted effects"
+transaction-capability = true
+request-attempts = 1
+remote-outcomes = ["accepted", "rejected"]
+abort-confirmed = true
+expected-ledger = ["rolled-back", "rejected"]
+expected-attempt-counts = [1, 1]
+expected-partial-remote-effect = "none"
+rollback-claimed = true
+
+[[publication-cases]]
+name = "ambiguous idempotent result still stops after one attempt"
+transaction-capability = false
+idempotent-replay = true
+request-attempts = 1
+remote-outcomes = ["transport-unknown"]
+expected-ledger = ["transport-unknown"]
+expected-attempt-counts = [1]
+expected-partial-remote-effect = "possible"
+rollback-claimed = false

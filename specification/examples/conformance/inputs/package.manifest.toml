@@ -1,0 +1,10 @@
+format-version = 1
+document-kind = "package-manifest"
+manifest-id = "rpm-package-set-v1"
+architecture = "x86_64"
+
+[[packages]]
+key = "rpm"
+identity = "rpm-4.19.1-1.azl4.x86_64"
+architecture = "x86_64"
+content-sha256 = "3333333333333333333333333333333333333333333333333333333333333333"
