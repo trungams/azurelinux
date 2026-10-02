@@ -4,31 +4,21 @@
 
 # Transformations
 
-> **Non-normative reading guide.** This page explains the normal overlay
-> workflow. The primary normative owners are
-> [Overlay transformations](./overlays.md) and the
-> [operation matrix](./overlay-operation-matrix.tsv); cross-cutting owners are
-> linked where used.
+This page explains the overlay pipeline within one private materialization
+attempt. [Overlay transformations](./overlays.md) and the
+[operation matrix](./overlay-operation-matrix.tsv) contain the binding rules.
 
-Overlays make declared downstream changes after source identity and artifact
-acquisition have produced a complete private candidate tree. They can edit the
-active RPM spec, add or remove patches, change loose files, or transform files
-inside a source archive. The complete component attempt is atomic.
-
-**First-pass takeaways:**
-
-- validate paths, patterns, and project-side sources before editing; for each
-  operation, freeze its target set immediately before that operation changes
-  the staging result;
-- execute archive groups before loose-tree operations; and
-- publish nothing unless every operation, digest, tree, and provenance check
-  succeeds.
+After the attempt assembles a complete candidate from acquired source
+material, overlays run once in private staging. They can edit the active RPM
+spec, manage patches, change loose files, or transform files inside an archive.
+The processor validates all declared inputs before editing, applies archive
+work first, and publishes nothing unless the whole component attempt succeeds.
 
 ## Declare an ordered overlay sequence
 
-This example sets one spec tag and adds one project-side file to the
-materialized tree. Setting adds the tag when it is absent, updates it when
-exactly one match exists, and fails on multiple matches:
+This example sets a spec tag and adds a project-side file to the materialized
+tree. In the selected package preamble, `spec-set-tag` adds the tag when no
+match exists, updates its one match, and fails on multiple matches.
 
 ```toml
 [[components.hello.overlays]]
@@ -42,16 +32,21 @@ file = "azurelinux.conf"
 source = "files/azurelinux.conf"
 ```
 
-`spec-set-tag` works on the active spec. `file-add` snapshots the project file
-named by `source` and creates the materialized-tree path named by `file`.
-`source` is relative to the document that defines the operation; `file` is
-relative to the materialized-tree root.
+`spec-set-tag` works only on the active spec. `file-add` snapshots the project
+file named by `source`, then creates the materialized-tree path named by
+`file`. The `source` path is relative to the document that defines the
+operation. The `file` path is relative to the materialized-tree root.
 
-`overlays` is append-composed. Entries keep their array order within a
-document, then append in document reach order and inheritance order.
-`overlay-files` is different: it is a replacing array of project-contained
-TOML files. Those files contain only an `overlays` array, are loaded in array
-order, and append their operations after all inline effective overlays. An
+The `overlays` array is append-composed. Entries retain their order within
+each document, then append in document reach order and inheritance order.
+When multiple groups contribute inline overlays, their arrays append in
+unsigned UTF-8 group-name order while preserving each group's element order.
+
+Unlike `overlays`, `overlay-files` is a replacing array. Later documents or
+later inheritance layers replace earlier values, while contributions from
+multiple groups conflict. Each entry names a project-contained TOML file whose
+only content is an `overlays` array. The processor loads those files in array
+order and appends their operations after all effective inline overlays. An
 overlay file is a secondary semantic document, not an include fragment.
 
 See [Overlay sequences and files](./overlays.md#overlay-sequences-and-files)
@@ -59,63 +54,66 @@ and [Common overlay field contracts](./overlays.md#common-overlay-field-contract
 
 ## Validate and snapshot before changing anything
 
-Before the first edit, a processor validates every operation against the
-17-row operation matrix, resolves paths, compiles regular expressions,
-snapshots every project-side source, checks archive associations and
-cross-scope conflicts, and creates a private staging copy.
+Before editing, the processor validates the operations, snapshots their
+project-side inputs, and creates a private staging tree. Each operation sees
+the staged changes that the ordering rules below place before it. Immediately
+before editing, it resolves and sorts all of its targets, then keeps that set
+fixed while it runs. If any target fails, the processor discards the whole
+component attempt and publishes nothing.
 
-Each operation reads the result of earlier operations in its phase. When one
-operation has several targets, its complete sorted target set is frozen before
-the first target changes. A missing target, wrong cardinality, invalid
-intermediate spec, path escape, hash mismatch, or write failure rolls back the
-whole component attempt. No partial tree or transformed archive is published.
-
-Every changed or created entry retains operation and source provenance. Exact
-validation, staging, target ordering, and rollback rules are in
+Every changed or created entry retains its operation and source provenance.
+The remaining preflight, target-ordering, staging, and rollback rules are in
 [Validation, staging, and provenance](./overlays.md#validation-staging-and-provenance).
 
 ## Apply archive groups before loose-tree operations
 
 Archive-scoped `file-remove` and `file-search-replace` operations name an
-`archive`. They are grouped by exact archive filename. Groups are ordered by
-the first occurrence of each archive, and operations within one group retain
-their declared relative order. Every archive group completes before the first
-non-archive operation. Non-archive operations then run in their original
-declared order with the grouped archive entries skipped.
+`archive`. The processor groups them by exact archive filename. The first
+occurrence of each filename sets the group order, and operations within a
+group retain their declared order.
 
-This batching gives one extract, modify, and repack cycle per archive while
-preserving deterministic operation order. Conflicts between an archive group
-and a loose-file operation that can touch the same top-level archive are
-errors before publication. Exact ordering and conflict detection are in
-[Ordering and conflicts](./overlays.md#ordering-and-conflicts).
+Every archive group finishes before any non-archive operation begins.
+Non-archive operations then run in their original declared order, skipping
+the entries assigned to archive groups. This gives each archive one extract,
+modify, and repack cycle. A loose-file operation that could also touch a
+grouped top-level archive is a conflict and fails before publication.
+See [Ordering and conflicts](./overlays.md#ordering-and-conflicts).
 
-Ordering/rollback sketch: if a declared loose-file edit is followed by
-operations for archive A, archive B, and archive A again, the complete A group
-runs first, then B, then the loose edit. A failed final hash for either archive
-rolls back the complete component attempt. The focused
+For example, suppose a loose-file edit appears before operations for archive
+A, archive B, and archive A again. The complete A group runs first, then B,
+and then the loose-file edit. If either final archive hash fails, the complete
+component attempt rolls back. The
 [overlay operation fixture](./examples/overlay-operations/README.md) checks
 grouping, post-overlay hashes, and all-or-nothing publication.
 
 ## Work within the bounded archive model
 
-Archive transformations accept the defined tar families with uncompressed,
-gzip, xz, or zstd content. Compression is detected from bytes and preserved;
-the filename suffix does not override the detected format. Archive parsing
-rejects path traversal, duplicate normalized paths, unsupported entry types,
-escaping links, malformed framing, unsupported metadata, and trailing data.
+Archive transformations accept the defined tar filename families with
+uncompressed, gzip, xz, or zstd content. The processor detects compression
+from the bytes and preserves that family; the filename suffix cannot override
+it.
 
-Operations work on a deterministic semantic extracted tree: normalized paths,
-entry types, regular-file bytes and executable state, explicit or synthesized
-directories, and symbolic-link targets. Repacking may use any encoder that
-preserves that semantic result and the detected compression family, but the
-exact emitted bytes must match the configured post-overlay hash.
+The processor extracts each archive into a safe, deterministic tree, edits
+that tree, and repacks it with the detected compression family. Unsafe paths
+or links, duplicate paths, unsupported entries or metadata, malformed framing,
+and trailing data fail when the archive group is interpreted, before any
+archive entry is exposed to an operation. Only `file-search-replace` and
+`file-remove` operate inside archives. Search/replace changes eligible
+regular-file text and preserves executable classification. Removal may delete
+an eligible regular file or symbolic link, never targets a directory, and
+removes a link itself rather than following or retargeting it. Explicit empty
+directories remain; only synthesized directories made unnecessary by removal
+disappear.
 
 Every transformed upstream archive has exactly one matching
 `source-files` entry with `origin.type = "overlay"`,
 `replace-upstream = true`, a replacement reason, and the required post-overlay
-digest. The final `sources` record is rewritten only after that digest passes.
-There is no canonical tar/compressor encoder or cross-tool byte-reproducibility
-claim.
+digest. At least one archive-scoped operation must reference it. The processor
+rewrites the final `sources` record only after the digest passes. Revision
+`0.1` does not choose a tar/compressor implementation or require different
+tools to emit identical bytes. An implementation may use any encoder that
+preserves the semantic archive result and detected compression family, but
+the emitted archive must match its configured post-overlay hash.
 
 See [Archive extraction and batching](./overlays.md#archive-extraction-and-batching)
 and
@@ -123,7 +121,7 @@ and
 
 ## Choose the operation family
 
-The 17 operations are grouped for lookup rather than repeated here:
+The 17 operations are grouped here for lookup:
 
 - **Spec tags:** `spec-add-tag`, `spec-insert-tag`, `spec-set-tag`,
   `spec-update-tag`, and `spec-remove-tag`.
@@ -131,46 +129,53 @@ The 17 operations are grouped for lookup rather than repeated here:
   `spec-search-replace`, `spec-remove-section`, and
   `spec-remove-subpackage`.
 - **Patches:** `patch-add` and `patch-remove`.
-- **Loose or archive files:** `file-prepend-lines`,
-  `file-search-replace`, `file-add`, `file-remove`, and `file-rename`.
+- **Loose files only:** `file-prepend-lines`, `file-add`, and `file-rename`.
+- **Loose files or files inside an archive:** `file-search-replace` and
+  `file-remove`.
 
-The matrix says which common fields are required, optional, or forbidden for
+The matrix marks every common field as required, optional, or forbidden for
 each operation. A forbidden field is an error even when its value is empty or
-false. The individual sections in
+false. The operation sections in
 [Overlay transformations](./overlays.md#spec-tag-operations) define target
-selection, exact effects, match cardinality, and postconditions.
+selection, effects, fixed match cardinality, and postconditions.
 
 ## Follow fixed matching and change rules
 
-Tag operations do not have a configurable match mode. `spec-add-tag` requires
-zero matches; `spec-set-tag` adds on zero, updates one, and errors on multiple;
-`spec-update-tag` requires exactly one; `spec-insert-tag` uses its defined
-family insertion rule; and `spec-remove-tag` removes every selected match.
-Required tag values cannot be empty or whitespace-only.
+Tag operations don't have a configurable match mode. `spec-add-tag` requires
+zero matches in the selected package preamble. In that preamble,
+`spec-set-tag` adds on zero, updates one, and fails on multiple matches.
+`spec-update-tag` requires exactly one. `spec-insert-tag` follows its family
+insertion rule, and `spec-remove-tag` removes every selected match. Required
+tag values cannot be empty or whitespace-only.
 
-Spec text is normalized from LF or CRLF to LF before matching and is reparsed
-after every spec or hybrid patch operation. A later spec operation sees only
-that reparsed state. Text search/replace uses RE2 with literal replacement
-text. Operations that require a change fail when no requested edit occurs.
+Spec text is normalized from LF or CRLF to LF before matching. After every
+spec operation and after `patch-add` or `patch-remove`, the processor reparses
+the spec. The next spec operation sees only that reparsed state.
+Search/replace uses RE2 and treats replacement text literally. An operation
+that requires a change fails when the requested edit changes nothing.
 
 `patch-add` updates the spec reference and creates the patch file as one atomic
 operation. `patch-remove` requires agreement between selected spec references
-and loose patch files. File operations never select any `.spec` path through
-the file namespace; `file-add` and `file-rename` also reject `.spec`
-destinations. Patterns never traverse a symbolic link as a directory and use
-sorted normalized paths.
+and loose patch files.
+
+File operations never select a `.spec` path through the file namespace.
+`file-add` and `file-rename` also reject `.spec` destinations. Pattern
+matching never traverses a symbolic link as a directory, and all matched paths
+use sorted normalized order.
 
 ## Publish only a complete valid result
 
-After all operations, the processor checks every postcondition, transformed
-archive digest, final `sources` record, tree invariant, and provenance
-association. Any failure leaves the prior published artifact unchanged.
-Success hands one complete candidate to the materialized-artifact publication
-boundary.
+After the last operation, the same materialization attempt checks all
+postconditions, transformed-archive digests, the final `sources` record, tree
+invariants, and provenance. Any failure leaves the previously published
+artifact unchanged. On success, the transformed candidate remains in private
+staging for the materialized-artifact publication boundary.
 
 ## Further reading
 
 - [Overlay metadata](./overlays.md#overlay-metadata)
 - [Overlay provenance fixture](./examples/overlay-provenance/README.md)
 
+After overlays and their final checks succeed inside the attempt, the next
+page shows the resulting tree and its single publication boundary.
 [Continue: Materialized dist-git](./materialized-dist-git.md)

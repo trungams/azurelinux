@@ -4,32 +4,27 @@
 
 # Errors, determinism, and security
 
-> **Non-normative reading guide.** This page explains the common failure and
-> safety model. The primary normative owners are
-> [Determinism and environmental inputs](./determinism.md),
-> [Validation and diagnostics](./validation.md), and
-> [Security and authorization](./security.md).
+Processing never turns an invalid partial result into success. It either
+produces the complete result for the current boundary or fails without letting
+that partial state escape.
 
-A conforming attempt either produces the complete result owned by its phase or
-fails without using invalid partial state. Inputs that can affect portable
-behavior are declared or fixed by the specification; ambient host state does
-not silently become configuration.
-
-**First-pass takeaways:**
-
-- an error stops at the boundary that owns it and cannot be repaired later;
-- portable behavior depends only on declared, fixed, or explicitly classified
-  influences; and
-- diagnostics retain semantic identities while excluding secret values.
+An invalid attempt stops at its current boundary. Resolution, materialization,
+and selected operations use only inputs frozen for their attempt. Processing
+treats credentials, paths, archives, and executable work as untrusted. The
+binding rules are in
+[Validation and diagnostics](./validation.md),
+[Determinism and environmental inputs](./determinism.md), and
+[Security and authorization](./security.md).
 
 ## Fail at the owning boundary
 
-Ordinary processing validates documents through local/profile publication.
-Separate conformance-fixture checking uses `V-CONFORMANCE`. These phase
-identifiers express ownership and dependencies, not one flat runtime loop; no
-later phase repairs, coerces, drops, retries, or reinterprets an earlier error.
+Ordinary processing uses eight validation groups from `V-DOCUMENT` through
+`V-PUBLISH`. They identify ownership, dependencies, and observable boundaries
+rather than one flat loop. Later processing cannot repair, coerce, drop, retry,
+or reinterpret an earlier error. `V-CONFORMANCE` is separate fixture checking
+for format, declared inputs, expectations, and traceability.
 
-The main rollback boundaries are:
+The result of a failure depends on where it occurs:
 
 - an invalid source document contributes no source model;
 - loading or composition failure produces no composed model;
@@ -38,132 +33,117 @@ The main rollback boundaries are:
 - acquisition, transformation, or artifact failure publishes no candidate;
 - failed local publication leaves the prior local artifact unchanged; and
 - failed remote publication produces no portable success result, without
-  claiming remote rollback.
+  claiming that the remote system rolled back.
 
-Warnings, skipped work, placeholder files, failure markers, and
-success-shaped empty results cannot replace a required error. Exact phase
-ownership is in [Validation phase order](./validation.md#validation-phase-order)
-and [Failure and rollback](./validation.md#failure-and-rollback).
+A warning, skipped operation, placeholder, failure marker, or success-shaped
+empty result cannot stand in for a required error.
+
+Details: [Validation phase order](./validation.md#validation-phase-order) and
+[Failure and rollback](./validation.md#failure-and-rollback).
 
 ## Make environmental inputs explicit
 
-Every resolution, materialization, or selected profile operation has one
-immutable environmental-input record. Depending on the operation, it can
-contain architecture, evaluation instant, network context, resource limits,
-toolchain identity, and RPM macro context. Required values are bound before
-use and cannot be replaced by a retry, redirect, subprocess, or later phase.
+An operation can observe only the values frozen in its immutable
+environmental-input record. Every resolution, materialization, or selected
+profile operation receives one record. A retry, redirect, subprocess, or
+cache lookup cannot replace a value.
 
-The environmental-input matrix classifies each influence as:
-
-- **explicit**, supplied by a named operation input;
-- **fixed**, completely defined by the specification;
-- **prohibited**, not consulted;
-- **irrelevant**, allowed to affect performance or non-semantic messages only;
-  or
-- **external-failure**, able to prevent success through a defined typed
-  failure but not to change accepted bytes or select another source except for
-  the specified lookaside not-found transition.
-
-The normative classifications are in
-[Environmental-input record](./determinism.md#environmental-input-record) and
-[the environmental-input matrix](./environmental-input-matrix.tsv).
+When an operation needs architecture, time, network policy, RPM macros,
+toolchain identity, or another environmental value, the caller supplies it
+explicitly. The host cannot fill in a missing value. See the
+[Environmental-input record](./determinism.md#environmental-input-record).
 
 ## Exclude ambient host behavior
 
-Core processing uses strict UTF-8 and specification-defined comparison and
-ordering. Process locale, host timezone, ambient wall clock, host architecture,
-CPU count, scheduler order, process identifiers, current directory, checkout
-root, cache location, temporary path, `HOME`, `PATH`, proxy variables, RPM
-configuration, Git configuration, `umask`, and random values cannot change a
-portable result.
+Ambient host state cannot change a portable result. Local paths, process
+settings, host configuration, timing, scheduling, and randomness are either
+explicitly replaced or excluded. A cache entry is usable only after its
+identity and bytes are verified.
 
-An operation that needs architecture receives it explicitly. Time-dependent
-external validity uses one explicit UTC evaluation instant. Network operations
-receive exact trust material, proxy choice, and deadlines. RPM build receives
-a complete macro context and immutable toolchain identity. Caches are usable
-only after the requested immutable identity and bytes are verified.
+If the host cannot represent a required path, mode, namespace, isolation
+boundary, or atomic publication guarantee, the operation returns
+`unsupported-operation` or fails under its owning rule. It does not adapt the
+portable model to the host.
 
-If a host cannot represent a required path, mode, namespace, or atomic
-publication guarantee exactly, the operation fails or is unsupported; it does
-not adapt the portable model to host behavior.
+Every tracked influence is classified as `explicit`, `fixed`, `prohibited`,
+`irrelevant`, or `external-failure`. The
+[environmental-input matrix](./environmental-input-matrix.tsv) applies those
+classifications and records the only source-selection exception. For the
+exact HTTPS outcomes and lookaside `not-found` transition to the configured
+origin, see
+[HTTPS artifact fetch and source selection](./sources.md#https-artifact-fetch-and-source-selection).
 
 ## Report structured diagnostics
 
-Every required error has at least one diagnostic with a class, validation
-phase, most specific processing phase, requirement identity, semantic subject,
-and any relevant semantic locations and related subjects. Exact message text,
-terminal formatting, localization, and serialization are not standardized.
+When processing fails, the diagnostic tells the reader what failed, where it
+failed, and which rule was violated. It uses semantic identities instead of
+depending on host paths, and it never includes secrets.
 
-The 13 diagnostic classes distinguish document syntax, model validation, path
-containment, reference resolution, conflicts, unsupported operations, security
-policy, authorization, transport, integrity, transformation, artifact
-validation, and conformance errors. Records have deterministic comparison
-order.
+Each diagnostic uses the required fields and one of 13 classes. Diagnostics
+compare in a deterministic order; message text and serialization remain
+implementation-defined. Absolute paths and operational details may be
+attached, but they cannot replace the semantic subject.
 
-Absolute paths and operational details may be attached, but they cannot
-replace semantic identities. Credential values, authorization headers, private
-keys, tokens, cookies, and secret query values never appear in required
-diagnostics, fixtures, provenance, or reports. See
-[Diagnostic record](./validation.md#diagnostic-record),
+Details: [Diagnostic record](./validation.md#diagnostic-record),
 [Diagnostic classes](./validation.md#diagnostic-classes), and
 [Security and secret redaction](./validation.md#security-and-secret-redaction).
 
-Non-normative diagnostic sketch: an escaping include can be reported as
+For example, an include that escapes the project can report
 `class = "path-containment"`, `validation-phase = "V-COMPOSE"`,
-`processing-phase = "LD-INCLUDES"`, with requirement
-`loading.md#match-handling-and-containment` and a project-relative semantic
-subject. Exact serialization and message text remain implementation-defined.
+`processing-phase = "LD-INCLUDES"`, the requirement
+`loading.md#match-handling-and-containment`, and a project-relative semantic
+subject. Implementations may choose their own message text and serialization.
 
 ## Bind credentials to purpose and origin
 
-Credentials enter only through opaque operation-time references. Each
-reference is bound to an exact purpose, canonical HTTPS origin, optional realm
-or destination, selected operation, and environmental-input record. Credential
-values do not appear in TOML, URIs, resolved models, artifacts, provenance, or
-portable diagnostics.
+Credentials are opaque operation inputs. Each reference binds a value to one
+purpose and canonical HTTPS origin and may narrow it to a realm or
+destination. It also belongs to the selected operation and environmental-input
+record.
 
-Redirects re-evaluate credential scope. Authorization is not forwarded across
-a canonical origin change unless a separate reference is explicitly bound to
-the target origin and purpose. Ambient environment variables, Git
-configuration, RPM configuration, netrc, browser state, and home-directory
-stores cannot supply a credential implicitly.
+Credential values never come from ambient host configuration or appear in
+model data, artifacts, provenance, or portable diagnostics.
 
-Exact rules are in
+A redirect checks credential scope again. Authorization is not forwarded to a
+different canonical origin unless another reference is explicitly bound to
+that target origin and purpose. See
 [Credentials and sensitive values](./security.md#credentials-and-sensitive-values).
 
 ## Treat paths, archives, and scripts as untrusted
 
-Portable path grammar and lexical rejection run before host lookup.
-Containment is checked at every required boundary, declared file inputs are
-snapshotted, writes occur only in private staging, and destinations are
-created without following attacker-replaced links.
+Validate paths before host lookup. Enforce containment at every required
+boundary, snapshot declared inputs, keep writes in private staging, and create
+destinations without following an attacker-replaced link.
 
-Archives are parsed as data rather than extracted by a host utility into the
-project tree. Path traversal, absolute paths, hardlinks, unsupported types,
-escaping links, duplicate paths, malformed metadata, trailing data, and limit
-exhaustion fail the complete attempt.
+Treat archives as data. Any archive that violates the containment, entry,
+metadata, or resource rules fails the whole attempt.
 
-Core materialization executes no source-controlled scripts. Optional generator,
-RPM-build, image, and test processes run only inside their selected profile
-boundary with explicit inputs, writable outputs, network policy, credentials,
-and limits. Custom generation receives no credentials and has network denied
-by default.
+Core materialization runs no source-controlled scripts. Optional generator,
+RPM-build, image, and test processes run only inside the boundary of their
+selected profile with its declared isolation, inputs, outputs, network,
+credential, and limit policy. Custom generation receives no credentials and
+has network access denied by default.
 
-See [Paths, filesystems, and publication](./security.md#paths-filesystems-and-publication),
+Details: [Paths, filesystems, and publication](./security.md#paths-filesystems-and-publication),
 [Archives](./security.md#archives), and
 [Custom generator isolation](./security.md#custom-generator-isolation).
 
 ## Apply limits without truncating results
 
-Before untrusted input or executable processing, the operation binds applicable
-limits for bytes, expanded size, entry count, individual files, path length,
-redirects, request attempts, processes, memory, and execution time. Zero
-forbids the resource; it does not mean unlimited. Reaching a limit fails the
-attempt and never authorizes a truncated artifact or partial output.
+Before reading untrusted input or starting executable work, bind every
+applicable non-negative limit listed in
+[Resource limits and denial of service](./security.md#resource-limits-and-denial-of-service).
+
+Zero forbids the resource; it does not mean unlimited. Reaching any limit
+fails the whole attempt. It never authorizes a truncated artifact or partial
+output.
 
 ## Further reading
 
 - [Processing and validation order](./resolution.md#processing-and-validation-order)
 - [Conformance examples and fixture format](./conformance.md)
+
+The narrative is complete. During implementation, use the Reference to find
+the detailed owner, matrix, or fixture for the task at hand.
 
 [Continue during implementation: Reference](./reference.md)

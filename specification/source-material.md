@@ -4,27 +4,22 @@
 
 # Source material
 
-> **Non-normative reading guide.** This page explains the normal source
-> workflow. The primary normative owner is
-> [Source identity and acquisition](./sources.md); cross-cutting owners are
-> linked where used. Follow the exact links for field, grammar, ordering,
-> network, hash, transformation, and security requirements.
+This page shows how a component chooses its source, acquires declared
+artifacts, and verifies them before transformation. The binding rules are in
+[Source identity and acquisition](./sources.md); cross-cutting owners are
+linked where they apply.
 
-A component starts from either a local dist-git directory or an exact upstream
-dist-git commit. It may also declare source artifacts such as tarballs, patches,
-or generated archives. Each required identity or digest is verified at the
-origin-specific acceptance boundary before the corresponding source result is
-accepted.
+A local component starts from one dist-git directory. An upstream component
+starts from one exact, verified commit. Both may add tarballs, patches, or
+generated archives through `source-files`. The processor verifies each
+identity or digest when its origin supplies the result. Only then can that
+result enter the component's source set.
 
-**First-pass takeaways:**
-
-- a component has one verified local or exact-commit upstream source;
-- each source artifact is accepted only at its origin-specific hash boundary;
-  and
-- for an upstream component's configured download, the distro-hosted,
-  hash-addressed lookaside is tried first and only `not-found` can select an
-  enabled configured origin; a local component fetches its declared
-  `origin.uri` directly.
+Downloads differ by component source. For an upstream component, a configured
+download first checks the distro's hash-addressed lookaside. Only `not-found`
+may select the configured `origin.uri`, and only when origins are enabled. A
+local component skips the lookaside and fetches its declared `origin.uri`
+directly.
 
 ## Choose the component source
 
@@ -36,14 +31,14 @@ type = "local"
 path = "pkg/hello.spec"
 ```
 
-The spec file's parent is the local source root. The local source identity
-includes the normalized project-relative source root, each regular file's
-path, bytes, and executable classification, and each portable symbolic link's
-path and exact target. Empty directories and non-semantic host metadata do not
-participate.
+The directory containing the spec is the local source root. Its identity
+includes the normalized project-relative root path. It also includes every
+regular file's path, bytes, and executable classification, plus every portable
+symbolic link's path and exact target. Empty directories and non-semantic host
+metadata don't participate.
 
 For an upstream component, name the source distro and version and pin the
-repository to a full commit:
+repository to one full commit:
 
 ```toml
 [components.zlib.spec]
@@ -56,32 +51,34 @@ name = "azurelinux"
 version = "4.0"
 ```
 
-`upstream-name` defaults to the component name. The exact local and upstream
-variants, forbidden fields, and defaults are owned by
+`upstream-name` defaults to the component name. The local and upstream field
+variants, including their forbidden fields and defaults, are defined in
 [Upstream component source](./sources.md#upstream-component-source) and
 [Local component source](./sources.md#local-component-source).
 
 ## Pin upstream content before acquisition
 
-Branches and snapshots help a producer choose a commit; they are not final
-source identities. The effective `upstream-commit` is the portable source
-truth and is verified as a full commit in the selected repository before
-checkout. Within one composed provider (one inheritance-layer partial
-configuration after its source documents have been composed), document
-loading and scalar composition decide among pin contributions. The effective
-component then applies the fixed
-[component inheritance order](./resolution.md#component-inheritance-order).
-Overlapping group pin contributions are errors rather than choosing a winner.
+Branches and snapshots may help a producer choose a commit, but the processor
+identifies the upstream source by the effective `upstream-commit`. Before
+checkout, it verifies that the selected repository contains that full commit.
 
-The distro's `dist-git-base-uri` identifies the repository. Source URI
-templates encode placeholder values as path data and are validated before
-network access. See [Source URI templates](./sources.md#source-uri-templates)
-for the exact tokens, cardinalities, encoding, and rejection rules.
+Pin contributions follow ordinary composition and inheritance. Within one
+inheritance layer, several source documents may contribute a pin. Those
+documents are composed first, so composition determines whether that layer
+contributes a pin and, if so, its value. The component then applies the four
+layers in the fixed
+[component inheritance order](./resolution.md#component-inheritance-order).
+Two groups cannot set the same pin; that overlap is an error.
+
+The distro's `dist-git-base-uri` identifies the repository. Before network
+access, the processor expands and validates its placeholders as path data.
+The [Source URI templates](./sources.md#source-uri-templates) section defines
+the allowed tokens, their cardinalities, encoding, and rejection rules.
 
 ## Add source artifacts
 
-`source-files` adds or intentionally replaces top-level source artifacts. Each
-entry declares an exact filename, digest, origin, and replacement policy:
+Use `source-files` to add or intentionally replace top-level source artifacts.
+Each entry gives the filename, digest, origin, and replacement policy:
 
 ```toml
 [[components.hello.source-files]]
@@ -94,74 +91,78 @@ type = "local"
 path = "files/hello-1.0.tar.gz"
 ```
 
-For this local-origin example, the digest must match the exact bytes of that
-local file. Available origins are direct HTTPS download, a project-contained
-local file, a `custom-result` file carrying producer-asserted generated
-provenance that core reads and hash-verifies, an archive transformed by
-overlays, or optional custom generation. The exact closed variants are in
-[Source artifact field contracts](./sources.md#source-artifact-field-contracts).
+For this local origin, the digest must match the file's exact bytes. Other
+origins cover a direct HTTPS download, a project-contained file, a transformed
+upstream archive, and optional custom generation. A `custom-result` is a
+supplied file that the producer identifies as generated. Core reads the file
+and verifies its hash. The
+[Source artifact field contracts](./sources.md#source-artifact-field-contracts)
+section defines all closed variants.
 
-An upstream dist-git may also contain a top-level `sources` manifest. Its
-records are parsed in order, filenames are unique, and artifact bytes must
-match the declared digest. See
-[Upstream `sources` manifest](./sources.md#upstream-sources-manifest).
+An upstream dist-git may also contain a top-level `sources` manifest. The
+processor parses its records in order and rejects duplicate filenames. It
+accepts each artifact only when the acquired bytes match the recorded digest.
+See [Upstream `sources` manifest](./sources.md#upstream-sources-manifest).
 
 ## Acquire, verify, and resolve collisions
 
-The normal order is: validate filenames, verify the upstream commit when
-applicable, parse the upstream manifest, acquire and hash upstream artifacts,
-then process configured `source-files` in array order. Additions and explicit
-replacements produce one effective artifact set; an unexpected collision
-fails the component attempt.
+The processor validates configured filenames before it reads source data. For
+an upstream component, it then verifies the commit, parses the upstream
+manifest, and acquires and hashes those artifacts. Configured `source-files`
+are processed afterward in array order.
 
-The exact order and failure boundary are in
-[Acquisition and collision order](./sources.md#acquisition-and-collision-order).
-Remote artifacts are fetched over HTTPS. A configured-origin fallback is
-available only for an upstream component's configured download, after the
-specified lookaside `not-found` outcome and only when origins are enabled. A
-local component's configured download fetches its declared `origin.uri`
-directly without a lookaside attempt. The exact canonical authority/origin
-model and single-attempt fetch state machine are defined in
+Additions and explicit replacements produce one effective artifact set. An
+unexpected collision, a missing replacement target, or a hash failure aborts
+the complete component attempt. [Acquisition and collision order](./sources.md#acquisition-and-collision-order)
+defines the full sequence.
+
+Remote artifacts use HTTPS. For an upstream component's configured download,
+the processor checks the lookaside first. Only `not-found` can select
+`origin.uri`, and only when origins are enabled. Once the origin is tried, any
+failure ends acquisition. A local component skips the lookaside and uses
+`origin.uri` directly.
+
 [Canonical HTTPS authority and origin](./sources.md#canonical-https-authority-and-origin)
-and
-[HTTPS artifact fetch and source selection](./sources.md#https-artifact-fetch-and-source-selection).
-The focused
-[lookaside outcome fixture](./examples/lookaside-outcomes/README.md) is the
-quickest evidence for that one permitted fallback transition.
+and [HTTPS artifact fetch and source selection](./sources.md#https-artifact-fetch-and-source-selection)
+define the request and one-attempt behavior. The
+[lookaside outcome fixture](./examples/lookaside-outcomes/README.md) shows the
+sole upstream fallback.
 
 ## Transform an upstream archive
 
-An archive changed by archive-scoped overlays has a matching
-`origin.type = "overlay"` entry. That entry replaces exactly one upstream
-artifact and records the required post-overlay hash. The association is
-defined in
-[Overlay-origin association](./sources.md#overlay-origin-association); archive
-batching, the semantic extracted tree, repacking, and hash verification are
-owned by
+When archive-scoped overlays change an upstream archive, a matching
+`origin.type = "overlay"` entry must replace exactly that one artifact. The
+entry records the hash required after repacking.
+[Overlay-origin association](./sources.md#overlay-origin-association) defines
+that link. Archive grouping, the semantic extracted tree, repacking, and hash
+verification are defined in
 [Overlay transformations](./overlays.md#archive-extraction-and-batching).
 
 ## Optional custom generation
 
-`origin.type = "custom"` describes an optional
-`custom-source-generate` operation. Core validates and preserves the fields but
-does not execute the script. Generation occurs only through a separately and
-explicitly selected `custom-source-generate` operation. When selected, the
-implementation exposes only declared artifact inputs, makes the declared
-package names available, and isolates the invocation. It validates the
-semantic output tree, emits one supported archive, and accepts it only when
-its configured hash matches.
+`origin.type = "custom"` describes data for the optional
+`custom-source-generate` operation. Core validates and preserves the fields,
+but it never runs the script. Generation happens only when that operation is
+selected separately and explicitly. The implementation isolates the script,
+exposes only its declared inputs, validates the output tree, and accepts the
+archive only after its exact bytes match the configured hash.
 
-The exact operation boundary and explicit non-goals are in
-[Custom-source-generation profile](./sources.md#custom-source-generation-profile);
-the isolation boundary is in
-[Custom generator isolation](./security.md#custom-generator-isolation).
-A producer may instead supply a `custom-result` file. That variant asserts
-generated provenance; core only reads and hash-verifies the supplied bytes and
-does not verify a generation history.
+A producer may instead supply a `custom-result` file. Core reads and
+hash-verifies that file without running the generator or verifying its
+history.
+
+[Custom-source-generation profile](./sources.md#custom-source-generation-profile)
+defines operation selection, output checks, and required resource-limit
+inputs.
+[Custom generator isolation](./security.md#custom-generator-isolation)
+defines the sandbox, default-deny network access, and credential boundary.
 
 ## Further reading
 
 - [Source identity fixture](./examples/source-identity/README.md)
 - [Local source identity fixture](./examples/local-source-identity/README.md)
 
+With the source inputs verified, the processor can assemble a private
+candidate and run its overlays once. The next page explains that overlay work
+before final validation and publication.
 [Continue: Transformations](./transformations.md)

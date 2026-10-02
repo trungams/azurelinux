@@ -4,30 +4,17 @@
 
 # Project model
 
-> **Non-normative reading guide.** This page explains how the main objects fit
-> together. The primary normative owners are
-> [Top-level object model](./objects.md), [Project](./project.md),
-> [Distros and versions](./distros.md), [Components](./components.md),
-> [Component groups and discovery](./component_groups.md), and
-> [Resolution](./resolution.md); cross-cutting owners are linked where used.
-
-A project names the distributions, components, defaults, groups, and optional
-workflow data that a processor can use. The common case declares a distro,
-then declares components directly or groups them for shared configuration.
-
-**First-pass takeaways:**
-
-- the resolution request supplies one immutable target distro/version pair;
-- a provider below is one already-composed partial configuration from an
-  inheritance layer; and
-- groups share configuration without forming a precedence ladder, while
-  optional profile data never executes itself.
+This guide shows how a project declares distros and components, shares
+settings through defaults and groups, and produces the resolved model used by
+later stages. The common case declares one distro and one or more components;
+the following sections explain each object or step and link its binding rules
+where they are used.
 
 ## Declare a distro and a component
 
-This separate upstream variant defines one upstream component. Because its
-complete `upstream-distro` table is absent, `project.default-distro` supplies
-that source-repository reference:
+This standalone example declares one upstream component. It omits
+`upstream-distro`, so `project.default-distro` supplies the source-repository
+context:
 
 ```toml
 spec-version = "0.1"
@@ -52,133 +39,138 @@ type = "upstream"
 upstream-commit = "0123456789abcdef0123456789abcdef01234567"
 ```
 
-The exact commit is the portable source identity. `lookaside-base-uri` names a
-distro-hosted, hash-addressed source-artifact store. The branch can help a
-producer refresh a pin, but it does not replace the effective
-`upstream-commit`. The resolution request must separately supply the target
-distro/version input used for resolution. `project.default-distro` selects a
-source repository context only; it never chooses or changes that target.
+The full `upstream-commit` is the portable source identity.
+`lookaside-base-uri` names a distro-hosted, hash-addressed source-artifact
+store. The branch can help a producer refresh a pin, but it does not replace
+the effective `upstream-commit`.
 
-Exact field contracts are in [Project](./project.md),
-[Distro fields](./distros.md#distro-fields), and
-[Upstream component source](./sources.md#upstream-component-source).
+The resolution request must separately supply the target distro/version input
+used for resolution. `project.default-distro` selects only the source
+repository context. It never chooses or changes the target.
+
+[Project](./project.md) and [Distro fields](./distros.md#distro-fields) define
+the project and distro values.
+
+[Upstream component source](./sources.md#upstream-component-source) defines
+the source reference and commit fields.
 
 ## Understand the top-level objects
 
-The root table is closed. Its portable object families are:
+The root table is closed. It recognizes these portable object families:
 
-- `project`, for descriptive values and a default source-distro reference;
-- `distros`, whose versions provide release values and optional component
-  defaults;
-- `components`, the named components that become materialized dist-git trees;
-- `component-groups`, which provide membership, discovery, and shared partial
-  component configuration;
-- `default-component-config`, the project-wide partial component default;
-- `resources`, `images`, `default-package-config`, `package-groups`, `tests`,
-  and `test-groups`, which are optional profile data;
-  and
-- document controls `spec-version` and `includes`.
+- The [project](./project.md) table holds descriptive values and a default
+  source-distro reference.
+- Each [distro](./distros.md) entry provides versions, release values, and
+  optional component defaults.
+- Named [components](./components.md) become materialized dist-git trees.
+- A [component group](./component_groups.md) provides membership, discovery,
+  and shared partial component configuration.
+- The top-level `default-component-config` is the project-wide partial
+  component default.
+- Optional profile data lives under `resources`, `images`,
+  `default-package-config`, `package-groups`, `tests`, and `test-groups`.
+- Document controls are `spec-version` and `includes`.
 
 Unknown top-level keys and alternate spellings are errors. Name-keyed maps use
 exact Unicode names without case folding or normalization. A missing,
 ambiguous, or wrong-kind reference fails instead of choosing a near match.
-The canonical list and common name rules are in
-[Canonical top-level vocabulary](./objects.md#canonical-top-level-vocabulary)
+
+The [Top-level object model](./objects.md) defines these root objects.
+Details: [Canonical top-level vocabulary](./objects.md#canonical-top-level-vocabulary)
 and [Names and references](./objects.md#names-and-references).
 
 ## Resolve the target before inheritance
 
-Every resolution evaluation receives an exact
-`(target-distro, target-version)` pair from its resolution request. That pair
-is not a TOML field, host default, or source selector. It must identify one
-declared distro version and remains fixed for the complete evaluation.
+Every resolution request must supply an exact
+`(target-distro, target-version)` pair. The pair comes from the request, not a
+TOML field, host default, or source selector. It must identify one declared
+distro version and remains fixed throughout evaluation.
 
-The selected distro version supplies the first component-default layer. Source
-fields such as `spec.upstream-distro`, and the project fallback used in the
-example, identify where upstream source comes from. They cannot reselect the
-target provider. See
-[Target distro/version evaluation input](./resolution.md#target-distroversion-evaluation-input).
+The selected distro version supplies the first component-default layer.
+`spec.upstream-distro` and the project fallback used in the example identify
+where upstream source comes from. They cannot reselect or change the target
+distro/version.
+
+Details:
+[Resolution](./resolution.md) defines the complete model; the
+[Target distro/version evaluation input](./resolution.md#target-distroversion-evaluation-input)
+section defines this required pair.
 
 ## Apply defaults and inheritance in one fixed order
 
-Each provider has already combined all source-document contributions to that
-inheritance layer before inheritance begins.
-Resolution then combines partial `ComponentConfig` values from low to high
-precedence:
+Each inheritance layer may receive values from several source documents. Those
+values are composed first, producing one partial `ComponentConfig` for that
+layer; the reference calls this partial configuration a provider. Resolution
+then combines the four providers from low to high precedence:
 
 1. the selected distro-version `default-component-config`;
 2. the top-level `default-component-config`;
 3. the aggregate of every applicable component group; and
 4. the direct `components.<name>` configuration.
 
-Tables and maps merge recursively, later scalars replace earlier scalars, and
+Tables and maps merge recursively. Later scalars replace earlier scalars, and
 replacing arrays replace the earlier array. The `overlays` sequence is the
-important append exception: entries retain provider and element order. A field
-default is applied only after all four layers and only when its owner defines
-one. Absence, `false`, zero, an empty string, an empty array, and an empty
-table are not interchangeable.
+important append exception: entries retain provider and element order.
 
-The full rule, including provenance, is in
+A field default is applied only after all four layers, and only when its owner
+defines one. Absence, `false`, zero, an empty string, an empty array, and an
+empty table are not interchangeable. Individual field chapters define whether
+a value is required, its default, and any composition exception.
+
+Details:
 [Component inheritance order](./resolution.md#component-inheritance-order).
-Individual field chapters define whether a value is required, its default,
-and any composition exception.
 
 ## Use groups for shared, non-conflicting contributions
 
-A component group can list explicit component names, discover components from
-project-contained `.spec` path patterns, and provide a partial
-`default-component-config`. Discovery is deterministic: patterns run in array
-order, matches are sorted by normalized project-relative path, exclusions run
-after positive matches, and repeated reaches of one canonical spec path are
-coalesced while retaining all provenance occurrences. Only distinct paths
-that derive the same component name collide and cause an error.
+Component groups share partial configuration across named or discovered
+components. Groups do not have priority over one another. They may append
+append-composed arrays or contribute disjoint table or map leaves. Resolution
+fails if two groups set the same non-append leaf, even to the same value.
 
-Several groups do not form a precedence ladder. They may append
-append-composed arrays or contribute disjoint table/map leaves. If two groups
-contribute the same non-append leaf, resolution fails even when the values are
-equal. Group-name UTF-8 order is used only to order appended elements; it
-cannot select a winning scalar or replacing array. Revision `0.1` has no group
-priority field.
+A group can list component names or discover `.spec` files with
+project-contained patterns. Discovery is deterministic, and repeated matches
+for the same file are coalesced. Distinct files that derive the same component
+name collide and fail. The reference defines pattern order, exclusions,
+provenance, and append ordering.
 
-See [Discovery pattern dialect](./component_groups.md#discovery-pattern-dialect),
-[Discovered component construction](./component_groups.md#discovered-component-construction),
-and the group-layer rules in
-[Component inheritance order](./resolution.md#component-inheritance-order).
-
-Result/failure sketch: one group may contribute
+For example, one group may contribute
 `build.defines = { hardening = "1" }` while another contributes a disjoint
 `build.defines = { tracing = "1" }`; both leaves survive. If both groups set
 `release.calculation`, resolution fails even when the two strings are equal.
-The focused
-[inheritance and component-group fixture](./examples/inheritance-overlap/README.md)
+The [inheritance and component-group example](./examples/inheritance-overlap/README.md)
 checks both outcomes.
+
+The [Discovery pattern dialect](./component_groups.md#discovery-pattern-dialect)
+defines matching, and
+[Discovered component construction](./component_groups.md#discovered-component-construction)
+defines the synthesized component.
+
+[Component inheritance order](./resolution.md#component-inheritance-order)
+defines how group contributions enter resolution.
 
 ## Keep core and optional profile data distinct
 
-Component construction, source acquisition, overlays, and materialized
-dist-git are core. Build, release, package publishing, image, test, RPM
-repository-resource, and executable custom-generation fields are canonical
-optional profile data. Their presence still requires validation and
-preservation, but it does not run an operation.
+Declaring optional profile data does not run anything. Component construction,
+source acquisition, overlays, and materialized dist-git are core. Settings for
+builds, releases, package publishing, images, tests, RPM repository resources,
+and custom generators are optional profile data. They are validated and
+preserved, but an operation begins only when it is explicitly requested. If
+the processor cannot support that operation, it returns
+`unsupported-operation` before side effects.
 
-An optional operation begins only through an explicit request using one of the
-defined operation identifiers. A processor that cannot support the selected
-operation returns `unsupported-operation` before side effects; it does not
-discard valid unselected data. The complete split is in
-[Optional profile data and operations](./profiles.md).
+Details: [Optional profile data and operations](./profiles.md).
 
 ## Produce one resolved model or an error
 
-Resolution reconciles discovered and explicit components, applies inheritance
-and defaults, resolves references, checks effective invariants, and converts
-upstream selectors to exact commits. A later phase cannot repair an earlier
-error. Success produces one typed resolved object graph with relocatable
-provenance; failure produces no resolved model for that evaluation.
+Resolution combines the component settings, applies defaults, resolves
+references, validates the result, and pins upstream sources to full commits. A
+later phase cannot repair an earlier error. If resolution succeeds, source
+acquisition receives the resolved component and its provenance. If it fails,
+no resolved model is produced. The reference does not define a serialization
+format or conformance tool.
 
-The exact phase order is in
+Details:
 [Processing and validation order](./resolution.md#processing-and-validation-order).
-The behavioral boundary deliberately does not define canonical JSON, TOML, a
-comparison stream, or a conformance tool.
 
 ## Further reading
 

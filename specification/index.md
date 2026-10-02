@@ -1,12 +1,16 @@
 # Distro TOML specification
 
-Distro TOML describes how source configuration and declared inputs become one
-build-ready materialized dist-git tree for each resolved component. It
-standardizes portable data and observable behavior, not a command,
-implementation language, cache, work, or storage layout.
+Distro TOML tells a processor how to turn project configuration and declared
+inputs into one build-ready materialized dist-git tree for each component
+after resolution. It defines portable data and observable results. It does not
+prescribe a command-line interface, implementation language, cache, workspace,
+or storage layout.
 
-Standalone configuration excerpt; it assumes the referenced project files
-already exist and satisfy their owning contracts.
+The seven reading guides explain that workflow. They are non-normative; the
+reference chapters they link contain the binding rules.
+
+The following standalone example assumes that `pkg/hello.spec` and
+`files/azurelinux.conf` already exist and are valid.
 
 ```toml
 spec-version = "0.1"
@@ -34,24 +38,20 @@ contains the local dist-git content and one active `hello.spec`.
 
 ## From TOML to materialized dist-git
 
-A processor loads the root file and its includes, combines their values,
-applies defaults and inheritance, resolves references and immutable source
-identities, acquires declared inputs, runs the ordered overlays, validates the
-candidate, and atomically publishes one materialized dist-git tree for each
-resolved component.
+A processor first loads the root file and its includes, then combines their
+values. It applies defaults and inheritance, resolves references and immutable
+source identities, and acquires the declared inputs. It runs the overlays in
+order, validates the candidate, and atomically publishes one materialized
+dist-git tree for each resolved component.
 
-The reference chapters call the loaded files
-[source documents](./document.md), the combined configuration the
-[composed model](./resolution.md#composed-model), and the effective
-configuration the
-[resolved model](./resolution.md#resolved-model). They define the exact
-[processing order](./resolution.md#processing-and-validation-order), how
-[archives are transformed and hashed](./overlays.md#archive-extraction-and-batching),
-how final entries retain a
-[materialization provenance ledger](./artifacts.md#provenance-association),
-how optional work is explicitly
-[selected](./profiles.md#selected-operation-contracts), and how failures are
-reported through [structured diagnostics](./validation.md#diagnostic-record).
+The specification calls the loaded files
+[source documents](./document.md) and the combined configuration the
+[composed model](./resolution.md#composed-model). After defaults and
+inheritance are applied, references are resolved, the resulting values pass
+validation, and source identities are resolved, the result is the
+[resolved model](./resolution.md#resolved-model). The
+[processing order](./resolution.md#processing-and-validation-order) defines
+the binding sequence.
 
 ## Requirement language
 
@@ -80,14 +80,14 @@ identity and vocabulary contract is in [Document format](./document.md).
 | **Materialized-tree** | Not enabled or claimed |
 
 No class is enabled or claimed. Revision `0.1` defines no class lifecycle,
-claim protocol, required suite, or transition rule. Exact input and observable
-boundaries, phase identifiers, whole-chapter owners, and identity/equality
-requirements are in the
-[detailed conformance boundaries](./conformance.md#conformance-boundaries).
+claim protocol, required suite, or transition rule. The
+[detailed conformance boundaries](./conformance.md#conformance-boundaries)
+list each class's inputs and observable results, phase identifiers, defining
+chapters, and identity/equality rules.
 
-The retained ordinary positive/negative examples and traceability are defined
-in [Conformance](./conformance.md). Those examples do
-not enable or establish a claim.
+[Conformance](./conformance.md) contains the positive and negative examples
+and their traceability records. These examples do not enable or establish a
+conformance claim.
 
 ## Boundaries and deferred work
 
@@ -95,11 +95,15 @@ Revision `0.1` does not standardize implementation libraries or
 implementation-specific fingerprints. Existing tool behavior is evidence, not
 authority; behavior is normative only when this specification states it.
 
-Exact non-goals and deferrals are retained in
-[Conformance](./conformance.md#explicit-deferrals-and-non-goals),
-[profile output exclusions](./profiles.md#status-and-output-exclusions), and
-[Compatibility](./compatibility.md). Resolved decisions and selected
-future-version topics are recorded, non-normatively, in
+Non-goals and deferred work are listed in
+[Conformance](./conformance.md#explicit-deferrals-and-non-goals).
+Profile-specific exclusions are listed in
+[profile output exclusions](./profiles.md#status-and-output-exclusions).
+[Compatibility](./compatibility.md) defines the remaining compatibility
+boundary.
+
+Resolved decisions and selected future-version topics are recorded,
+non-normatively, in
 [Decision status and open decisions](./open-decisions.md).
 
 ## Read next
@@ -124,4 +128,8 @@ excerpts unless explicitly marked as continuing.
    failure boundaries, explicit inputs, diagnostics, and safety rules.
 
 During implementation, use [Reference](./reference.md) to find exhaustive
-owners, matrices, fixtures, exclusions, and deferred work.
+owners, including [archive transformation and hashing](./overlays.md#archive-extraction-and-batching),
+the final [materialization provenance ledger](./artifacts.md#provenance-association),
+[selected operation contracts](./profiles.md#selected-operation-contracts),
+and [diagnostic records](./validation.md#diagnostic-record), plus matrices,
+fixtures, exclusions, and deferred work.

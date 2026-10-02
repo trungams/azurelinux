@@ -4,28 +4,29 @@
 
 # Materialized dist-git
 
-> **Non-normative reading guide.** This page explains the final core artifact.
-> The primary normative owner is
-> [Materialized dist-git artifacts](./artifacts.md); cross-cutting owners are
-> linked where used.
+This page shows how verified source material and overlay results become one
+build-ready dist-git tree. [Materialized dist-git artifacts](./artifacts.md)
+contains the binding rules.
 
-Core processing produces one build-ready dist-git tree for one resolved
-component. It starts from verified local or upstream source, inserts verified
-source artifacts, applies the complete overlay pipeline in private staging,
-validates the result, and publishes it as one observable transition.
+Core produces one materialized artifact for each resolved component. In one
+private component attempt, the
+[`MT-MATERIALIZE` operation](./resolution.md#processing-and-validation-order)
+assembles the source tree and verified artifacts, runs the overlay pipeline
+described on the previous page once, and validates the final result. It
+publishes the complete tree in one observable transition.
 
 ## Assemble the candidate tree
 
-For an upstream component, the exact verified commit supplies the source tree.
-The exact top-level `<upstream-name>.spec` is the only active-spec source; the
-processor does not scan for another candidate. For a local component,
+For an upstream component, the verified commit supplies the source tree. Its
+exact top-level `<upstream-name>.spec` is the only active-spec source. The
+processor doesn't scan for or choose another spec. For a local component,
 `spec.path` identifies the active spec inside the local source root.
 
-In both cases the selected spec becomes the single top-level
+In both cases, the selected spec becomes the single top-level
 `<effective-component-name>.spec` with mode `0644`. Other source-tree sidecars
 retain normalized source-relative paths. Effective source artifacts become
 top-level regular files at their exact filenames. Remaining collisions are
-errors rather than implicit overwrites.
+errors; the processor never overwrites them implicitly.
 
 A typical result can contain:
 
@@ -37,89 +38,89 @@ README.md
 packaging/macros
 ```
 
-The exact assembly order and active-spec stem restrictions are in
+The assembly order and active-spec stem restrictions are in
 [Materialization input and candidate assembly](./artifacts.md#materialization-input-and-candidate-assembly).
 
 ## Keep one portable tree namespace
 
-Artifact paths are strict UTF-8 relative paths with `/` separators. They
-contain no empty, `.`, `..`, or `.git` segment and are compared without case
-folding or Unicode normalization. The permitted entry types are directories,
-regular files, and symbolic links with contained portable target text.
+The materialized tree uses strict UTF-8 relative paths with `/` separators. It
+may contain directories, regular files, and contained symbolic links. Regular
+files keep their exact bytes and executable state. Directories use mode `0755`
+and exist only when a surviving descendant needs them.
 
-Directories have mode `0755` and exist only when required by a surviving
-descendant. Regular files have exact bytes and mode `0644` or `0755`.
-Hardlinks, devices, sockets, FIFOs, submodules, host-only reparse objects, and
-other entry types are errors. Materialization never follows a symbolic link as
-a directory or writes through one.
-
-Processor-generated caches, locks, logs, temporary files, `.git` state,
-failure markers, build outputs, and provenance sidecars are excluded. See
+The processor rejects escaping paths or links, links used as directories, and
+unsupported entry types. Paths contain no empty, `.`, `..`, or `.git` segment
+and are compared without case folding or Unicode normalization. Processor
+state such as caches, locks, logs, temporary files, `.git`, failure markers,
+build outputs, and provenance sidecars stays out of the tree. See
 [Tree namespace and permitted entries](./artifacts.md#tree-namespace-and-permitted-entries)
 and [Entry placement and exclusions](./artifacts.md#entry-placement-and-exclusions).
 
 ## Build the final `sources` manifest
 
-The top-level `sources` path records effective source artifacts. For upstream
-components, unchanged comments, blank lines, and unmodified artifact records
-retain their exact original bytes and line terminators. Configured
-replacements rewrite their existing record positions in canonical modern
-form. New configured artifacts append in effective `source-files` order.
+The top-level `sources` file records the effective source artifacts. For an
+upstream component, unchanged comments, blank lines, and unmodified artifact
+records keep their original bytes and line terminators. A configured
+replacement rewrites the record in its existing position using canonical
+modern form. New configured artifacts append in effective `source-files`
+order.
 
-Archive-overlay replacements use the verified post-overlay digest. Every
-record must agree with the actual top-level artifact bytes. A stale record,
-missing file, unrecorded effective artifact, duplicate filename, malformed
-emitted record, or wrong digest fails the complete attempt.
+An archive-overlay replacement uses its verified post-overlay digest. Every
+emitted manifest record must agree with the actual top-level artifacts and
+their digests. Any mismatch fails the complete component attempt.
 
-The exact byte algorithm is in
-[`sources` manifest bytes](./artifacts.md#sources-manifest-bytes).
+[`sources` manifest bytes](./artifacts.md#sources-manifest-bytes) defines the
+byte algorithm and individual failures.
 
 ## Record provenance without adding a tree file
 
-Every successful materialization has a semantic provenance ledger. It is
-model state, not a filesystem entry and not a standardized byte format.
+Materialization records provenance for each final entry. This provenance is
+model data, not a file in the tree. The active spec records its selected
+source and final path. Apart from `sources`, every final non-directory entry
+records its base origin and every ordered transformation that created,
+renamed, changed, or retained it. A derived directory identifies the surviving
+descendant entries that require it.
 
-For each final non-directory entry other than `sources`, the ledger identifies
-its base origin and every ordered transformation that created, renamed,
-changed, or retained it. The active spec records its exact selected source and
-final path. The `sources` file instead uses a derived aggregate origin
-containing its starting manifest and ordered preserved, replacement, and
-append contributors.
+`sources` is different because it combines preserved and rewritten manifest
+records. Its provenance records the starting manifest and, in order, which
+records were preserved, replaced, or appended.
 
-Different origins or operation histories are not collapsed merely because
-they produce equal final bytes. Exact requirements are in
+Different origins or operation histories remain distinct even when they
+produce equal final bytes. The complete requirements are in
 [Provenance association](./artifacts.md#provenance-association).
-
-## Compare observable behavior, not a canonical encoding
-
-Two successful materialized results are behaviorally identical only when
-their component identity, complete normalized path set, entry types, regular
-file bytes, executable classifications, symbolic-link target text, and
-required exclusions are equal.
-
-Revision `0.1` defines no canonical tree serialization, traversal order,
-digest framing, comparison algorithm, or conformance tool. Implementations may
-index or compare trees however they choose only when every observable property
-above is preserved. A transformed archive additionally has exact emitted
-bytes constrained by its configured hash, without a universal archive encoder.
-
-See [Behavioral tree identity](./artifacts.md#behavioral-tree-identity) and
-[Transformed archive byte boundary](./artifacts.md#transformed-archive-byte-boundary).
 
 ## Publish atomically
 
 Acquisition, assembly, transformations, manifest rewriting, hash checks,
 artifact validation, and provenance validation all happen in private state.
-On success, observers see the new complete tree. On failure, no new local
-artifact is published and a previous artifact remains byte-for-byte unchanged.
+On success, observers see the complete new tree in one transition. On failure,
+no new local artifact is published, and the previous artifact remains
+byte-for-byte unchanged.
 
 This local guarantee does not extend to optional remote package or image
-publication. The exact local rule is in
-[Atomic publication](./artifacts.md#atomic-publication).
+publication. [Atomic publication](./artifacts.md#atomic-publication) defines
+the local rule.
+
+## Compare observable behavior, not a canonical encoding
+
+Two successful results are behaviorally identical when they have the same
+component identity, complete normalized path set, and entry type at every
+path. Regular-file bytes and executable state, symbolic-link targets, and
+required exclusions must also match. The specification does not require one
+tree encoding or comparison method.
+
+Transformed archives have one additional byte gate: their exact emitted bytes
+must match the configured hash. That result-specific hash is an acceptance
+gate, not a canonical encoding rule.
+
+See [Behavioral tree identity](./artifacts.md#behavioral-tree-identity) and
+[Transformed archive byte boundary](./artifacts.md#transformed-archive-byte-boundary).
 
 ## Further reading
 
 - [Materialized artifact fixture](./examples/materialized-artifact/README.md)
 - [Overlay provenance fixture](./examples/overlay-provenance/README.md)
 
+Core processing now has a complete local artifact. Optional workflows can use
+it for builds, tests, images, or publication.
 [Continue: Optional workflows](./optional-workflows.md)

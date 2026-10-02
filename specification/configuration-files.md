@@ -3,11 +3,9 @@
 
 # Configuration files
 
-> **Non-normative reading guide.** This page explains the normal file-loading
-> workflow. The primary normative owners are
-> [Document format](./document.md) and
-> [Document loading and composition](./loading.md); cross-cutting owners are
-> linked where used.
+This guide follows the loader from `azldev.toml` through included fragments to
+one composed model. [Document format](./document.md) and
+[Document loading and composition](./loading.md) contain the binding rules.
 
 A project starts with one file named `azldev.toml`. Small projects can keep
 their complete configuration there. Larger projects can split configuration
@@ -33,15 +31,21 @@ type = "local"
 path = "pkg/hello.spec"
 ```
 
-The root-table `spec-version` document-control key appears only in the root
-file. An included fragment omits that root-table key; the same string at
-another path follows its owning field contract. A fragment may contain its own
-root-table `includes` array. All files are strict UTF-8 TOML: invalid TOML,
-duplicate assignments, unknown keys in closed tables, wrong types, and
-noncanonical key spellings are errors. The exact root and fragment rules are
-in [Root document identity](./document.md#root-document-identity),
-[Included fragments](./document.md#included-fragments), and [Strict key
-vocabulary](./document.md#strict-key-vocabulary).
+`spec-version` is a document-control key only at the root of a document. The
+root document must contain it, while included fragments must omit it. A
+fragment may still contain `includes`, and a nested field named `spec-version`
+follows that field's own definition.
+
+Every file must be strict UTF-8 TOML. Invalid TOML, duplicate assignments,
+unknown keys in closed tables, wrong types, and noncanonical key spellings are
+errors.
+
+[Root document identity](./document.md#root-document-identity) and
+[Included fragments](./document.md#included-fragments) define the two document
+roles.
+
+[Strict key vocabulary](./document.md#strict-key-vocabulary) defines accepted
+field spellings.
 
 The example's literal `configuration/defaults.toml` must exist. The glob may
 match no files without failing. `path = "pkg/hello.spec"` remains relative to
@@ -50,90 +54,89 @@ the same component.
 
 ## Resolve includes from the declaring file
 
-Each include entry is relative to the directory of the file that declares it,
-not always to the project root. `/` is the only separator. Absolute paths,
-backslashes, URI-like paths, drive spellings, invalid glob syntax, and an
-attempt to navigate above the project root are errors before a fragment is
-loaded.
+Each include path is `/`-separated, relative to the file that declares it, and
+confined to the project root. Host-specific or malformed paths fail before
+loading. Matching uses exact Unicode spelling: a missing literal fails, while
+a valid glob with no matches contributes nothing. The loader resolves the
+include path and any symlinks, then requires the resulting target to be a
+regular file inside the canonical project root.
 
-Literal segments and glob matches use exact Unicode spelling. Implementations
-do not case-fold or normalize names. Symbolic links are resolved for
-containment, and every selected fragment must remain inside the canonical
-project root and resolve to a regular file. A missing literal is an error. A
-valid glob with no matches contributes nothing.
+These rules keep configuration portable across checkout locations and reject
+host-specific path behavior.
 
-These rules make a configuration portable across checkout locations while
-rejecting host-specific path behavior. The exact grammar and failure cases are
-in [The `includes` directive](./loading.md#the-includes-directive),
+Details: [The `includes` directive](./loading.md#the-includes-directive),
 [Include-entry and glob grammar](./loading.md#include-entry-and-glob-grammar),
 and [Match handling and containment](./loading.md#match-handling-and-containment).
 
 ## Follow one deterministic order
 
-Loading begins with the root body. Include entries are then processed in array
-order. Matches for one glob are sorted by normalized project-relative path
-UTF-8 bytes, and each matched fragment's include subtree is completed
+Loading begins with the root body. The loader processes include entries in
+array order. It sorts one glob's matches by the UTF-8 bytes of their normalized
+project-relative paths. It finishes each matched fragment's include subtree
 depth-first before loading the next match.
 
 The declaring document therefore precedes everything it includes. Later
-document bodies have higher precedence only where the owning composition rule
-allows replacement. The physical position of `includes` inside a file does
-not change the order.
+document bodies have higher precedence only where that field's composition
+rules allow replacement. The physical position of `includes` inside a file
+does not change the order.
 
-A canonical document reached again outside the active recursion chain is not
-applied twice. Its first deterministic reach supplies its body and traverses
-its includes; later reaches add graph provenance only. Reaching a document
-that is still active is a cycle and fails. See
-[Traversal order](./loading.md#traversal-order) and
+If the loader encounters the same file again after finishing its first
+traversal, it records the additional include relationship but does not apply
+the file or follow its includes again. Encountering a file that is still being
+loaded is a cycle and fails.
+
+Details: [Traversal order](./loading.md#traversal-order) and
 [Cycles and repeated reaches](./loading.md#cycles-and-repeated-reaches).
 
 ## Validate before merging
 
-Every newly reached file is parsed and checked independently before its body
-can participate in composition. A bad value in an earlier fragment cannot be
-hidden by a valid value in a later file. Required values that may be supplied
-elsewhere can remain absent from an individual fragment, but every value that
-is present must already have a valid key, TOML type, nested shape, and
-source-local constraints.
+The loader parses and checks every newly reached file before its body can
+participate in composition. A valid value in a later file cannot hide a bad
+value in an earlier fragment. A fragment may omit a required value when
+another file can supply it, but every value that is present must already have
+a valid key, TOML type, nested shape, and source-local constraints.
 
 After every reached document is valid, composition processes bodies from
 earliest to latest:
 
-- tables and name-keyed maps merge recursively;
-- a later scalar of the same TOML type replaces the earlier scalar;
-- a later array replaces the complete earlier array, including with `[]`;
-- different TOML value types conflict and fail; and
+- Tables and name-keyed maps merge recursively.
+- A later scalar of the same TOML type replaces the earlier scalar.
+- A later array replaces the complete earlier array, including with `[]`.
+- Different TOML value types conflict and fail.
 - `ComponentConfig.overlays` is the defined append-composed array exception.
 
-Field chapters can define another exception only explicitly. For example,
+A field follows these composition rules unless its own definition states an
+exception. For example,
 `overlay-files` is a replacing array, while `overlays` appends in document
-reach order. Composition is atomic: a load, type, or merge error produces no
-composed model. The complete rules are in
-[Composition sequence](./loading.md#composition-sequence) and
+reach order. Composition is atomic. A load, type, or merge error produces no
+composed model.
+
+Details: [Composition sequence](./loading.md#composition-sequence) and
 [Explicit composition exceptions](./loading.md#explicit-composition-exceptions).
 
-Quick result sketch: if an earlier fragment supplies
+For example, suppose an earlier fragment supplies
 `project.description = "Base"` and a later fragment supplies
-`project.description = "Component"`, the later scalar wins. Two `overlays`
-arrays append, while a later replacing array set to `[]` clears the earlier
-array. An invalid value in the earlier fragment fails before any of those
-composition results can hide it; the focused
-[source-model validation falsifier](./examples/source-model-validation/README.md)
+`project.description = "Component"`. The later scalar wins. Two `overlays`
+arrays append. A later replacing array set to `[]` clears the earlier array.
+An invalid value in the earlier fragment fails before any of those composition
+results can hide it. The focused
+[source-model validation example](./examples/source-model-validation/README.md)
 shows that boundary.
 
 ## Keep each value's origin
 
-The composed model retains the source document that supplied each effective
-leaf. Relative path values also retain the defining file's path base. Moving
-the complete project to another absolute checkout directory does not change
-that semantic provenance.
+The composed model remembers which source document supplied each leaf.
+Relative path values also retain the defining file's path base. Moving the
+complete project to another absolute checkout directory does not change
+either fact.
 
 This distinction matters when a fragment supplies a component spec path, an
 overlay source, a test path, or another project-side file. Later composition
-and inheritance do not silently rebase the path to the root document or to the
-file that refers to the resulting object. Exact provenance behavior is in
-[Path provenance](./loading.md#path-provenance), and the composed result is
-defined in [Composed model](./resolution.md#composed-model).
+and inheritance do not silently rebase that path to the root document or to
+the file that refers to the resulting object.
+
+Details: [Path provenance](./loading.md#path-provenance) and
+[Composed model](./resolution.md#composed-model).
 
 ## Further reading
 
